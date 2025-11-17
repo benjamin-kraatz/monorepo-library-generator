@@ -7,8 +7,8 @@
  * @module monorepo-library-generator/contract/commands-template
  */
 
-import { TypeScriptBuilder } from "../../../utils/code-generation/typescript-builder.js"
-import type { ContractTemplateOptions } from "../../../utils/shared/types.js"
+import { TypeScriptBuilder } from '../../../utils/code-generation/typescript-builder.js';
+import type { ContractTemplateOptions } from '../../../utils/shared/types.js';
 
 /**
  * Generate commands.ts file for contract library
@@ -20,65 +20,65 @@ import type { ContractTemplateOptions } from "../../../utils/shared/types.js"
  * - Schema union for validation
  */
 export function generateCommandsFile(options: ContractTemplateOptions): string {
-  const builder = new TypeScriptBuilder()
-  const { className, fileName, propertyName } = options
-  const domainName = propertyName
+  const builder = new TypeScriptBuilder();
+  const { className, fileName, propertyName } = options;
+  const domainName = propertyName;
 
   // Add file header
-  builder.addRaw(createFileHeader(className, domainName, fileName))
-  builder.addBlankLine()
+  builder.addRaw(createFileHeader(className, domainName, fileName));
+  builder.addBlankLine();
 
   // Add imports
-  builder.addImports([
-    { from: "effect", imports: ["Schema"] }
-  ])
+  builder.addImports([{ from: 'effect', imports: ['Schema'] }]);
 
   builder.addImports([
-    { from: "./entities", imports: [`${className}Id`], isTypeOnly: true }
-  ])
+    { from: './entities', imports: [`${className}Id`], isTypeOnly: true },
+  ]);
 
-  builder.addBlankLine()
+  builder.addBlankLine();
 
   // ============================================================================
   // SECTION 1: CRUD Commands
   // ============================================================================
 
-  builder.addSectionComment("CRUD Commands")
-  builder.addBlankLine()
+  builder.addSectionComment('CRUD Commands');
+  builder.addBlankLine();
 
   // Create command
-  builder.addRaw(createCreateCommand(className, propertyName))
-  builder.addBlankLine()
+  builder.addRaw(createCreateCommand(className, propertyName));
+  builder.addBlankLine();
 
   // Update command
-  builder.addRaw(createUpdateCommand(className, propertyName))
-  builder.addBlankLine()
+  builder.addRaw(createUpdateCommand(className, propertyName));
+  builder.addBlankLine();
 
   // Delete command
-  builder.addRaw(createDeleteCommand(className, propertyName))
-  builder.addBlankLine()
+  builder.addRaw(createDeleteCommand(className, propertyName));
+  builder.addBlankLine();
 
   // TODO comment for custom commands
-  builder.addComment("TODO: Add domain-specific commands here")
-  builder.addComment("Example - Status change command (if domain has state machine):")
-  builder.addComment("")
+  builder.addComment('TODO: Add domain-specific commands here');
   builder.addComment(
-    `export class Change${className}StatusCommand extends Schema.Class<Change${className}StatusCommand>("Change${className}StatusCommand")({`
-  )
-  builder.addComment(`  ${propertyName}Id: Schema.UUID,`)
-  builder.addComment("  newStatus: Schema.String,")
-  builder.addComment("  reason: Schema.optional(Schema.String),")
-  builder.addComment("}) {")
-  builder.addComment("  static create(params: { ... }) { ... }")
-  builder.addComment("}")
-  builder.addBlankLine()
+    'Example - Status change command (if domain has state machine):',
+  );
+  builder.addComment('');
+  builder.addComment(
+    `export class Change${className}StatusCommand extends Schema.Class<Change${className}StatusCommand>("Change${className}StatusCommand")({`,
+  );
+  builder.addComment(`  ${propertyName}Id: Schema.UUID,`);
+  builder.addComment('  newStatus: Schema.String,');
+  builder.addComment('  reason: Schema.optional(Schema.String),');
+  builder.addComment('}) {');
+  builder.addComment('  static create(params: { ... }) { ... }');
+  builder.addComment('}');
+  builder.addBlankLine();
 
   // ============================================================================
   // SECTION 2: Command Union Type
   // ============================================================================
 
-  builder.addSectionComment("Command Union Type")
-  builder.addBlankLine()
+  builder.addSectionComment('Command Union Type');
+  builder.addBlankLine();
 
   builder.addTypeAlias({
     name: `${className}Command`,
@@ -87,11 +87,11 @@ export function generateCommandsFile(options: ContractTemplateOptions): string {
   | Update${className}Command
   | Delete${className}Command`,
     exported: true,
-    jsdoc: `Union of all ${domainName} commands`
-  })
+    jsdoc: `Union of all ${domainName} commands`,
+  });
 
-  builder.addComment("TODO: Add custom commands to this union")
-  builder.addBlankLine()
+  builder.addComment('TODO: Add custom commands to this union');
+  builder.addBlankLine();
 
   // Command schema union
   builder.addRaw(`/**
@@ -103,15 +103,19 @@ export const ${className}CommandSchema = Schema.Union(
   Delete${className}Command
   // TODO: Add custom command schemas
 );
-`)
+`);
 
-  return builder.toString()
+  return builder.toString();
 }
 
 /**
  * Create file header
  */
-function createFileHeader(className: string, domainName: string, fileName: string): string {
+function createFileHeader(
+  className: string,
+  domainName: string,
+  fileName: string,
+): string {
   return `/**
  * ${className} Commands (CQRS Write Operations)
  *
@@ -124,8 +128,8 @@ function createFileHeader(className: string, domainName: string, fileName: strin
  * 3. Create custom commands for domain-specific operations
  * 4. Add factory methods for command creation
  *
- * @module @creativetoolkits/contract-${fileName}/commands
- */`
+ * @module @custom-repo/contract-${fileName}/commands
+ */`;
 }
 
 /**
@@ -160,7 +164,7 @@ export class Create${className}Command extends Schema.Class<Create${className}Co
       // TODO: Add fields
     });
   }
-}`
+}`;
 }
 
 /**
@@ -198,7 +202,7 @@ export class Update${className}Command extends Schema.Class<Update${className}Co
       updates: params.updates,
     });
   }
-}`
+}`;
 }
 
 /**
@@ -224,5 +228,5 @@ export class Delete${className}Command extends Schema.Class<Delete${className}Co
       ...(params.reason !== undefined && { reason: params.reason }),
     });
   }
-}`
+}`;
 }

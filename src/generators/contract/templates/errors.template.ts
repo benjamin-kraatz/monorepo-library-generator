@@ -7,9 +7,9 @@
  * @module monorepo-library-generator/contract/errors-template
  */
 
-import { EffectPatterns } from "../../../utils/code-generation/effect-patterns.js"
-import { TypeScriptBuilder } from "../../../utils/code-generation/typescript-builder.js"
-import type { ContractTemplateOptions } from "../../../utils/shared/types.js"
+import { EffectPatterns } from '../../../utils/code-generation/effect-patterns.js';
+import { TypeScriptBuilder } from '../../../utils/code-generation/typescript-builder.js';
+import type { ContractTemplateOptions } from '../../../utils/shared/types.js';
 
 /**
  * Generate errors.ts file for contract library
@@ -21,28 +21,28 @@ import type { ContractTemplateOptions } from "../../../utils/shared/types.js"
  * - Error union types
  */
 export function generateErrorsFile(options: ContractTemplateOptions): string {
-  const builder = new TypeScriptBuilder()
-  const { className, fileName, propertyName } = options
-  const domainName = propertyName
+  const builder = new TypeScriptBuilder();
+  const { className, fileName, propertyName } = options;
+  const domainName = propertyName;
 
   // Add comprehensive file header with documentation
-  builder.addRaw(createFileHeader(className, domainName, fileName))
-  builder.addBlankLine()
+  builder.addRaw(createFileHeader(className, domainName, fileName));
+  builder.addBlankLine();
 
   // Add imports
-  builder.addImports([
-    { from: "effect", imports: ["Data", "Schema"] }
-  ])
-  builder.addBlankLine()
+  builder.addImports([{ from: 'effect', imports: ['Data', 'Schema'] }]);
+  builder.addBlankLine();
 
   // ============================================================================
   // SECTION 1: Domain Errors
   // ============================================================================
 
-  builder.addSectionComment("Domain Errors (Data.TaggedError)")
-  builder.addComment("Use Data.TaggedError for domain-level errors that occur in business logic.")
-  builder.addComment("These errors are NOT serializable over RPC by default.")
-  builder.addBlankLine()
+  builder.addSectionComment('Domain Errors (Data.TaggedError)');
+  builder.addComment(
+    'Use Data.TaggedError for domain-level errors that occur in business logic.',
+  );
+  builder.addComment('These errors are NOT serializable over RPC by default.');
+  builder.addBlankLine();
 
   // NotFoundError
   builder.addClass(
@@ -50,23 +50,23 @@ export function generateErrorsFile(options: ContractTemplateOptions): string {
       className: `${className}NotFoundError`,
       tagName: `${className}NotFoundError`,
       fields: [
-        { name: "message", type: "string", readonly: true },
-        { name: `${propertyName}Id`, type: "string", readonly: true }
+        { name: 'message', type: 'string', readonly: true },
+        { name: `${propertyName}Id`, type: 'string', readonly: true },
       ],
       staticMethods: [
         {
-          name: "create",
-          params: [{ name: `${propertyName}Id`, type: "string" }],
+          name: 'create',
+          params: [{ name: `${propertyName}Id`, type: 'string' }],
           returnType: `${className}NotFoundError`,
           body: `return new ${className}NotFoundError({
   message: \`${className} not found: \${${propertyName}Id}\`,
   ${propertyName}Id,
-});`
-        }
+});`,
+        },
       ],
-      jsdoc: `Error thrown when ${domainName} is not found`
-    })
-  )
+      jsdoc: `Error thrown when ${domainName} is not found`,
+    }),
+  );
 
   // ValidationError
   builder.addClass(
@@ -74,47 +74,49 @@ export function generateErrorsFile(options: ContractTemplateOptions): string {
       className: `${className}ValidationError`,
       tagName: `${className}ValidationError`,
       fields: [
-        { name: "message", type: "string", readonly: true },
-        { name: "field", type: "string", readonly: true, optional: true },
-        { name: "constraint", type: "string", readonly: true, optional: true },
-        { name: "value", type: "unknown", readonly: true, optional: true }
+        { name: 'message', type: 'string', readonly: true },
+        { name: 'field', type: 'string', readonly: true, optional: true },
+        { name: 'constraint', type: 'string', readonly: true, optional: true },
+        { name: 'value', type: 'unknown', readonly: true, optional: true },
       ],
       staticMethods: [
         {
-          name: "create",
-          params: [{
-            name: "params",
-            type: `{
+          name: 'create',
+          params: [
+            {
+              name: 'params',
+              type: `{
     message: string;
     field?: string;
     constraint?: string;
     value?: unknown;
-  }`
-          }],
+  }`,
+            },
+          ],
           returnType: `${className}ValidationError`,
           body: `return new ${className}ValidationError({
   message: params.message,
   ...(params.field !== undefined && { field: params.field }),
   ...(params.constraint !== undefined && { constraint: params.constraint }),
   ...(params.value !== undefined && { value: params.value }),
-});`
+});`,
         },
         {
-          name: "fieldRequired",
-          params: [{ name: "field", type: "string" }],
+          name: 'fieldRequired',
+          params: [{ name: 'field', type: 'string' }],
           returnType: `${className}ValidationError`,
           body: `return new ${className}ValidationError({
   message: \`\${field} is required\`,
   field,
   constraint: "required",
-});`
+});`,
         },
         {
-          name: "fieldInvalid",
+          name: 'fieldInvalid',
           params: [
-            { name: "field", type: "string" },
-            { name: "constraint", type: "string" },
-            { name: "value", type: "unknown", optional: true }
+            { name: 'field', type: 'string' },
+            { name: 'constraint', type: 'string' },
+            { name: 'value', type: 'unknown', optional: true },
           ],
           returnType: `${className}ValidationError`,
           body: `return new ${className}ValidationError({
@@ -122,12 +124,12 @@ export function generateErrorsFile(options: ContractTemplateOptions): string {
   field,
   constraint,
   ...(value !== undefined && { value }),
-});`
-        }
+});`,
+        },
       ],
-      jsdoc: `Error thrown when ${domainName} validation fails`
-    })
-  )
+      jsdoc: `Error thrown when ${domainName} validation fails`,
+    }),
+  );
 
   // AlreadyExistsError
   builder.addClass(
@@ -135,25 +137,25 @@ export function generateErrorsFile(options: ContractTemplateOptions): string {
       className: `${className}AlreadyExistsError`,
       tagName: `${className}AlreadyExistsError`,
       fields: [
-        { name: "message", type: "string", readonly: true },
-        { name: "identifier", type: "string", readonly: true, optional: true }
+        { name: 'message', type: 'string', readonly: true },
+        { name: 'identifier', type: 'string', readonly: true, optional: true },
       ],
       staticMethods: [
         {
-          name: "create",
-          params: [{ name: "identifier", type: "string", optional: true }],
+          name: 'create',
+          params: [{ name: 'identifier', type: 'string', optional: true }],
           returnType: `${className}AlreadyExistsError`,
           body: `return new ${className}AlreadyExistsError({
   message: identifier
     ? \`${className} already exists: \${identifier}\`
     : \`${className} already exists\`,
   ...(identifier !== undefined && { identifier }),
-});`
-        }
+});`,
+        },
       ],
-      jsdoc: `Error thrown when ${domainName} already exists`
-    })
-  )
+      jsdoc: `Error thrown when ${domainName} already exists`,
+    }),
+  );
 
   // PermissionError
   builder.addClass(
@@ -161,61 +163,65 @@ export function generateErrorsFile(options: ContractTemplateOptions): string {
       className: `${className}PermissionError`,
       tagName: `${className}PermissionError`,
       fields: [
-        { name: "message", type: "string", readonly: true },
-        { name: "operation", type: "string", readonly: true },
-        { name: `${propertyName}Id`, type: "string", readonly: true },
-        { name: "userId", type: "string", readonly: true, optional: true }
+        { name: 'message', type: 'string', readonly: true },
+        { name: 'operation', type: 'string', readonly: true },
+        { name: `${propertyName}Id`, type: 'string', readonly: true },
+        { name: 'userId', type: 'string', readonly: true, optional: true },
       ],
       staticMethods: [
         {
-          name: "create",
-          params: [{
-            name: "params",
-            type: `{
+          name: 'create',
+          params: [
+            {
+              name: 'params',
+              type: `{
     operation: string;
     ${propertyName}Id: string;
     userId?: string;
-  }`
-          }],
+  }`,
+            },
+          ],
           returnType: `${className}PermissionError`,
           body: `return new ${className}PermissionError({
   message: \`Operation '\${params.operation}' not permitted on ${domainName} \${params.${propertyName}Id}\`,
   operation: params.operation,
   ${propertyName}Id: params.${propertyName}Id,
   ...(params.userId !== undefined && { userId: params.userId }),
-});`
-        }
+});`,
+        },
       ],
-      jsdoc: `Error thrown when ${domainName} operation is not permitted`
-    })
-  )
+      jsdoc: `Error thrown when ${domainName} operation is not permitted`,
+    }),
+  );
 
   // Add TODO comment for custom domain errors
-  builder.addComment("TODO: Add domain-specific errors here")
-  builder.addComment("Example - State transition error (if domain has status/state machine):")
-  builder.addComment("")
+  builder.addComment('TODO: Add domain-specific errors here');
   builder.addComment(
-    `export class ${className}InvalidStateError extends Data.TaggedError("${className}InvalidStateError")<{`
-  )
-  builder.addComment("  readonly message: string;")
-  builder.addComment("  readonly currentState: string;")
-  builder.addComment("  readonly targetState: string;")
-  builder.addComment(`  readonly ${propertyName}Id: string;`)
-  builder.addComment("}> {")
-  builder.addComment(`  static create(params: {`)
-  builder.addComment("    currentState: string;")
-  builder.addComment("    targetState: string;")
-  builder.addComment(`    ${propertyName}Id: string;`)
-  builder.addComment("  }) {")
-  builder.addComment(`    return new ${className}InvalidStateError({`)
+    'Example - State transition error (if domain has status/state machine):',
+  );
+  builder.addComment('');
   builder.addComment(
-    `      message: \`Cannot transition ${domainName} from \${params.currentState} to \${params.targetState}\`,`
-  )
-  builder.addComment("      ...params,")
-  builder.addComment("    });")
-  builder.addComment("  }")
-  builder.addComment("}")
-  builder.addBlankLine()
+    `export class ${className}InvalidStateError extends Data.TaggedError("${className}InvalidStateError")<{`,
+  );
+  builder.addComment('  readonly message: string;');
+  builder.addComment('  readonly currentState: string;');
+  builder.addComment('  readonly targetState: string;');
+  builder.addComment(`  readonly ${propertyName}Id: string;`);
+  builder.addComment('}> {');
+  builder.addComment(`  static create(params: {`);
+  builder.addComment('    currentState: string;');
+  builder.addComment('    targetState: string;');
+  builder.addComment(`    ${propertyName}Id: string;`);
+  builder.addComment('  }) {');
+  builder.addComment(`    return new ${className}InvalidStateError({`);
+  builder.addComment(
+    `      message: \`Cannot transition ${domainName} from \${params.currentState} to \${params.targetState}\`,`,
+  );
+  builder.addComment('      ...params,');
+  builder.addComment('    });');
+  builder.addComment('  }');
+  builder.addComment('}');
+  builder.addBlankLine();
 
   // Domain error union type
   builder.addTypeAlias({
@@ -226,17 +232,21 @@ export function generateErrorsFile(options: ContractTemplateOptions): string {
   | ${className}AlreadyExistsError
   | ${className}PermissionError`,
     exported: true,
-    jsdoc: "Union of all domain errors"
-  })
+    jsdoc: 'Union of all domain errors',
+  });
 
   // ============================================================================
   // SECTION 2: Repository Errors
   // ============================================================================
 
-  builder.addSectionComment("Repository Errors (Data.TaggedError)")
-  builder.addComment("Repository errors use Data.TaggedError for domain-level operations.")
-  builder.addComment("These errors do NOT cross RPC boundaries - use rpc.ts for network errors.")
-  builder.addBlankLine()
+  builder.addSectionComment('Repository Errors (Data.TaggedError)');
+  builder.addComment(
+    'Repository errors use Data.TaggedError for domain-level operations.',
+  );
+  builder.addComment(
+    'These errors do NOT cross RPC boundaries - use rpc.ts for network errors.',
+  );
+  builder.addBlankLine();
 
   // NotFoundRepositoryError
   builder.addClass(
@@ -244,23 +254,23 @@ export function generateErrorsFile(options: ContractTemplateOptions): string {
       className: `${className}NotFoundRepositoryError`,
       tagName: `${className}NotFoundRepositoryError`,
       fields: [
-        { name: "message", type: "string", readonly: true },
-        { name: `${propertyName}Id`, type: "string", readonly: true }
+        { name: 'message', type: 'string', readonly: true },
+        { name: `${propertyName}Id`, type: 'string', readonly: true },
       ],
       staticMethods: [
         {
-          name: "create",
-          params: [{ name: `${propertyName}Id`, type: "string" }],
+          name: 'create',
+          params: [{ name: `${propertyName}Id`, type: 'string' }],
           returnType: `${className}NotFoundRepositoryError`,
           body: `return new ${className}NotFoundRepositoryError({
   message: \`${className} not found: \${${propertyName}Id}\`,
   ${propertyName}Id,
-});`
-        }
+});`,
+        },
       ],
-      jsdoc: `Repository error for ${domainName} not found`
-    })
-  )
+      jsdoc: `Repository error for ${domainName} not found`,
+    }),
+  );
 
   // ValidationRepositoryError
   builder.addClass(
@@ -268,32 +278,34 @@ export function generateErrorsFile(options: ContractTemplateOptions): string {
       className: `${className}ValidationRepositoryError`,
       tagName: `${className}ValidationRepositoryError`,
       fields: [
-        { name: "message", type: "string", readonly: true },
-        { name: "field", type: "string", readonly: true, optional: true },
-        { name: "constraint", type: "string", readonly: true, optional: true }
+        { name: 'message', type: 'string', readonly: true },
+        { name: 'field', type: 'string', readonly: true, optional: true },
+        { name: 'constraint', type: 'string', readonly: true, optional: true },
       ],
       staticMethods: [
         {
-          name: "create",
-          params: [{
-            name: "params",
-            type: `{
+          name: 'create',
+          params: [
+            {
+              name: 'params',
+              type: `{
     message: string;
     field?: string;
     constraint?: string;
-  }`
-          }],
+  }`,
+            },
+          ],
           returnType: `${className}ValidationRepositoryError`,
           body: `return new ${className}ValidationRepositoryError({
   message: params.message,
   ...(params.field !== undefined && { field: params.field }),
   ...(params.constraint !== undefined && { constraint: params.constraint }),
-});`
-        }
+});`,
+        },
       ],
-      jsdoc: `Repository error for ${domainName} validation failures`
-    })
-  )
+      jsdoc: `Repository error for ${domainName} validation failures`,
+    }),
+  );
 
   // ConflictRepositoryError
   builder.addClass(
@@ -301,25 +313,25 @@ export function generateErrorsFile(options: ContractTemplateOptions): string {
       className: `${className}ConflictRepositoryError`,
       tagName: `${className}ConflictRepositoryError`,
       fields: [
-        { name: "message", type: "string", readonly: true },
-        { name: "identifier", type: "string", readonly: true, optional: true }
+        { name: 'message', type: 'string', readonly: true },
+        { name: 'identifier', type: 'string', readonly: true, optional: true },
       ],
       staticMethods: [
         {
-          name: "create",
-          params: [{ name: "identifier", type: "string", optional: true }],
+          name: 'create',
+          params: [{ name: 'identifier', type: 'string', optional: true }],
           returnType: `${className}ConflictRepositoryError`,
           body: `return new ${className}ConflictRepositoryError({
   message: identifier
     ? \`${className} already exists: \${identifier}\`
     : \`${className} already exists\`,
   ...(identifier !== undefined && { identifier }),
-});`
-        }
+});`,
+        },
       ],
-      jsdoc: `Repository error for ${domainName} conflicts`
-    })
-  )
+      jsdoc: `Repository error for ${domainName} conflicts`,
+    }),
+  );
 
   // DatabaseRepositoryError
   builder.addClass(
@@ -327,32 +339,34 @@ export function generateErrorsFile(options: ContractTemplateOptions): string {
       className: `${className}DatabaseRepositoryError`,
       tagName: `${className}DatabaseRepositoryError`,
       fields: [
-        { name: "message", type: "string", readonly: true },
-        { name: "operation", type: "string", readonly: true },
-        { name: "cause", type: "string", readonly: true, optional: true }
+        { name: 'message', type: 'string', readonly: true },
+        { name: 'operation', type: 'string', readonly: true },
+        { name: 'cause', type: 'string', readonly: true, optional: true },
       ],
       staticMethods: [
         {
-          name: "create",
-          params: [{
-            name: "params",
-            type: `{
+          name: 'create',
+          params: [
+            {
+              name: 'params',
+              type: `{
     message: string;
     operation: string;
     cause?: string;
-  }`
-          }],
+  }`,
+            },
+          ],
           returnType: `${className}DatabaseRepositoryError`,
           body: `return new ${className}DatabaseRepositoryError({
   message: params.message,
   operation: params.operation,
   ...(params.cause !== undefined && { cause: params.cause }),
-});`
-        }
+});`,
+        },
       ],
-      jsdoc: `Repository error for ${domainName} database failures`
-    })
-  )
+      jsdoc: `Repository error for ${domainName} database failures`,
+    }),
+  );
 
   // Repository error union type
   builder.addTypeAlias({
@@ -363,30 +377,34 @@ export function generateErrorsFile(options: ContractTemplateOptions): string {
   | ${className}ConflictRepositoryError
   | ${className}DatabaseRepositoryError`,
     exported: true,
-    jsdoc: "Union of all repository errors"
-  })
+    jsdoc: 'Union of all repository errors',
+  });
 
   // ============================================================================
   // SECTION 3: Error Union Types
   // ============================================================================
 
-  builder.addSectionComment("Error Union Types")
-  builder.addBlankLine()
+  builder.addSectionComment('Error Union Types');
+  builder.addBlankLine();
 
   builder.addTypeAlias({
     name: `${className}Error`,
     type: `${className}DomainError | ${className}RepositoryError`,
     exported: true,
-    jsdoc: `All possible ${domainName} errors`
-  })
+    jsdoc: `All possible ${domainName} errors`,
+  });
 
-  return builder.toString()
+  return builder.toString();
 }
 
 /**
  * Create comprehensive file header with documentation
  */
-function createFileHeader(className: string, domainName: string, fileName: string): string {
+function createFileHeader(
+  className: string,
+  domainName: string,
+  fileName: string,
+): string {
   return `/**
  * ${className} Domain Errors
  *
@@ -441,6 +459,6 @@ function createFileHeader(className: string, domainName: string, fileName: strin
  *
  * @see https://effect.website/docs/guides/error-management for error handling
  * @see libs/contract/${fileName}/src/lib/rpc.ts for RPC-serializable errors
- * @module @creativetoolkits/contract-${fileName}/errors
- */`
+ * @module @custom-repo/contract-${fileName}/errors
+ */`;
 }

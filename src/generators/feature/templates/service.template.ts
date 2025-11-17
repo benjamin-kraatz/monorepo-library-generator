@@ -6,8 +6,8 @@
  * @module monorepo-library-generator/feature/service-template
  */
 
-import { TypeScriptBuilder } from "../../../utils/code-generation/typescript-builder.js"
-import type { FeatureTemplateOptions } from "../../../utils/shared/types.js"
+import { TypeScriptBuilder } from '../../../utils/code-generation/typescript-builder.js';
+import type { FeatureTemplateOptions } from '../../../utils/shared/types.js';
 
 /**
  * Generate server/service.ts file for feature library
@@ -15,8 +15,8 @@ import type { FeatureTemplateOptions } from "../../../utils/shared/types.js"
  * Creates business logic service with Effect Context.Tag pattern.
  */
 export function generateServiceFile(options: FeatureTemplateOptions): string {
-  const builder = new TypeScriptBuilder()
-  const { className, fileName, name } = options
+  const builder = new TypeScriptBuilder();
+  const { className, fileName, name } = options;
 
   // Add file header with extensive documentation
   builder.addFileHeader({
@@ -30,36 +30,36 @@ DEPENDENCY INJECTION PATTERN:
 3. Use dependencies in returned service methods
 4. Compose layers at application level
 
-TODO: Uncomment and customize these imports based on your needs:`
-  })
+TODO: Uncomment and customize these imports based on your needs:`,
+  });
 
   // Add imports
   builder.addImports([
-    { from: "effect", imports: ["Context", "Effect", "Layer", "Schedule"] },
-    { from: "../shared/errors", imports: [`${className}Error`] }
-  ])
-  builder.addBlankLine()
+    { from: 'effect', imports: ['Context', 'Effect', 'Layer', 'Schedule'] },
+    { from: '../shared/errors', imports: [`${className}Error`] },
+  ]);
+  builder.addBlankLine();
 
   // Add example dependency imports section
   builder.addSectionComment(`Example Dependency Imports (Uncomment what you need)
 
 // Data Access Layer (Repositories):
-// import { UserRepository } from "@creativetoolkits/data-access-user/server";
-// import { ProductRepository } from "@creativetoolkits/data-access-product/server";
+// import { UserRepository } from "@custom-repo/data-access-user/server";
+// import { ProductRepository } from "@custom-repo/data-access-product/server";
 
 // Infrastructure Services:
-// import { LoggingService } from "@creativetoolkits/infra-logging/server";
-// import { CacheService } from "@creativetoolkits/infra-cache/server";
-// import { DatabaseService } from "@creativetoolkits/infra-database/server";
+// import { LoggingService } from "@custom-repo/infra-logging/server";
+// import { CacheService } from "@custom-repo/infra-cache/server";
+// import { DatabaseService } from "@custom-repo/infra-database/server";
 
 // External Service Providers:
-// import { StripeService } from "@creativetoolkits/provider-stripe/server";
-// import { ResendService } from "@creativetoolkits/provider-resend/server";
+// import { StripeService } from "@custom-repo/provider-stripe/server";
+// import { ResendService } from "@custom-repo/provider-resend/server";
 
 // Other Feature Services:
-// import { AuthService } from "@creativetoolkits/feature-auth/server";
-// import { NotificationService } from "@creativetoolkits/feature-notification/server";`)
-  builder.addBlankLine()
+// import { AuthService } from "@custom-repo/feature-auth/server";
+// import { NotificationService } from "@custom-repo/feature-notification/server";`);
+  builder.addBlankLine();
 
   // Add Context.Tag class definition
   builder.addRaw(`export class ${className}Service extends Context.Tag("${className}Service")<
@@ -67,8 +67,8 @@ TODO: Uncomment and customize these imports based on your needs:`
   {
     readonly exampleOperation: () => Effect.Effect<void, ${className}Error>;
   }
->() {`)
-  builder.addBlankLine()
+>() {`);
+  builder.addBlankLine();
 
   // Add Live layer
   builder.addRaw(`  static readonly Live = Layer.effect(
@@ -208,8 +208,8 @@ TODO: Uncomment and customize these imports based on your needs:`
           }),
       };
     })
-  );`)
-  builder.addBlankLine()
+  );`);
+  builder.addBlankLine();
 
   // Add Test layer
   builder.addRaw(`  // ==========================================================================
@@ -222,8 +222,8 @@ TODO: Uncomment and customize these imports based on your needs:`
   static readonly Test = Layer.succeed(this, {
     exampleOperation: () => Effect.void,
   });
-}`)
-  builder.addBlankLine()
+}`);
+  builder.addBlankLine();
 
   // Add comprehensive error handling reference
   builder.addSectionComment(`Error Transformation Reference
@@ -338,8 +338,8 @@ const data = yield* primarySource.fetchData().pipe(
     message: "Both primary and backup sources failed",
     cause: err
   }))
-);`)
-  builder.addBlankLine()
+);`);
+  builder.addBlankLine();
 
   // Add layer composition examples
   builder.addSectionComment(`Layer Composition Examples
@@ -373,8 +373,8 @@ await Effect.runPromise(
     Effect.provide(LoggingServiceLive),
     Effect.provide(UserRepositoryLive)
   )
-);`)
-  builder.addBlankLine()
+);`);
+  builder.addBlankLine();
 
-  return builder.toString()
+  return builder.toString();
 }

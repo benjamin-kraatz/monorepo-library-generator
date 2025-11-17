@@ -7,8 +7,8 @@
  * @module monorepo-library-generator/contract/projections-template
  */
 
-import { TypeScriptBuilder } from "../../../utils/code-generation/typescript-builder.js"
-import type { ContractTemplateOptions } from "../../../utils/shared/types.js"
+import { TypeScriptBuilder } from '../../../utils/code-generation/typescript-builder.js';
+import type { ContractTemplateOptions } from '../../../utils/shared/types.js';
 
 /**
  * Generate projections.ts file for contract library
@@ -18,57 +18,61 @@ import type { ContractTemplateOptions } from "../../../utils/shared/types.js"
  * - Detail projection (optimized for detail views)
  * - Documentation about JOIN-based implementation
  */
-export function generateProjectionsFile(options: ContractTemplateOptions): string {
-  const builder = new TypeScriptBuilder()
-  const { className, fileName, propertyName } = options
-  const domainName = propertyName
+export function generateProjectionsFile(
+  options: ContractTemplateOptions,
+): string {
+  const builder = new TypeScriptBuilder();
+  const { className, fileName, propertyName } = options;
+  const domainName = propertyName;
 
   // Add file header
-  builder.addRaw(createFileHeader(className, domainName, fileName))
-  builder.addBlankLine()
+  builder.addRaw(createFileHeader(className, domainName, fileName));
+  builder.addBlankLine();
 
   // Add imports
-  builder.addImports([
-    { from: "effect", imports: ["Schema"] }
-  ])
+  builder.addImports([{ from: 'effect', imports: ['Schema'] }]);
 
   builder.addImports([
-    { from: "./entities", imports: [`${className}Id`], isTypeOnly: true }
-  ])
+    { from: './entities', imports: [`${className}Id`], isTypeOnly: true },
+  ]);
 
-  builder.addBlankLine()
+  builder.addBlankLine();
 
   // ============================================================================
   // SECTION 1: Projection Schemas
   // ============================================================================
 
-  builder.addSectionComment("Projection Schemas")
-  builder.addBlankLine()
+  builder.addSectionComment('Projection Schemas');
+  builder.addBlankLine();
 
   // List projection
-  builder.addRaw(createListProjection(className, propertyName))
-  builder.addBlankLine()
+  builder.addRaw(createListProjection(className, propertyName));
+  builder.addBlankLine();
 
   // Detail projection
-  builder.addRaw(createDetailProjection(className, propertyName))
-  builder.addBlankLine()
+  builder.addRaw(createDetailProjection(className, propertyName));
+  builder.addBlankLine();
 
   // ============================================================================
   // SECTION 2: Implementation Notes
   // ============================================================================
 
-  builder.addSectionComment("How Projections Work in This System")
-  builder.addBlankLine()
+  builder.addSectionComment('How Projections Work in This System');
+  builder.addBlankLine();
 
-  builder.addRaw(createImplementationNotes(className))
+  builder.addRaw(createImplementationNotes(className));
 
-  return builder.toString()
+  return builder.toString();
 }
 
 /**
  * Create file header
  */
-function createFileHeader(className: string, domainName: string, fileName: string): string {
+function createFileHeader(
+  className: string,
+  domainName: string,
+  fileName: string,
+): string {
   return `/**
  * ${className} Projections (CQRS Read Models)
  *
@@ -86,8 +90,8 @@ function createFileHeader(className: string, domainName: string, fileName: strin
  * 3. Define which tables to JOIN for each projection
  * 4. Implement cache invalidation strategy
  *
- * @module @creativetoolkits/contract-${fileName}/projections
- */`
+ * @module @custom-repo/contract-${fileName}/projections
+ */`;
 }
 
 /**
@@ -126,13 +130,16 @@ export class ${className}ListProjection extends Schema.Class<${className}ListPro
   // /** Aggregated stats */
   // itemCount: Schema.Number,
   // averageRating: Schema.optional(Schema.Number),
-}) {}`
+}) {}`;
 }
 
 /**
  * Create Detail projection
  */
-function createDetailProjection(className: string, propertyName: string): string {
+function createDetailProjection(
+  className: string,
+  propertyName: string,
+): string {
   return `/**
  * ${className} Detail Projection
  *
@@ -180,7 +187,7 @@ export class ${className}DetailProjection extends Schema.Class<${className}Detai
   //   count: Schema.Number,
   //   total: Schema.Number,
   // }),
-}) {}`
+}) {}`;
 }
 
 /**
@@ -227,5 +234,5 @@ function createImplementationNotes(className: string): string {
  *    - Use connection pooling
  *    - Batch cache warming for popular projections
  *    - Monitor query performance with database profiling
- */`
+ */`;
 }

@@ -9,10 +9,10 @@
 import {
   addPaginatedResponse,
   addPaginationOptions,
-  addSortDirection
-} from "../../../utils/code-generation/type-template-utils.js"
-import { TypeScriptBuilder } from "../../../utils/code-generation/typescript-builder.js"
-import type { DataAccessTemplateOptions } from "../../../utils/shared/types.js"
+  addSortDirection,
+} from '../../../utils/code-generation/type-template-utils.js';
+import { TypeScriptBuilder } from '../../../utils/code-generation/typescript-builder.js';
+import type { DataAccessTemplateOptions } from '../../../utils/shared/types.js';
 
 /**
  * Generate types.ts file for data-access library
@@ -24,8 +24,8 @@ import type { DataAccessTemplateOptions } from "../../../utils/shared/types.js"
  * - Helper type utilities
  */
 export function generateTypesFile(options: DataAccessTemplateOptions): string {
-  const builder = new TypeScriptBuilder()
-  const { className, fileName } = options
+  const builder = new TypeScriptBuilder();
+  const { className, fileName } = options;
 
   // Add file header
   builder.addFileHeader({
@@ -38,12 +38,12 @@ TODO: Customize this file:
 2. Create filter and search interfaces
 3. Define query options and sort criteria
 4. Add type-safe builder patterns if needed`,
-    module: `@creativetoolkits/data-access-${fileName}/server`
-  })
+    module: `@custom-repo/data-access-${fileName}/server`,
+  });
 
   // Core Entity Types
-  builder.addSectionComment("Core Entity Types")
-  builder.addBlankLine()
+  builder.addSectionComment('Core Entity Types');
+  builder.addBlankLine();
 
   builder.addRaw(`/**
  * ${className} Entity
@@ -71,8 +71,8 @@ export interface ${className} {
   // TODO: Add entity properties
   readonly createdAt: Date;
   readonly updatedAt: Date;
-}`)
-  builder.addBlankLine()
+}`);
+  builder.addBlankLine();
 
   builder.addRaw(`/**
  * ${className} Creation Input
@@ -97,8 +97,8 @@ export interface ${className} {
 export type ${className}CreateInput = Omit<
   ${className},
   'id' | 'createdAt' | 'updatedAt'
->;`)
-  builder.addBlankLine()
+>;`);
+  builder.addBlankLine();
 
   builder.addRaw(`/**
  * ${className} Update Input
@@ -119,12 +119,12 @@ export type ${className}CreateInput = Omit<
  */
 export type ${className}UpdateInput = Partial<
   Omit<${className}, 'id' | 'createdAt' | 'updatedAt'>
->;`)
-  builder.addBlankLine()
+>;`);
+  builder.addBlankLine();
 
   // Filter & Query Types
-  builder.addSectionComment("Filter & Query Types")
-  builder.addBlankLine()
+  builder.addSectionComment('Filter & Query Types');
+  builder.addBlankLine();
 
   builder.addRaw(`/**
  * ${className} Filter Options
@@ -149,26 +149,26 @@ export type ${className}UpdateInput = Partial<
 export interface ${className}Filter {
   // TODO: Add filter properties
   readonly search?: string;
-}`)
-  builder.addBlankLine()
+}`);
+  builder.addBlankLine();
 
   // Add query types using utility (SortDirection, Sort, Pagination)
-  addSortDirection(builder)
-  builder.addBlankLine()
+  addSortDirection(builder);
+  builder.addBlankLine();
 
-  builder.addComment(`${className} Sort Options`)
-  builder.addComment("TODO: Add domain-specific sortable fields")
-  builder.addComment("Examples: createdAt, updatedAt, name, price")
+  builder.addComment(`${className} Sort Options`);
+  builder.addComment('TODO: Add domain-specific sortable fields');
+  builder.addComment('Examples: createdAt, updatedAt, name, price');
   builder.addRaw(`export interface ${className}Sort {
   readonly field: string; // TODO: Use union of sortable fields
   readonly direction: SortDirection;
-}`)
-  builder.addBlankLine()
+}`);
+  builder.addBlankLine();
 
-  builder.addComment("Pagination Options")
-  builder.addComment("Standard pagination parameters for list queries.")
-  addPaginationOptions(builder)
-  builder.addBlankLine()
+  builder.addComment('Pagination Options');
+  builder.addComment('Standard pagination parameters for list queries.');
+  addPaginationOptions(builder);
+  builder.addBlankLine();
 
   builder.addRaw(`/**
  * Query Options
@@ -189,21 +189,21 @@ export interface QueryOptions {
   readonly filter?: ${className}Filter;
   readonly sort?: ${className}Sort;
   readonly pagination?: PaginationOptions;
-}`)
-  builder.addBlankLine()
+}`);
+  builder.addBlankLine();
 
   // Response Types
-  builder.addSectionComment("Response Types")
-  builder.addBlankLine()
+  builder.addSectionComment('Response Types');
+  builder.addBlankLine();
 
-  builder.addComment("Paginated List Response")
-  builder.addComment("Standard paginated response format for list queries.")
-  addPaginatedResponse(builder)
-  builder.addBlankLine()
+  builder.addComment('Paginated List Response');
+  builder.addComment('Standard paginated response format for list queries.');
+  addPaginatedResponse(builder);
+  builder.addBlankLine();
 
   // Helper Type Utilities
-  builder.addSectionComment("Helper Type Utilities")
-  builder.addBlankLine()
+  builder.addSectionComment('Helper Type Utilities');
+  builder.addBlankLine();
 
   builder.addRaw(`/**
  * Make all properties of T required
@@ -212,8 +212,8 @@ export interface QueryOptions {
  */
 export type Required<T> = {
   [K in keyof T]-?: T[K];
-};`)
-  builder.addBlankLine()
+};`);
+  builder.addBlankLine();
 
   builder.addRaw(`/**
  * Make all properties of T readonly
@@ -223,7 +223,7 @@ export type Required<T> = {
 export type ReadonlyDeep<T> = {
   readonly [K in keyof T]: ReadonlyDeep<T[K]>;
 };
-`)
+`);
 
-  return builder.toString()
+  return builder.toString();
 }

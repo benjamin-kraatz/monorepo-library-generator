@@ -1,6 +1,6 @@
 # workspace-plugin
 
-Nx plugin for generating standardized architecture components in the CreativeToolkits monorepo.
+Nx plugin for generating standardized architecture components in the custom-repo monorepo.
 
 ## Available Generators
 

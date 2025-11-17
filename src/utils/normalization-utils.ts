@@ -7,19 +7,23 @@
  * @module monorepo-library-generator/normalization-utils
  */
 
-import type { Tree } from "@nx/devkit"
-import { joinPathFragments, names, offsetFromRoot as computeOffsetFromRoot } from "@nx/devkit"
-import type { LibraryType } from "./shared/types.js"
+import type { Tree } from '@nx/devkit';
+import {
+  joinPathFragments,
+  names,
+  offsetFromRoot as computeOffsetFromRoot,
+} from '@nx/devkit';
+import type { LibraryType } from './shared/types.js';
 
 /**
  * Input for base normalization
  */
 export interface NormalizeOptionsInput {
-  readonly name: string
-  readonly directory?: string
-  readonly description?: string
-  readonly libraryType: LibraryType
-  readonly additionalTags?: Array<string>
+  readonly name: string;
+  readonly directory?: string;
+  readonly description?: string;
+  readonly libraryType: LibraryType;
+  readonly additionalTags?: Array<string>;
 }
 
 /**
@@ -27,29 +31,29 @@ export interface NormalizeOptionsInput {
  */
 export interface NormalizedBaseOptions {
   // Required by BaseTemplateSubstitutions
-  readonly tmpl: ""
-  readonly name: string
-  readonly offsetFromRoot: string
-  readonly tags: string
+  readonly tmpl: '';
+  readonly name: string;
+  readonly offsetFromRoot: string;
+  readonly tags: string;
 
   // Naming variants
-  readonly className: string // PascalCase
-  readonly propertyName: string // camelCase
-  readonly fileName: string // kebab-case
-  readonly constantName: string // SCREAMING_SNAKE_CASE
-  readonly domainName: string // Title Case
+  readonly className: string; // PascalCase
+  readonly propertyName: string; // camelCase
+  readonly fileName: string; // kebab-case
+  readonly constantName: string; // SCREAMING_SNAKE_CASE
+  readonly domainName: string; // Title Case
 
   // Project identifiers
-  readonly projectName: string // {type}-{name}
-  readonly packageName: string // @creativetoolkits/{projectName}
+  readonly projectName: string; // {type}-{name}
+  readonly packageName: string; // @custom-repo/{projectName}
 
   // Paths
-  readonly projectRoot: string
-  readonly sourceRoot: string
-  readonly distRoot: string
+  readonly projectRoot: string;
+  readonly sourceRoot: string;
+  readonly distRoot: string;
 
   // Metadata
-  readonly description: string
+  readonly description: string;
 }
 
 /**
@@ -57,14 +61,14 @@ export interface NormalizedBaseOptions {
  */
 function getDefaultDirectory(libraryType: LibraryType): string {
   const directories: Record<LibraryType, string> = {
-    "contract": "libs/contract",
-    "data-access": "libs/data-access",
-    "feature": "libs/feature",
-    "provider": "libs/provider",
-    "infra": "libs/infra",
-    "util": "libs/util"
-  }
-  return directories[libraryType]
+    contract: 'libs/contract',
+    'data-access': 'libs/data-access',
+    feature: 'libs/feature',
+    provider: 'libs/provider',
+    infra: 'libs/infra',
+    util: 'libs/util',
+  };
+  return directories[libraryType];
 }
 
 /**
@@ -72,9 +76,9 @@ function getDefaultDirectory(libraryType: LibraryType): string {
  */
 function createDomainName(fileName: string): string {
   return fileName
-    .split("-")
+    .split('-')
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ")
+    .join(' ');
 }
 
 /**
@@ -83,20 +87,17 @@ function createDomainName(fileName: string): string {
 function buildTags(
   libraryType: LibraryType,
   fileName: string,
-  additionalTags?: Array<string>
+  additionalTags?: Array<string>,
 ): string {
-  const baseTags = [
-    `type:${libraryType}`,
-    `scope:${fileName}`
-  ]
+  const baseTags = [`type:${libraryType}`, `scope:${fileName}`];
 
   if (additionalTags) {
     for (const tag of additionalTags) {
-      baseTags.push(tag)
+      baseTags.push(tag);
     }
   }
 
-  return baseTags.join(",")
+  return baseTags.join(',');
 }
 
 /**
@@ -133,33 +134,33 @@ function buildTags(
  */
 export function normalizeBaseOptions(
   tree: Tree,
-  input: NormalizeOptionsInput
+  input: NormalizeOptionsInput,
 ): NormalizedBaseOptions {
   // Use Nx names utility to get all naming variants
-  const nameVariants = names(input.name)
-  const fileName = nameVariants.fileName // kebab-case
+  const nameVariants = names(input.name);
+  const fileName = nameVariants.fileName; // kebab-case
 
   // Get directory (use default if not provided)
-  const directory = input.directory || getDefaultDirectory(input.libraryType)
+  const directory = input.directory || getDefaultDirectory(input.libraryType);
 
   // Compute paths
-  const projectRoot = joinPathFragments(directory, fileName)
-  const sourceRoot = joinPathFragments(projectRoot, "src")
-  const distRoot = joinPathFragments("dist", directory, fileName)
+  const projectRoot = joinPathFragments(directory, fileName);
+  const sourceRoot = joinPathFragments(projectRoot, 'src');
+  const distRoot = joinPathFragments('dist', directory, fileName);
 
   // Compute project identifiers
-  const projectName = `${input.libraryType}-${fileName}`
-  const packageName = `@creativetoolkits/${projectName}`
+  const projectName = `${input.libraryType}-${fileName}`;
+  const packageName = `@custom-repo/${projectName}`;
 
   // Compute domain name (Title Case from fileName)
-  const domainName = input.description || createDomainName(fileName)
+  const domainName = input.description || createDomainName(fileName);
 
   // Build tags
-  const tags = buildTags(input.libraryType, fileName, input.additionalTags)
+  const tags = buildTags(input.libraryType, fileName, input.additionalTags);
 
   return {
     // Required by BaseTemplateSubstitutions
-    tmpl: "" as const,
+    tmpl: '' as const,
     name: input.name,
     offsetFromRoot: computeOffsetFromRoot(projectRoot),
     tags,
@@ -181,6 +182,6 @@ export function normalizeBaseOptions(
     distRoot,
 
     // Metadata
-    description: input.description || domainName
-  }
+    description: input.description || domainName,
+  };
 }

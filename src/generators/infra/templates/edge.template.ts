@@ -6,29 +6,28 @@
  * @module monorepo-library-generator/infra-templates
  */
 
-import { generateStandardErrorExports } from "../../../utils/code-generation/barrel-export-utils.js"
-import { TypeScriptBuilder } from "../../../utils/code-generation/typescript-builder.js"
-import type { InfraTemplateOptions } from "../../../utils/shared/types.js"
+import { generateStandardErrorExports } from '../../../utils/code-generation/barrel-export-utils.js';
+import { TypeScriptBuilder } from '../../../utils/code-generation/typescript-builder.js';
+import type { InfraTemplateOptions } from '../../../utils/shared/types.js';
 
 /**
  * Generate edge.ts file for infrastructure service
  */
 export function generateEdgeFile(options: InfraTemplateOptions): string {
-  const builder = new TypeScriptBuilder()
-  const { className, fileName, includeEdge } = options
+  const builder = new TypeScriptBuilder();
+  const { className, fileName, includeEdge } = options;
 
   // Only generate if edge mode is enabled
   if (!includeEdge) {
-    return ""
+    return '';
   }
 
   // File header
   builder.addFileHeader({
-    title: `@creativetoolkits/infra-${fileName}/edge`,
-    description:
-      `Edge runtime exports for ${className} infrastructure service.\nContains edge-specific layers and functionality for edge runtime environments.`,
-    module: `@creativetoolkits/infra-${fileName}/edge`
-  })
+    title: `@custom-repo/infra-${fileName}/edge`,
+    description: `Edge runtime exports for ${className} infrastructure service.\nContains edge-specific layers and functionality for edge runtime environments.`,
+    module: `@custom-repo/infra-${fileName}/edge`,
+  });
 
   builder.addRaw(`// Edge layers (edge runtime-safe)
 export { ${className}ServiceEdgeLayers } from "./lib/layers/edge-layers";
@@ -37,15 +36,15 @@ export { ${className}ServiceEdgeLayers } from "./lib/layers/edge-layers";
 export { ${className}Service } from "./lib/service/interface";
 
 // Errors (universal)
-`)
+`);
 
   builder.addRaw(
     generateStandardErrorExports({
       className,
-      importPath: "./lib/service/errors",
-      unionTypeSuffix: "ServiceError"
-    })
-  )
+      importPath: './lib/service/errors',
+      unionTypeSuffix: 'ServiceError',
+    }),
+  );
 
-  return builder.toString()
+  return builder.toString();
 }

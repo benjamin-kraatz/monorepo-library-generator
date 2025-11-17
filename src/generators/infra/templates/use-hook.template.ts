@@ -6,36 +6,35 @@
  * @module monorepo-library-generator/infra-templates
  */
 
-import { TypeScriptBuilder } from "../../../utils/code-generation/typescript-builder.js"
-import type { InfraTemplateOptions } from "../../../utils/shared/types.js"
+import { TypeScriptBuilder } from '../../../utils/code-generation/typescript-builder.js';
+import type { InfraTemplateOptions } from '../../../utils/shared/types.js';
 
 /**
  * Generate React hook file for infrastructure service
  */
 export function generateUseHookFile(options: InfraTemplateOptions): string {
-  const builder = new TypeScriptBuilder()
-  const { className, fileName, includeClientServer } = options
+  const builder = new TypeScriptBuilder();
+  const { className, fileName, includeClientServer } = options;
 
   // Only generate if client/server mode is enabled
   if (!includeClientServer) {
-    return ""
+    return '';
   }
 
   // File header
   builder.addFileHeader({
     title: `use${className} React Hook`,
-    description:
-      `React hook for using ${className} service in components.\nProvides client-safe interface without exposing server secrets.\n\nTODO: Customize this hook for your service:\n1. Define hook return type and state\n2. Add effect logic for data fetching/updates\n3. Add error handling and loading states\n4. Document hook usage and examples\n5. Add TypeScript generics if needed`,
-    module: `@creativetoolkits/infra-${fileName}/client`
-  })
+    description: `React hook for using ${className} service in components.\nProvides client-safe interface without exposing server secrets.\n\nTODO: Customize this hook for your service:\n1. Define hook return type and state\n2. Add effect logic for data fetching/updates\n3. Add error handling and loading states\n4. Document hook usage and examples\n5. Add TypeScript generics if needed`,
+    module: `@custom-repo/infra-${fileName}/client`,
+  });
 
   // Imports
   builder.addImports([
-    { from: "react", imports: ["useEffect", "useState", "useCallback"] }
-  ])
+    { from: 'react', imports: ['useEffect', 'useState', 'useCallback'] },
+  ]);
 
   // Section: Hook State Types
-  builder.addSectionComment("Hook State Types")
+  builder.addSectionComment('Hook State Types');
 
   builder.addRaw(`/**
  * ${className} Hook State
@@ -54,11 +53,11 @@ export interface Use${className}State {
 
   /** Refetch function */
   readonly refetch: () => Promise<void>;
-}`)
-  builder.addBlankLine()
+}`);
+  builder.addBlankLine();
 
   // Section: Hook Implementation
-  builder.addSectionComment("Hook Implementation")
+  builder.addSectionComment('Hook Implementation');
 
   builder.addFunction({
     name: `use${className}`,
@@ -95,9 +94,8 @@ return {
   isLoading,
   refetch,
 };`,
-    jsdoc:
-      `use${className} Hook\n\nTODO: Implement hook logic\n\n@returns Hook state with data, error, loading, and refetch\n\n@example\n\`\`\`typescript\nfunction MyComponent() {\n  const { data, isLoading, error, refetch } = use${className}();\n\n  if (isLoading) return <div>Loading...</div>;\n  if (error) return <div>Error: {error.message}</div>;\n\n  return (\n    <div>\n      <p>{JSON.stringify(data)}</p>\n      <button onClick={refetch}>Refresh</button>\n    </div>\n  );\n}\n\`\`\``
-  })
+    jsdoc: `use${className} Hook\n\nTODO: Implement hook logic\n\n@returns Hook state with data, error, loading, and refetch\n\n@example\n\`\`\`typescript\nfunction MyComponent() {\n  const { data, isLoading, error, refetch } = use${className}();\n\n  if (isLoading) return <div>Loading...</div>;\n  if (error) return <div>Error: {error.message}</div>;\n\n  return (\n    <div>\n      <p>{JSON.stringify(data)}</p>\n      <button onClick={refetch}>Refresh</button>\n    </div>\n  );\n}\n\`\`\``,
+  });
 
   builder.addRaw(`// TODO: Add additional hooks as needed
 // Example:
@@ -124,7 +122,7 @@ return {
 //   }, []);
 //
 //   return { mutate, isPending, error };
-// }`)
+// }`);
 
-  return builder.toString()
+  return builder.toString();
 }

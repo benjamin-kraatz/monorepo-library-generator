@@ -13,26 +13,26 @@ import {
   installPackagesTask,
   names,
   offsetFromRoot,
-} from "@nx/devkit";
+} from '@nx/devkit';
 import type {
   ProviderGeneratorSchema,
   NormalizedProviderOptions,
-} from "./schema.js";
+} from './schema.js';
 import {
   parseTags,
   validateLibraryDoesNotExist,
-} from "../../utils/generator-utils.js";
+} from '../../utils/generator-utils.js';
 import {
   generateLibraryFiles,
   type LibraryGeneratorOptions,
-} from "../../utils/library-generator-utils.js";
-import { generateErrorsFile } from "./templates/errors.template.js";
-import { generateTypesFile } from "./templates/types.template.js";
-import { generateValidationFile } from "./templates/validation.template.js";
-import { generateServiceFile } from "./templates/service.template.js";
-import { generateLayersFile } from "./templates/layers.template.js";
-import { generateServiceSpecFile } from "./templates/service-spec.template.js";
-import type { ProviderTemplateOptions } from "../../utils/shared/types.js";
+} from '../../utils/library-generator-utils.js';
+import { generateErrorsFile } from './templates/errors.template.js';
+import { generateTypesFile } from './templates/types.template.js';
+import { generateValidationFile } from './templates/validation.template.js';
+import { generateServiceFile } from './templates/service.template.js';
+import { generateLayersFile } from './templates/layers.template.js';
+import { generateServiceSpecFile } from './templates/service-spec.template.js';
+import type { ProviderTemplateOptions } from '../../utils/shared/types.js';
 
 /**
  * Normalize and validate generator options
@@ -50,18 +50,18 @@ function normalizeOptions(
   }
 
   const projectName = `provider-${names(options.name).fileName}`;
-  const directory = options.directory || "libs/provider";
+  const directory = options.directory || 'libs/provider';
   const projectRoot = `${directory}/${names(options.name).fileName}`;
 
   // Validate library doesn't already exist
   validateLibraryDoesNotExist(tree, projectRoot, projectName);
 
   const nameVariations = names(options.name);
-  const projectClassName = `${nameVariations.className}Service`;  // Changed from Provider to Service
+  const projectClassName = `${nameVariations.className}Service`; // Changed from Provider to Service
   const projectConstantName = `${nameVariations.constantName}_SERVICE`;
 
   // Platform determination
-  const platform = options.platform || "node";
+  const platform = options.platform || 'node';
   // Only set includeClientServer when explicitly provided or when platform requires it
   // For node platform, leave as undefined to use platform default in library generator
   const includeClientServer =
@@ -74,8 +74,8 @@ function normalizeOptions(
 
   // Create standardized tags following {type}-{scope}-{platform}-{service} pattern
   const defaultTags = [
-    "type:provider",
-    "scope:provider",  // Provider scope for external service adapters
+    'type:provider',
+    'scope:provider', // Provider scope for external service adapters
     `platform:${platform}`,
     `service:${names(options.externalService).fileName}`,
   ];
@@ -117,7 +117,7 @@ function addDomainFiles(tree: Tree, options: NormalizedProviderOptions) {
 
     // Library metadata
     libraryType: 'provider',
-    packageName: `@creativetoolkits/${options.projectName}`,
+    packageName: `@custom-repo/${options.projectName}`,
     projectName: options.projectName,
     projectRoot: options.projectRoot,
     sourceRoot: `${options.projectRoot}/src`,
@@ -136,10 +136,19 @@ function addDomainFiles(tree: Tree, options: NormalizedProviderOptions) {
   // Generate all provider-specific files using code-based templates
   tree.write(`${sourceLibPath}/errors.ts`, generateErrorsFile(templateOptions));
   tree.write(`${sourceLibPath}/types.ts`, generateTypesFile(templateOptions));
-  tree.write(`${sourceLibPath}/validation.ts`, generateValidationFile(templateOptions));
-  tree.write(`${sourceLibPath}/service.ts`, generateServiceFile(templateOptions));
+  tree.write(
+    `${sourceLibPath}/validation.ts`,
+    generateValidationFile(templateOptions),
+  );
+  tree.write(
+    `${sourceLibPath}/service.ts`,
+    generateServiceFile(templateOptions),
+  );
   tree.write(`${sourceLibPath}/layers.ts`, generateLayersFile(templateOptions));
-  tree.write(`${sourceLibPath}/service.spec.ts`, generateServiceSpecFile(templateOptions));
+  tree.write(
+    `${sourceLibPath}/service.spec.ts`,
+    generateServiceSpecFile(templateOptions),
+  );
 }
 
 /**

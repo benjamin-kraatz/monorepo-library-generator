@@ -7,8 +7,8 @@
  * @module monorepo-library-generator/contract/ports-template
  */
 
-import { TypeScriptBuilder } from "../../../utils/code-generation/typescript-builder.js"
-import type { ContractTemplateOptions } from "../../../utils/shared/types.js"
+import { TypeScriptBuilder } from '../../../utils/code-generation/typescript-builder.js';
+import type { ContractTemplateOptions } from '../../../utils/shared/types.js';
 
 /**
  * Generate ports.ts file for contract library
@@ -19,39 +19,47 @@ import type { ContractTemplateOptions } from "../../../utils/shared/types.js"
  * - Service port (Context.Tag with inline interface)
  */
 export function generatePortsFile(options: ContractTemplateOptions): string {
-  const builder = new TypeScriptBuilder()
-  const { className, fileName, includeCQRS, propertyName } = options
-  const domainName = propertyName
+  const builder = new TypeScriptBuilder();
+  const { className, fileName, includeCQRS, propertyName } = options;
+  const domainName = propertyName;
 
   // Add file header
-  builder.addRaw(createFileHeader(className, domainName, fileName))
-  builder.addBlankLine()
+  builder.addRaw(createFileHeader(className, domainName, fileName));
+  builder.addBlankLine();
 
   // Add imports
   builder.addImports([
-    { from: "effect", imports: ["Context", "Effect", "Option"] }
-  ])
+    { from: 'effect', imports: ['Context', 'Effect', 'Option'] },
+  ]);
 
   builder.addImports([
     {
-      from: "@creativetoolkits/types-database",
-      imports: [`${className}Select`, `${className}Insert`, `${className}Update`],
-      isTypeOnly: true
-    }
-  ])
+      from: '@custom-repo/types-database',
+      imports: [
+        `${className}Select`,
+        `${className}Insert`,
+        `${className}Update`,
+      ],
+      isTypeOnly: true,
+    },
+  ]);
 
   builder.addImports([
-    { from: "./errors", imports: [`${className}RepositoryError`], isTypeOnly: true }
-  ])
+    {
+      from: './errors',
+      imports: [`${className}RepositoryError`],
+      isTypeOnly: true,
+    },
+  ]);
 
-  builder.addBlankLine()
+  builder.addBlankLine();
 
   // ============================================================================
   // SECTION 1: Supporting Types
   // ============================================================================
 
-  builder.addSectionComment("Supporting Types")
-  builder.addBlankLine()
+  builder.addSectionComment('Supporting Types');
+  builder.addBlankLine();
 
   // Filters interface
   builder.addInterface({
@@ -59,61 +67,73 @@ export function generatePortsFile(options: ContractTemplateOptions): string {
     exported: true,
     jsdoc: `Filter options for querying ${domainName}s`,
     properties: [
-      { name: "createdAfter", type: "Date", optional: true, readonly: true, jsdoc: "Filter by creation date range" },
-      { name: "createdBefore", type: "Date", optional: true, readonly: true },
-      { name: "updatedAfter", type: "Date", optional: true, readonly: true, jsdoc: "Filter by update date range" },
-      { name: "updatedBefore", type: "Date", optional: true, readonly: true }
-    ]
-  })
+      {
+        name: 'createdAfter',
+        type: 'Date',
+        optional: true,
+        readonly: true,
+        jsdoc: 'Filter by creation date range',
+      },
+      { name: 'createdBefore', type: 'Date', optional: true, readonly: true },
+      {
+        name: 'updatedAfter',
+        type: 'Date',
+        optional: true,
+        readonly: true,
+        jsdoc: 'Filter by update date range',
+      },
+      { name: 'updatedBefore', type: 'Date', optional: true, readonly: true },
+    ],
+  });
 
-  builder.addComment("TODO: Add domain-specific filters here")
-  builder.addComment("Example filters:")
-  builder.addComment("")
-  builder.addComment("/** Filter by unique slug */")
-  builder.addComment("readonly slug?: string;")
-  builder.addComment("")
-  builder.addComment("/** Filter by status */")
-  builder.addComment("readonly status?: string | readonly string[];")
-  builder.addComment("")
-  builder.addComment("/** Filter by owner */")
-  builder.addComment("readonly ownerId?: string;")
-  builder.addBlankLine()
+  builder.addComment('TODO: Add domain-specific filters here');
+  builder.addComment('Example filters:');
+  builder.addComment('');
+  builder.addComment('/** Filter by unique slug */');
+  builder.addComment('readonly slug?: string;');
+  builder.addComment('');
+  builder.addComment('/** Filter by status */');
+  builder.addComment('readonly status?: string | readonly string[];');
+  builder.addComment('');
+  builder.addComment('/** Filter by owner */');
+  builder.addComment('readonly ownerId?: string;');
+  builder.addBlankLine();
 
   // PaginationParams interface
   builder.addInterface({
-    name: "PaginationParams",
+    name: 'PaginationParams',
     exported: true,
-    jsdoc: "Pagination parameters",
+    jsdoc: 'Pagination parameters',
     properties: [
-      { name: "limit", type: "number", readonly: true },
-      { name: "offset", type: "number", readonly: true }
-    ]
-  })
+      { name: 'limit', type: 'number', readonly: true },
+      { name: 'offset', type: 'number', readonly: true },
+    ],
+  });
 
   // SortOptions interface
   builder.addInterface({
-    name: "SortOptions",
+    name: 'SortOptions',
     exported: true,
-    jsdoc: "Sort options",
+    jsdoc: 'Sort options',
     properties: [
-      { name: "field", type: "string", readonly: true },
-      { name: "direction", type: "\"asc\" | \"desc\"", readonly: true }
-    ]
-  })
+      { name: 'field', type: 'string', readonly: true },
+      { name: 'direction', type: '"asc" | "desc"', readonly: true },
+    ],
+  });
 
   // PaginatedResult interface
   builder.addInterface({
-    name: "PaginatedResult",
+    name: 'PaginatedResult',
     exported: true,
-    jsdoc: "Paginated result",
+    jsdoc: 'Paginated result',
     properties: [
-      { name: "items", type: "readonly T[]", readonly: true },
-      { name: "total", type: "number", readonly: true },
-      { name: "limit", type: "number", readonly: true },
-      { name: "offset", type: "number", readonly: true },
-      { name: "hasMore", type: "boolean", readonly: true }
-    ]
-  })
+      { name: 'items', type: 'readonly T[]', readonly: true },
+      { name: 'total', type: 'number', readonly: true },
+      { name: 'limit', type: 'number', readonly: true },
+      { name: 'offset', type: 'number', readonly: true },
+      { name: 'hasMore', type: 'boolean', readonly: true },
+    ],
+  });
 
   // Change PaginatedResult to generic
   builder.addRaw(`\n// Make PaginatedResult generic\nexport interface PaginatedResult<T> {
@@ -122,52 +142,70 @@ export function generatePortsFile(options: ContractTemplateOptions): string {
   readonly limit: number;
   readonly offset: number;
   readonly hasMore: boolean;
-}\n`)
+}\n`);
 
   // ============================================================================
   // SECTION 2: Repository Port
   // ============================================================================
 
-  builder.addSectionComment("Repository Port")
-  builder.addBlankLine()
+  builder.addSectionComment('Repository Port');
+  builder.addBlankLine();
 
   // Create repository Context.Tag with inline interface
-  const repositoryTag = createRepositoryTag(className, domainName, fileName, propertyName)
-  builder.addRaw(repositoryTag)
-  builder.addBlankLine()
+  const repositoryTag = createRepositoryTag(
+    className,
+    domainName,
+    fileName,
+    propertyName,
+  );
+  builder.addRaw(repositoryTag);
+  builder.addBlankLine();
 
   // ============================================================================
   // SECTION 3: Service Port
   // ============================================================================
 
-  builder.addSectionComment("Service Port")
-  builder.addBlankLine()
+  builder.addSectionComment('Service Port');
+  builder.addBlankLine();
 
   // Create service Context.Tag with inline interface
-  const serviceTag = createServiceTag(className, domainName, fileName, propertyName)
-  builder.addRaw(serviceTag)
-  builder.addBlankLine()
+  const serviceTag = createServiceTag(
+    className,
+    domainName,
+    fileName,
+    propertyName,
+  );
+  builder.addRaw(serviceTag);
+  builder.addBlankLine();
 
   // ============================================================================
   // SECTION 4: Projection Repository Port (CQRS only)
   // ============================================================================
 
   if (includeCQRS) {
-    builder.addSectionComment("Projection Repository Port (CQRS)")
-    builder.addBlankLine()
+    builder.addSectionComment('Projection Repository Port (CQRS)');
+    builder.addBlankLine();
 
-    const projectionRepositoryTag = createProjectionRepositoryTag(className, domainName, fileName)
-    builder.addRaw(projectionRepositoryTag)
-    builder.addBlankLine()
+    const projectionRepositoryTag = createProjectionRepositoryTag(
+      className,
+      domainName,
+      fileName,
+    );
+    builder.addRaw(projectionRepositoryTag);
+    builder.addBlankLine();
   }
 
-  return builder.toString()
+  return builder.toString();
 }
 
 /**
  * Create file header with comprehensive documentation
  */
-function createFileHeader(className: string, domainName: string, fileName: string): string {
+function createFileHeader(
+  className: string,
+  domainName: string,
+  fileName: string,
+): string {
   return `/**
  * ${className} Ports (Interfaces)
  *
@@ -185,14 +223,19 @@ function createFileHeader(className: string, domainName: string, fileName: strin
  *    - Caching strategies
  *
  * @see https://effect.website/docs/guides/context-management for dependency injection
- * @module @creativetoolkits/contract-${fileName}/ports
- */`
+ * @module @custom-repo/contract-${fileName}/ports
+ */`;
 }
 
 /**
  * Create repository Context.Tag definition
  */
-function createRepositoryTag(className: string, domainName: string, fileName: string, _propertyName: string): string {
+function createRepositoryTag(
+  className: string,
+  domainName: string,
+  fileName: string,
+  _propertyName: string,
+): string {
   return `/**
  * ${className}Repository Context Tag for dependency injection
  *
@@ -216,7 +259,7 @@ function createRepositoryTag(className: string, domainName: string, fileName: st
  * \`\`\`
  */
 export class ${className}Repository extends Context.Tag(
-  "@creativetoolkits/contract-${fileName}/${className}Repository"
+  "@custom-repo/contract-${fileName}/${className}Repository"
 )<
   ${className}Repository,
   {
@@ -282,13 +325,18 @@ export class ${className}Repository extends Context.Tag(
 
     // TODO: Add domain-specific repository methods here
   }
->() {}`
+>() {}`;
 }
 
 /**
  * Create service Context.Tag definition
  */
-function createServiceTag(className: string, domainName: string, fileName: string, _propertyName: string): string {
+function createServiceTag(
+  className: string,
+  domainName: string,
+  fileName: string,
+  _propertyName: string,
+): string {
   return `/**
  * ${className}Service Context Tag for dependency injection
  *
@@ -306,7 +354,7 @@ function createServiceTag(className: string, domainName: string, fileName: strin
  * \`\`\`
  */
 export class ${className}Service extends Context.Tag(
-  "@creativetoolkits/contract-${fileName}/${className}Service"
+  "@custom-repo/contract-${fileName}/${className}Service"
 )<
   ${className}Service,
   {
@@ -350,13 +398,17 @@ export class ${className}Service extends Context.Tag(
 
     // TODO: Add domain-specific service methods here
   }
->() {}`
+>() {}`;
 }
 
 /**
  * Create projection repository Context.Tag definition (CQRS only)
  */
-function createProjectionRepositoryTag(className: string, domainName: string, fileName: string): string {
+function createProjectionRepositoryTag(
+  className: string,
+  domainName: string,
+  fileName: string,
+): string {
   return `/**
  * ${className}ProjectionRepository Context Tag for CQRS read models
  *
@@ -373,7 +425,7 @@ function createProjectionRepositoryTag(className: string, domainName: string, fi
  * \`\`\`
  */
 export class ${className}ProjectionRepository extends Context.Tag(
-  "@creativetoolkits/contract-${fileName}/${className}ProjectionRepository"
+  "@custom-repo/contract-${fileName}/${className}ProjectionRepository"
 )<
   ${className}ProjectionRepository,
   {
@@ -409,5 +461,5 @@ export class ${className}ProjectionRepository extends Context.Tag(
 
     // TODO: Add domain-specific projection methods
   }
->() {}`
+>() {}`;
 }

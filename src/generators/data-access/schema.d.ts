@@ -15,12 +15,12 @@ export interface DataAccessGeneratorSchema {
    * Domain name for the data-access library (e.g., 'product', 'seller')
    *
    * Should be lowercase, kebab-case format.
-   * Generates library as `@creativetoolkits/data-access-{domain}`
+   * Generates library as `@custom-repo/data-access-{domain}`
    *
    * @example
    * ```
    * pnpm exec nx g @workspace:data-access product
-   * // Creates @creativetoolkits/data-access-product
+   * // Creates @custom-repo/data-access-product
    * ```
    */
   readonly name: string;

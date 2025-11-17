@@ -6,33 +6,39 @@
  * @module monorepo-library-generator/infra-templates
  */
 
-import { TypeScriptBuilder } from "../../../utils/code-generation/typescript-builder.js"
-import type { InfraTemplateOptions } from "../../../utils/shared/types.js"
+import { TypeScriptBuilder } from '../../../utils/code-generation/typescript-builder.js';
+import type { InfraTemplateOptions } from '../../../utils/shared/types.js';
 
 /**
  * Generate server layers file for infrastructure service
  */
-export function generateServerLayersFile(options: InfraTemplateOptions): string {
-  const builder = new TypeScriptBuilder()
-  const { className, fileName } = options
+export function generateServerLayersFile(
+  options: InfraTemplateOptions,
+): string {
+  const builder = new TypeScriptBuilder();
+  const { className, fileName } = options;
 
   // File header
   builder.addFileHeader({
     title: `${className} Service Layers`,
-    description:
-      `Layer compositions for server-side dependency injection using Effect.\nProvides additional layer variants for different environments and use cases.\n\nNOTE: The primary Live and Test layers are now static members of ${className}Service\n(see ../service/interface.ts). This file provides optional additional layer variants.`,
-    module: `@creativetoolkits/infra-${fileName}/layers`,
-    see: ["https://effect.website/docs/guides/context-management for layer patterns"]
-  })
+    description: `Layer compositions for server-side dependency injection using Effect.\nProvides additional layer variants for different environments and use cases.\n\nNOTE: The primary Live and Test layers are now static members of ${className}Service\n(see ../service/interface.ts). This file provides optional additional layer variants.`,
+    module: `@custom-repo/infra-${fileName}/layers`,
+    see: [
+      'https://effect.website/docs/guides/context-management for layer patterns',
+    ],
+  });
 
   // Imports
   builder.addImports([
-    { from: "effect", imports: ["Layer", "Effect", "Option", "Context", "Schedule"] },
-    { from: "../service/interface", imports: [`${className}Service`] }
-  ])
+    {
+      from: 'effect',
+      imports: ['Layer', 'Effect', 'Option', 'Context', 'Schedule'],
+    },
+    { from: '../service/interface', imports: [`${className}Service`] },
+  ]);
 
   // Section: Primary Layers Comment
-  builder.addSectionComment("Primary Layers (Available as Static Members)")
+  builder.addSectionComment('Primary Layers (Available as Static Members)');
 
   builder.addRaw(`//
 // The primary Live and Test layers are defined as static members of ${className}Service:
@@ -48,11 +54,11 @@ export function generateServerLayersFile(options: InfraTemplateOptions): string 
 // }).pipe(
 //   Effect.provide(${className}Service.Live)  // Use static Live layer
 // );
-// \`\`\``)
-  builder.addBlankLine()
+// \`\`\``);
+  builder.addBlankLine();
 
   // Section: Development Layer
-  builder.addSectionComment("Development Layer (Optional)")
+  builder.addSectionComment('Development Layer (Optional)');
 
   builder.addRaw(`/**
  * Development Layer
@@ -114,8 +120,8 @@ export const ${className}ServiceDev = Layer.effect(
       },
     };
   }),
-);`)
-  builder.addBlankLine()
+);`);
+  builder.addBlankLine();
 
   builder.addRaw(`/**
  * Development Layer WITH Resource Cleanup (Optional Example)
@@ -151,11 +157,11 @@ export const ${className}ServiceDev = Layer.effect(
  *   })
  * );
  * \`\`\`
- */`)
-  builder.addBlankLine()
+ */`);
+  builder.addBlankLine();
 
   // Section: Auto Layer
-  builder.addSectionComment("Auto Layer (Environment Detection) - Optional")
+  builder.addSectionComment('Auto Layer (Environment Detection) - Optional');
 
   builder.addRaw(`/**
  * Automatic Layer Selection
@@ -192,11 +198,11 @@ export const ${className}ServiceAuto = (() => {
     default:
       return ${className}ServiceDev;
   }
-})();`)
-  builder.addBlankLine()
+})();`);
+  builder.addBlankLine();
 
   // Section: Advanced Pattern Examples
-  builder.addSectionComment("Advanced Pattern Examples (DELETE IF NOT NEEDED)")
+  builder.addSectionComment('Advanced Pattern Examples (DELETE IF NOT NEEDED)');
 
   builder.addRaw(`/**
  * Example: Layer with Custom Configuration
@@ -236,8 +242,8 @@ export const ${className}ServiceCustom = (customConfig: {
         healthCheck: () => Effect.succeed(true),
       };
     }),
-  );`)
-  builder.addBlankLine()
+  );`);
+  builder.addBlankLine();
 
   builder.addRaw(`/**
  * Example: Layer with Retry Policy
@@ -278,11 +284,11 @@ export const ${className}ServiceWithRetry = Layer.effect(
       healthCheck: () => baseService.healthCheck(),
     };
   }),
-);`)
-  builder.addBlankLine()
+);`);
+  builder.addBlankLine();
 
   // Section: Layer Composition Examples
-  builder.addSectionComment("Layer Composition Examples")
+  builder.addSectionComment('Layer Composition Examples');
 
   builder.addRaw(`/**
  * Example: Composed Layer with Dependencies
@@ -307,7 +313,7 @@ export const ${className}ServiceWithRetry = Layer.effect(
 //   ${className}ConfigLive,
 //   LoggingServiceLive,
 //   // ... other dependency layers
-// );`)
+// );`);
 
-  return builder.toString()
+  return builder.toString();
 }

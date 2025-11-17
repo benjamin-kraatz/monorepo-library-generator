@@ -5,26 +5,23 @@
  * Creates repositories, schemas, error types, and layers for type-safe database access.
  */
 
-import {
-  Tree,
-  formatFiles,
-} from "@nx/devkit";
-import { generateLibraryFiles } from "../../utils/library-generator-utils.js";
+import { Tree, formatFiles } from '@nx/devkit';
+import { generateLibraryFiles } from '../../utils/library-generator-utils.js';
 import {
   normalizeBaseOptions,
   type NormalizedBaseOptions,
-} from "../../utils/normalization-utils.js";
-import type { DataAccessGeneratorSchema } from "./schema.d.js";
-import { generateErrorsFile } from "./templates/errors.template.js";
-import { generateTypesFile } from "./templates/types.template.js";
-import { generateValidationFile } from "./templates/validation.template.js";
-import { generateQueriesFile } from "./templates/queries.template.js";
-import { generateRepositoryFile } from "./templates/repository.template.js";
-import { generateLayersFile } from "./templates/layers.template.js";
-import { generateIndexFile } from "./templates/index.template.js";
-import { generateRepositorySpecFile } from "./templates/repository-spec.template.js";
-import { generateLayersSpecFile } from "./templates/layers-spec.template.js";
-import type { DataAccessTemplateOptions } from "../../utils/shared/types.js";
+} from '../../utils/normalization-utils.js';
+import type { DataAccessGeneratorSchema } from './schema.d.js';
+import { generateErrorsFile } from './templates/errors.template.js';
+import { generateTypesFile } from './templates/types.template.js';
+import { generateValidationFile } from './templates/validation.template.js';
+import { generateQueriesFile } from './templates/queries.template.js';
+import { generateRepositoryFile } from './templates/repository.template.js';
+import { generateLayersFile } from './templates/layers.template.js';
+import { generateIndexFile } from './templates/index.template.js';
+import { generateRepositorySpecFile } from './templates/repository-spec.template.js';
+import { generateLayersSpecFile } from './templates/layers-spec.template.js';
+import type { DataAccessTemplateOptions } from '../../utils/shared/types.js';
 
 // __dirname is available in CommonJS mode (Node.js global)
 declare const __dirname: string;
@@ -41,7 +38,7 @@ interface NormalizedDataAccessOptions extends NormalizedBaseOptions {
  */
 export default async function dataAccessGenerator(
   tree: Tree,
-  schema: DataAccessGeneratorSchema
+  schema: DataAccessGeneratorSchema,
 ) {
   const options = normalizeOptions(tree, schema);
 
@@ -79,9 +76,9 @@ See: /libs/ARCHITECTURE.md for Contract-First Architecture details
     projectRoot: options.projectRoot,
     offsetFromRoot: options.offsetFromRoot,
     libraryType: 'data-access' as const,
-    platform: 'node' as const,  // Build platform type
+    platform: 'node' as const, // Build platform type
     description: options.description,
-    tags: ['type:data-access', 'scope:shared', 'platform:server'],  // Nx tag aligns with /server export
+    tags: ['type:data-access', 'scope:shared', 'platform:server'], // Nx tag aligns with /server export
     includeClientServer: false,
     includeEdgeExports: false,
   };
@@ -113,21 +110,48 @@ See: /libs/ARCHITECTURE.md for Contract-First Architecture details
   const sourceServerPath = `${sourceLibPath}/server`;
 
   // Generate shared files
-  tree.write(`${sourceSharedPath}/errors.ts`, generateErrorsFile(templateOptions));
-  tree.write(`${sourceSharedPath}/types.ts`, generateTypesFile(templateOptions));
-  tree.write(`${sourceSharedPath}/validation.ts`, generateValidationFile(templateOptions));
+  tree.write(
+    `${sourceSharedPath}/errors.ts`,
+    generateErrorsFile(templateOptions),
+  );
+  tree.write(
+    `${sourceSharedPath}/types.ts`,
+    generateTypesFile(templateOptions),
+  );
+  tree.write(
+    `${sourceSharedPath}/validation.ts`,
+    generateValidationFile(templateOptions),
+  );
 
   // Generate repository files
-  tree.write(`${sourceLibPath}/queries.ts`, generateQueriesFile(templateOptions));
-  tree.write(`${sourceLibPath}/repository.ts`, generateRepositoryFile(templateOptions));
-  tree.write(`${sourceLibPath}/repository.spec.ts`, generateRepositorySpecFile(templateOptions));
+  tree.write(
+    `${sourceLibPath}/queries.ts`,
+    generateQueriesFile(templateOptions),
+  );
+  tree.write(
+    `${sourceLibPath}/repository.ts`,
+    generateRepositoryFile(templateOptions),
+  );
+  tree.write(
+    `${sourceLibPath}/repository.spec.ts`,
+    generateRepositorySpecFile(templateOptions),
+  );
 
   // Generate server files
-  tree.write(`${sourceServerPath}/layers.ts`, generateLayersFile(templateOptions));
-  tree.write(`${sourceLibPath}/layers.spec.ts`, generateLayersSpecFile(templateOptions));
+  tree.write(
+    `${sourceServerPath}/layers.ts`,
+    generateLayersFile(templateOptions),
+  );
+  tree.write(
+    `${sourceLibPath}/layers.spec.ts`,
+    generateLayersSpecFile(templateOptions),
+  );
 
   // Generate index file (barrel exports)
-  tree.write(`${options.sourceRoot}/index.ts`, generateIndexFile(templateOptions));
+  tree.write(
+    `${options.sourceRoot}/index.ts`,
+    generateIndexFile(templateOptions),
+  );
 
   // 3. Format files
   await formatFiles(tree);
@@ -182,7 +206,7 @@ Next steps:
 
 ⚡ Key Architecture Patterns:
    - Repository Pattern: CQRS-inspired queries and mutations
-   - Contract-First: Implements contracts from @creativetoolkits/contract-${options.name}
+   - Contract-First: Implements contracts from @custom-repo/contract-${options.name}
    - Error Handling: All errors use Data.TaggedError for Effect integration
    - Kysely Queries: Type-safe SQL query builder in src/lib/queries.ts
    - Effect Layers: Live, Test, Dev, Auto environment layers
@@ -197,7 +221,7 @@ Next steps:
  */
 function normalizeOptions(
   tree: Tree,
-  schema: DataAccessGeneratorSchema
+  schema: DataAccessGeneratorSchema,
 ): NormalizedDataAccessOptions {
   // Use shared normalization utility for common fields
   return normalizeBaseOptions(tree, {

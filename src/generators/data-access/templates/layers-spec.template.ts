@@ -6,8 +6,8 @@
  * @module monorepo-library-generator/data-access/layers-spec-template
  */
 
-import { TypeScriptBuilder } from "../../../utils/code-generation/typescript-builder.js"
-import type { DataAccessTemplateOptions } from "../../../utils/shared/types.js"
+import { TypeScriptBuilder } from '../../../utils/code-generation/typescript-builder.js';
+import type { DataAccessTemplateOptions } from '../../../utils/shared/types.js';
 
 /**
  * Generate layers.spec.ts file for data-access library
@@ -20,9 +20,11 @@ import type { DataAccessTemplateOptions } from "../../../utils/shared/types.js"
  * - CRUD operation tests
  * - Performance tests
  */
-export function generateLayersSpecFile(options: DataAccessTemplateOptions): string {
-  const builder = new TypeScriptBuilder()
-  const { className, fileName } = options
+export function generateLayersSpecFile(
+  options: DataAccessTemplateOptions,
+): string {
+  const builder = new TypeScriptBuilder();
+  const { className, fileName } = options;
 
   // Add file header
   builder.addFileHeader({
@@ -38,25 +40,28 @@ TODO: Customize this file:
 5. Test caching layer if implemented
 
 @see https://effect.website/docs/guides/testing for Effect testing patterns`,
-    module: `@creativetoolkits/data-access-${fileName}/server`
-  })
-  builder.addBlankLine()
+    module: `@custom-repo/data-access-${fileName}/server`,
+  });
+  builder.addBlankLine();
 
   // Add imports
   builder.addImports([
-    { from: "jest", imports: ["describe", "it", "expect", "beforeEach", "afterEach"] },
-    { from: "effect", imports: ["Effect", "Layer", "Exit"] }
-  ])
-  builder.addBlankLine()
+    {
+      from: 'jest',
+      imports: ['describe', 'it', 'expect', 'beforeEach', 'afterEach'],
+    },
+    { from: 'effect', imports: ['Effect', 'Layer', 'Exit'] },
+  ]);
+  builder.addBlankLine();
 
   builder.addRaw(`// TODO: Import your layers
 // import { ${className}RepositoryLive } from './repository';
-// import { ${className}QueryBuilderLive } from './queries';`)
-  builder.addBlankLine()
+// import { ${className}QueryBuilderLive } from './queries';`);
+  builder.addBlankLine();
 
   // Layer Composition Tests
-  builder.addSectionComment("Layer Composition Tests")
-  builder.addBlankLine()
+  builder.addSectionComment('Layer Composition Tests');
+  builder.addBlankLine();
 
   builder.addRaw(`describe('${className} Layers', () => {
   // TODO: Add layer composition tests
@@ -327,7 +332,7 @@ TODO: Customize this file:
     });
   });
 });
-`)
+`);
 
-  return builder.toString()
+  return builder.toString();
 }

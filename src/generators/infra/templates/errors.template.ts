@@ -6,31 +6,32 @@
  * @module monorepo-library-generator/infra-templates
  */
 
-import { createErrorUnionType } from "../../../utils/code-generation/error-template-utils.js"
-import { TypeScriptBuilder } from "../../../utils/code-generation/typescript-builder.js"
-import type { InfraTemplateOptions } from "../../../utils/shared/types.js"
+import { createErrorUnionType } from '../../../utils/code-generation/error-template-utils.js';
+import { TypeScriptBuilder } from '../../../utils/code-generation/typescript-builder.js';
+import type { InfraTemplateOptions } from '../../../utils/shared/types.js';
 
 /**
  * Generate errors file for infrastructure service
  */
 export function generateErrorsFile(options: InfraTemplateOptions): string {
-  const builder = new TypeScriptBuilder()
-  const { className, fileName } = options
+  const builder = new TypeScriptBuilder();
+  const { className, fileName } = options;
 
   // File header
   builder.addFileHeader({
     title: `${className} Service Errors`,
-    description:
-      `Domain errors using Data.TaggedError for proper Effect integration.\nThese errors are NOT serializable (use in internal operations).\nFor RPC/network boundaries, use Schema.TaggedError instead.\n\nTODO: Customize this file for your service:\n1. Define domain-specific error types\n2. Add error context (ids, values, reasons)\n3. Document error recovery strategies\n4. Add helper constructors for error creation`,
-    module: `@creativetoolkits/infra-${fileName}/errors`,
-    see: ["https://effect.website/docs/api/Data/TaggedError for error patterns"]
-  })
+    description: `Domain errors using Data.TaggedError for proper Effect integration.\nThese errors are NOT serializable (use in internal operations).\nFor RPC/network boundaries, use Schema.TaggedError instead.\n\nTODO: Customize this file for your service:\n1. Define domain-specific error types\n2. Add error context (ids, values, reasons)\n3. Document error recovery strategies\n4. Add helper constructors for error creation`,
+    module: `@custom-repo/infra-${fileName}/errors`,
+    see: [
+      'https://effect.website/docs/api/Data/TaggedError for error patterns',
+    ],
+  });
 
   // Imports
-  builder.addImport("effect", "Data")
+  builder.addImport('effect', 'Data');
 
   // Section: Core Service Errors
-  builder.addSectionComment("Core Service Errors")
+  builder.addSectionComment('Core Service Errors');
 
   // Base error
   builder.addRaw(`/**
@@ -47,8 +48,8 @@ export class ${className}Error extends Data.TaggedError(
 
   /** Optional underlying cause */
   readonly cause?: unknown;
-}> {}`)
-  builder.addBlankLine()
+}> {}`);
+  builder.addBlankLine();
 
   // NotFound error
   builder.addRaw(`/**
@@ -71,8 +72,8 @@ export class ${className}NotFoundError extends Data.TaggedError(
       id,
     });
   }
-}`)
-  builder.addBlankLine()
+}`);
+  builder.addBlankLine();
 
   // Validation error
   builder.addRaw(`/**
@@ -95,8 +96,8 @@ export class ${className}ValidationError extends Data.TaggedError(
       errors,
     });
   }
-}`)
-  builder.addBlankLine()
+}`);
+  builder.addBlankLine();
 
   // Conflict error
   builder.addRaw(`/**
@@ -121,8 +122,8 @@ export class ${className}ConflictError extends Data.TaggedError(
       conflictingId,
     });
   }
-}`)
-  builder.addBlankLine()
+}`);
+  builder.addBlankLine();
 
   // Config error
   builder.addRaw(`/**
@@ -145,11 +146,11 @@ export class ${className}ConfigError extends Data.TaggedError(
       property,
     });
   }
-}`)
-  builder.addBlankLine()
+}`);
+  builder.addBlankLine();
 
   // Section: Operation Errors
-  builder.addSectionComment("Operation Errors")
+  builder.addSectionComment('Operation Errors');
 
   // Connection error
   builder.addRaw(`/**
@@ -176,8 +177,8 @@ export class ${className}ConnectionError extends Data.TaggedError(
       cause,
     });
   }
-}`)
-  builder.addBlankLine()
+}`);
+  builder.addBlankLine();
 
   // Timeout error
   builder.addRaw(`/**
@@ -207,8 +208,8 @@ export class ${className}TimeoutError extends Data.TaggedError(
       operation,
     });
   }
-}`)
-  builder.addBlankLine()
+}`);
+  builder.addBlankLine();
 
   // Internal error
   builder.addRaw(`/**
@@ -231,11 +232,11 @@ export class ${className}InternalError extends Data.TaggedError(
       cause,
     });
   }
-}`)
-  builder.addBlankLine()
+}`);
+  builder.addBlankLine();
 
   // Section: Error Type Union
-  builder.addSectionComment("Error Type Union")
+  builder.addSectionComment('Error Type Union');
 
   builder.addRaw(
     createErrorUnionType({
@@ -248,13 +249,12 @@ export class ${className}InternalError extends Data.TaggedError(
         `${className}ConfigError`,
         `${className}ConnectionError`,
         `${className}TimeoutError`,
-        `${className}InternalError`
+        `${className}InternalError`,
       ],
-      jsdoc:
-        `Union of all ${className} service errors\n\nUse this type for service method signatures:\n\n@example\n\`\`\`typescript\nreadonly operation: () => Effect.Effect<Result, ${className}ServiceError>;\n\`\`\``
-    })
-  )
-  builder.addBlankLine()
+      jsdoc: `Union of all ${className} service errors\n\nUse this type for service method signatures:\n\n@example\n\`\`\`typescript\nreadonly operation: () => Effect.Effect<Result, ${className}ServiceError>;\n\`\`\``,
+    }),
+  );
+  builder.addBlankLine();
 
   // TODO comment
   builder.addRaw(`// TODO: Add domain-specific error types here
@@ -272,7 +272,7 @@ export class ${className}InternalError extends Data.TaggedError(
 //       rule,
 //     });
 //   }
-// }`)
+// }`);
 
-  return builder.toString()
+  return builder.toString();
 }

@@ -6,41 +6,46 @@
  * @module monorepo-library-generator/infra-templates
  */
 
-import { TypeScriptBuilder } from "../../../utils/code-generation/typescript-builder.js"
-import type { InfraTemplateOptions } from "../../../utils/shared/types.js"
+import { TypeScriptBuilder } from '../../../utils/code-generation/typescript-builder.js';
+import type { InfraTemplateOptions } from '../../../utils/shared/types.js';
 
 /**
  * Generate service interface file for infrastructure service
  */
 export function generateInterfaceFile(options: InfraTemplateOptions): string {
-  const builder = new TypeScriptBuilder()
-  const { className, fileName } = options
+  const builder = new TypeScriptBuilder();
+  const { className, fileName } = options;
 
   // File header
   builder.addFileHeader({
     title: `${className} Service`,
-    description:
-      `Defines the service contract using Effect 3.0+ Context.Tag pattern with inline interface\nand static Live layer for dependency injection.\n\nThis file combines the service definition and implementation in a single module following\nEffect 3.0+ best practices for infrastructure services.\n\nCUSTOMIZATION GUIDE:\n1. ✅ Service methods are fully defined in Context.Tag interface (get, findByCriteria, create, update, delete, healthCheck)\n2. ✅ Live layer includes complete implementation with dependency injection, resource management, and error handling\n3. ✅ Test layer provides in-memory implementations for all methods\n4. 🔧 Customize resource initialization, query logic, and error types for your specific use case\n5. 🔧 Uncomment and configure dependencies (config, logger, provider) as needed`,
-    module: `@creativetoolkits/infra-${fileName}/service`,
+    description: `Defines the service contract using Effect 3.0+ Context.Tag pattern with inline interface\nand static Live layer for dependency injection.\n\nThis file combines the service definition and implementation in a single module following\nEffect 3.0+ best practices for infrastructure services.\n\nCUSTOMIZATION GUIDE:\n1. ✅ Service methods are fully defined in Context.Tag interface (get, findByCriteria, create, update, delete, healthCheck)\n2. ✅ Live layer includes complete implementation with dependency injection, resource management, and error handling\n3. ✅ Test layer provides in-memory implementations for all methods\n4. 🔧 Customize resource initialization, query logic, and error types for your specific use case\n5. 🔧 Uncomment and configure dependencies (config, logger, provider) as needed`,
+    module: `@custom-repo/infra-${fileName}/service`,
     see: [
-      "https://effect.website/docs/guides/context-management for dependency injection",
-      "EFFECT_PATTERNS.md for Effect 3.0+ service patterns"
-    ]
-  })
+      'https://effect.website/docs/guides/context-management for dependency injection',
+      'EFFECT_PATTERNS.md for Effect 3.0+ service patterns',
+    ],
+  });
 
   // Imports
   builder.addImports([
-    { from: "effect", imports: ["Context", "Effect", "Layer", "Option"] },
+    { from: 'effect', imports: ['Context', 'Effect', 'Layer', 'Option'] },
     {
-      from: "./errors",
-      imports: [`${className}InternalError`, `${className}NotFoundError`, `${className}ValidationError`]
+      from: './errors',
+      imports: [
+        `${className}InternalError`,
+        `${className}NotFoundError`,
+        `${className}ValidationError`,
+      ],
     },
-    { from: "./errors", imports: [`${className}Error`], isTypeOnly: true },
-    { from: "./config", imports: [`${className}Config`], isTypeOnly: true }
-  ])
+    { from: './errors', imports: [`${className}Error`], isTypeOnly: true },
+    { from: './config', imports: [`${className}Config`], isTypeOnly: true },
+  ]);
 
   // Section: Service Context.Tag Definition
-  builder.addSectionComment("Service Context.Tag Definition with Inline Interface (Effect 3.0+)")
+  builder.addSectionComment(
+    'Service Context.Tag Definition with Inline Interface (Effect 3.0+)',
+  );
 
   // Service class with Context.Tag
   builder.addRaw(`/**
@@ -75,7 +80,7 @@ export function generateInterfaceFile(options: InfraTemplateOptions): string {
  * \`\`\`
  */
 export class ${className}Service extends Context.Tag(
-  "@creativetoolkits/infra-${fileName}/${className}Service"
+  "@custom-repo/infra-${fileName}/${className}Service"
 )<
   ${className}Service,
   {
@@ -177,12 +182,12 @@ export class ${className}Service extends Context.Tag(
      */
     readonly healthCheck: () => Effect.Effect<boolean, never>;
   }
->() {`)
+>() {`);
 
   // Static Live Layer
-  builder.addRaw(`  // ${"=".repeat(74)}
+  builder.addRaw(`  // ${'='.repeat(74)}
   // Static Live Layer (Effect 3.0+ Pattern)
-  // ${"=".repeat(74)}
+  // ${'='.repeat(74)}
 
   /**
    * Production Layer Implementation
@@ -196,7 +201,7 @@ export class ${className}Service extends Context.Tag(
    *
    * DEPENDENCY INJECTION EXAMPLES:
    * - Configuration: const config = yield* ${className}Config;
-   * - Logging: import { LoggingService } from "@creativetoolkits/infra-logging/server";
+   * - Logging: import { LoggingService } from "@custom-repo/infra-logging/server";
    * - Provider: Replace ProviderService with actual provider like StripeService
    * - Other Services: Inject other infra services as needed
    *
@@ -368,9 +373,9 @@ export class ${className}Service extends Context.Tag(
     })
   );
 
-  // ${"=".repeat(74)}
+  // ${'='.repeat(74)}
   // Static Test Layer
-  // ${"=".repeat(74)}
+  // ${'='.repeat(74)}
 
   /**
    * Test Layer Implementation
@@ -394,7 +399,7 @@ export class ${className}Service extends Context.Tag(
     delete: (_id) => Effect.void,
     healthCheck: () => Effect.succeed(true)
   });
-}`)
+}`);
 
-  return builder.toString()
+  return builder.toString();
 }

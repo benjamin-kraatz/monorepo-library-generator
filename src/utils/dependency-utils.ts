@@ -7,30 +7,30 @@
  * @module monorepo-library-generator/dependency-utils
  */
 
-import type { Tree } from "@nx/devkit"
-import { names } from "@nx/devkit"
-import * as path from "path"
-import type { LibraryType } from "./shared/types.js"
+import type { Tree } from '@nx/devkit';
+import { names } from '@nx/devkit';
+import * as path from 'path';
+import type { LibraryType } from './shared/types.js';
 
 /**
  * Dependency information for TypeScript project references and package.json
  */
 export interface DependencyInfo {
-  readonly packageName: string
-  readonly projectName: string
-  readonly relativePath: string
-  readonly relativeLibPath: string
-  readonly description: string
+  readonly packageName: string;
+  readonly projectName: string;
+  readonly relativePath: string;
+  readonly relativeLibPath: string;
+  readonly description: string;
 }
 
 /**
  * Options for computing dependencies
  */
 export interface ComputeDependenciesOptions {
-  readonly dependencyNames: Array<string>
-  readonly libraryType: LibraryType
-  readonly projectRoot: string
-  readonly tree: Tree
+  readonly dependencyNames: Array<string>;
+  readonly libraryType: LibraryType;
+  readonly projectRoot: string;
+  readonly tree: Tree;
 }
 
 /**
@@ -38,14 +38,14 @@ export interface ComputeDependenciesOptions {
  */
 function getLibraryDirectory(libraryType: LibraryType): string {
   const directories: Record<LibraryType, string> = {
-    "contract": "libs/contract",
-    "data-access": "libs/data-access",
-    "feature": "libs/feature",
-    "provider": "libs/provider",
-    "infra": "libs/infra",
-    "util": "libs/util"
-  }
-  return directories[libraryType]
+    contract: 'libs/contract',
+    'data-access': 'libs/data-access',
+    feature: 'libs/feature',
+    provider: 'libs/provider',
+    infra: 'libs/infra',
+    util: 'libs/util',
+  };
+  return directories[libraryType];
 }
 
 /**
@@ -70,7 +70,7 @@ function getLibraryDirectory(libraryType: LibraryType): string {
  * // Returns:
  * // [
  * //   {
- * //     packageName: '@creativetoolkits/contract-user',
+ * //     packageName: '@custom-repo/contract-user',
  * //     projectName: 'contract-user',
  * //     relativePath: '../user',
  * //     relativeLibPath: '../user/tsconfig.lib.json',
@@ -81,36 +81,36 @@ function getLibraryDirectory(libraryType: LibraryType): string {
  * ```
  */
 export function computeDependencies(
-  options: ComputeDependenciesOptions
+  options: ComputeDependenciesOptions,
 ): Array<DependencyInfo> {
-  const { dependencyNames, libraryType, projectRoot, tree } = options
-  const libraryDirectory = getLibraryDirectory(libraryType)
+  const { dependencyNames, libraryType, projectRoot, tree } = options;
+  const libraryDirectory = getLibraryDirectory(libraryType);
 
   return dependencyNames.map((depName) => {
-    const depFileName = names(depName).fileName
-    const depProjectRoot = `${libraryDirectory}/${depFileName}`
+    const depFileName = names(depName).fileName;
+    const depProjectRoot = `${libraryDirectory}/${depFileName}`;
 
     // Validate that the dependency exists
     if (!tree.exists(depProjectRoot)) {
       throw new Error(
         `${libraryType} dependency '${depName}' not found at ${depProjectRoot}. ` +
-          `Please create it first using: pnpm exec nx g @workspace:${libraryType} ${depName}`
-      )
+          `Please create it first using: pnpm exec nx g @workspace:${libraryType} ${depName}`,
+      );
     }
 
     // Compute relative paths from this project to the dependency
-    const relativePath = path.relative(projectRoot, depProjectRoot)
-    const relativeLibPath = path.join(relativePath, "tsconfig.lib.json")
-    const projectName = `${libraryType}-${depFileName}`
+    const relativePath = path.relative(projectRoot, depProjectRoot);
+    const relativeLibPath = path.join(relativePath, 'tsconfig.lib.json');
+    const projectName = `${libraryType}-${depFileName}`;
 
     return {
-      packageName: `@creativetoolkits/${projectName}`,
+      packageName: `@custom-repo/${projectName}`,
       projectName,
       relativePath,
       relativeLibPath,
-      description: `${libraryType} dependency`
-    }
-  })
+      description: `${libraryType} dependency`,
+    };
+  });
 }
 
 /**
@@ -131,11 +131,11 @@ export function computeDependencies(
 export function validateDependencyExists(
   tree: Tree,
   dependencyName: string,
-  libraryType: LibraryType
+  libraryType: LibraryType,
 ): boolean {
-  const depFileName = names(dependencyName).fileName
-  const libraryDirectory = getLibraryDirectory(libraryType)
-  const depProjectRoot = `${libraryDirectory}/${depFileName}`
+  const depFileName = names(dependencyName).fileName;
+  const libraryDirectory = getLibraryDirectory(libraryType);
+  const depProjectRoot = `${libraryDirectory}/${depFileName}`;
 
-  return tree.exists(depProjectRoot)
+  return tree.exists(depProjectRoot);
 }

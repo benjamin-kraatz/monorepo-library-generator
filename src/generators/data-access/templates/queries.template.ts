@@ -6,8 +6,8 @@
  * @module monorepo-library-generator/data-access/queries-template
  */
 
-import { TypeScriptBuilder } from "../../../utils/code-generation/typescript-builder.js"
-import type { DataAccessTemplateOptions } from "../../../utils/shared/types.js"
+import { TypeScriptBuilder } from '../../../utils/code-generation/typescript-builder.js';
+import type { DataAccessTemplateOptions } from '../../../utils/shared/types.js';
 
 /**
  * Generate queries.ts file for data-access library
@@ -17,9 +17,11 @@ import type { DataAccessTemplateOptions } from "../../../utils/shared/types.js"
  * - Filter, sort, and pagination helpers
  * - Common query patterns
  */
-export function generateQueriesFile(options: DataAccessTemplateOptions): string {
-  const builder = new TypeScriptBuilder()
-  const { className, fileName } = options
+export function generateQueriesFile(
+  options: DataAccessTemplateOptions,
+): string {
+  const builder = new TypeScriptBuilder();
+  const { className, fileName } = options;
 
   // Add file header
   builder.addFileHeader({
@@ -35,28 +37,28 @@ TODO: Customize this file:
 5. Add search functionality if needed
 
 @see https://kysely.dev/docs/category/queries for Kysely API reference`,
-    module: `@creativetoolkits/data-access-${fileName}/server`
-  })
-  builder.addBlankLine()
+    module: `@custom-repo/data-access-${fileName}/server`,
+  });
+  builder.addBlankLine();
 
   // Add imports
   builder.addImports([
     {
-      from: "kysely",
-      imports: ["Kysely", "SelectQueryBuilder"],
-      isTypeOnly: true
+      from: 'kysely',
+      imports: ['Kysely', 'SelectQueryBuilder'],
+      isTypeOnly: true,
     },
     {
-      from: "@creativetoolkits/types-database",
-      imports: ["Database"],
-      isTypeOnly: true
-    }
-  ])
-  builder.addBlankLine()
+      from: '@custom-repo/types-database',
+      imports: ['Database'],
+      isTypeOnly: true,
+    },
+  ]);
+  builder.addBlankLine();
 
   // Query Type Aliases
-  builder.addSectionComment("Query Type Aliases")
-  builder.addBlankLine()
+  builder.addSectionComment('Query Type Aliases');
+  builder.addBlankLine();
 
   builder.addRaw(`/**
  * Type alias for query builder starting from ${fileName} table
@@ -65,8 +67,8 @@ type ${className}QueryBuilder = SelectQueryBuilder<
   Database,
   "${fileName}" | any,
   any
->;`)
-  builder.addBlankLine()
+>;`);
+  builder.addBlankLine();
 
   builder.addRaw(`/**
  * ${className} Filter options for queries
@@ -77,8 +79,8 @@ export interface ${className}QueryFilters {
   // readonly status?: 'active' | 'inactive';
   // readonly createdAfter?: Date;
   // readonly search?: string;
-}`)
-  builder.addBlankLine()
+}`);
+  builder.addBlankLine();
 
   builder.addRaw(`/**
  * Pagination options
@@ -86,12 +88,12 @@ export interface ${className}QueryFilters {
 export interface PaginationOptions {
   readonly skip: number;
   readonly limit: number;
-}`)
-  builder.addBlankLine()
+}`);
+  builder.addBlankLine();
 
   // Query Builders
-  builder.addSectionComment("Query Builders")
-  builder.addBlankLine()
+  builder.addSectionComment('Query Builders');
+  builder.addBlankLine();
 
   // buildFindAllQuery
   builder.addRaw(`/**
@@ -123,8 +125,8 @@ export function buildFindAllQuery(
   // }
 
   return query as ${className}QueryBuilder;
-}`)
-  builder.addBlankLine()
+}`);
+  builder.addBlankLine();
 
   // buildFindByIdQuery
   builder.addRaw(`/**
@@ -143,8 +145,8 @@ export function buildFindByIdQuery(
   return db
     .selectFrom("${fileName}")
     .where("id", "=", id) as ${className}QueryBuilder;
-}`)
-  builder.addBlankLine()
+}`);
+  builder.addBlankLine();
 
   // buildCountQuery
   builder.addRaw(`/**
@@ -167,8 +169,8 @@ export function buildCountQuery(
   // TODO: Add filter conditions
 
   return query;
-}`)
-  builder.addBlankLine()
+}`);
+  builder.addBlankLine();
 
   // Add TODO comment for additional queries
   builder.addRaw(`// TODO: Add more specialized queries
@@ -187,7 +189,7 @@ export function buildCountQuery(
 //     .selectFrom("${fileName}")
 //     .where("name", "like", \`%\${searchTerm}%\`);
 // }
-`)
+`);
 
-  return builder.toString()
+  return builder.toString();
 }
