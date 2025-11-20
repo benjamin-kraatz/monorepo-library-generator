@@ -12,7 +12,7 @@ import type { InfraTemplateOptions } from '../../../utils/shared/types';
 /**
  * Generate index.ts file for infrastructure service
  */
-export function generateIndexFile(options: InfraTemplateOptions): string {
+export function generateIndexFile(options: InfraTemplateOptions) {
   const builder = new TypeScriptBuilder();
   const { className, fileName, includeClientServer } = options;
 

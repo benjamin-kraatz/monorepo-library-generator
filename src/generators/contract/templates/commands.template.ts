@@ -19,7 +19,7 @@ import type { ContractTemplateOptions } from '../../../utils/shared/types';
  * - Command union types
  * - Schema union for validation
  */
-export function generateCommandsFile(options: ContractTemplateOptions): string {
+export function generateCommandsFile(options: ContractTemplateOptions) {
   const builder = new TypeScriptBuilder();
   const { className, fileName, propertyName } = options;
   const domainName = propertyName;
@@ -115,7 +115,7 @@ function createFileHeader(
   className: string,
   domainName: string,
   fileName: string,
-): string {
+) {
   return `/**
  * ${className} Commands (CQRS Write Operations)
  *
@@ -135,7 +135,7 @@ function createFileHeader(
 /**
  * Create Create command
  */
-function createCreateCommand(className: string, _propertyName: string): string {
+function createCreateCommand(className: string, _propertyName: string) {
   return `/**
  * Command to create a new ${className}
  */
@@ -170,7 +170,7 @@ export class Create${className}Command extends Schema.Class<Create${className}Co
 /**
  * Create Update command
  */
-function createUpdateCommand(className: string, propertyName: string): string {
+function createUpdateCommand(className: string, propertyName: string) {
   return `/**
  * Command to update an existing ${className}
  */
@@ -208,7 +208,7 @@ export class Update${className}Command extends Schema.Class<Update${className}Co
 /**
  * Create Delete command
  */
-function createDeleteCommand(className: string, propertyName: string): string {
+function createDeleteCommand(className: string, propertyName: string) {
   return `/**
  * Command to delete a ${className}
  */

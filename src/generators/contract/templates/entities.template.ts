@@ -18,7 +18,7 @@ import type { ContractTemplateOptions } from '../../../utils/shared/types';
  * - Schema.Class entity definition
  * - Helper functions for parsing and encoding
  */
-export function generateEntitiesFile(options: ContractTemplateOptions): string {
+export function generateEntitiesFile(options: ContractTemplateOptions) {
   const builder = new TypeScriptBuilder();
   const { className, fileName } = options;
 

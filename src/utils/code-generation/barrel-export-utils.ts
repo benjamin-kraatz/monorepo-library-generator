@@ -58,7 +58,7 @@ export interface StandardErrorExportConfig {
  */
 export function generateStandardErrorExports(
   config: StandardErrorExportConfig,
-): string {
+) {
   const { className, importPath, unionTypeSuffix = 'ServiceError' } = config;
 
   const errorTypes = [

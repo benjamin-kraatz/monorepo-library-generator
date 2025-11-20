@@ -14,7 +14,7 @@ import type { FeatureTemplateOptions } from '../../../utils/shared/types';
  *
  * Creates business logic service with Effect Context.Tag pattern.
  */
-export function generateServiceFile(options: FeatureTemplateOptions): string {
+export function generateServiceFile(options: FeatureTemplateOptions) {
   const builder = new TypeScriptBuilder();
   const { className, fileName, name } = options;
 

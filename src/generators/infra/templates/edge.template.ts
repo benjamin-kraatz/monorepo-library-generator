@@ -13,7 +13,7 @@ import type { InfraTemplateOptions } from '../../../utils/shared/types';
 /**
  * Generate edge.ts file for infrastructure service
  */
-export function generateEdgeFile(options: InfraTemplateOptions): string {
+export function generateEdgeFile(options: InfraTemplateOptions) {
   const builder = new TypeScriptBuilder();
   const { className, fileName, includeEdge } = options;
 

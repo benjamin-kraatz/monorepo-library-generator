@@ -44,7 +44,7 @@
       },
       {
         "file": "CLAUDE.md",
-        "hash": "13339868169871076938"
+        "hash": "17859066380122244489"
       },
       {
         "file": "LICENSE",
@@ -65,6 +65,18 @@
       {
         "file": "flake.nix",
         "hash": "5278872866010000124"
+      },
+      {
+        "file": "generate-real-libs.ts",
+        "hash": "8071578550639713435"
+      },
+      {
+        "file": "generated-libs/package.json",
+        "hash": "12401521590899497185"
+      },
+      {
+        "file": "generated-libs/pnpm-workspace.yaml",
+        "hash": "8022882164007354903"
       },
       {
         "file": "package.json",
@@ -400,7 +412,7 @@
       },
       {
         "file": "src/utils/build-config-utils.ts",
-        "hash": "4151436286447044761"
+        "hash": "17118180335569847422"
       },
       {
         "file": "src/utils/code-generation/barrel-export-utils.ts",
@@ -444,11 +456,11 @@
       },
       {
         "file": "src/utils/library-generator-utils.spec.ts",
-        "hash": "18441094894130282464"
+        "hash": "1349410195745170060"
       },
       {
         "file": "src/utils/library-generator-utils.ts",
-        "hash": "16141182714682568176"
+        "hash": "5265082424368709310"
       },
       {
         "file": "src/utils/normalization-utils.ts",
@@ -473,6 +485,10 @@
       {
         "file": "src/utils/tsconfig-utils.ts",
         "hash": "14928634025932666867"
+      },
+      {
+        "file": "src/utils/workspace-detection.ts",
+        "hash": "15125742293051900861"
       },
       {
         "file": "tsconfig.base.json",

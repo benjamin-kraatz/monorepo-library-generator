@@ -1,0 +1,10 @@
+{
+  "name": "test-workspace",
+  "private": true,
+  "devDependencies": {
+    "@effect/build-utils": "^0.8.9"
+  },
+  "scripts": {
+    "codegen": "build-utils prepare-v2"
+  }
+}

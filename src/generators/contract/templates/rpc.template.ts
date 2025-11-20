@@ -18,7 +18,7 @@ import type { ContractTemplateOptions } from '../../../utils/shared/types';
  * - Schema.TaggedError for serializable errors
  * - Type exports for all schemas
  */
-export function generateRpcFile(options: ContractTemplateOptions): string {
+export function generateRpcFile(options: ContractTemplateOptions) {
   const builder = new TypeScriptBuilder();
   const { className, fileName, propertyName } = options;
   const domainName = propertyName;
@@ -86,7 +86,7 @@ function createFileHeader(
   className: string,
   domainName: string,
   fileName: string,
-): string {
+) {
   return `/**
  * ${className} RPC Schemas
  *
@@ -106,7 +106,7 @@ function createFileHeader(
 /**
  * Create Get schemas
  */
-function createGetSchemas(className: string, propertyName: string): string {
+function createGetSchemas(className: string, propertyName: string) {
   return `/**
  * Request schema for getting a single ${className}
  */
@@ -134,7 +134,7 @@ export type Get${className}Response = Schema.Schema.Type<typeof Get${className}R
 /**
  * Create List schemas
  */
-function createListSchemas(className: string): string {
+function createListSchemas(className: string) {
   return `/**
  * Request schema for listing ${className}s
  */
@@ -183,7 +183,7 @@ export type List${className}sResponse = Schema.Schema.Type<typeof List${classNam
 /**
  * Create Create schemas
  */
-function createCreateSchemas(className: string): string {
+function createCreateSchemas(className: string) {
   return `/**
  * Request schema for creating a ${className}
  */
@@ -213,7 +213,7 @@ export type Create${className}Response = Schema.Schema.Type<typeof Create${class
 /**
  * Create Update schemas
  */
-function createUpdateSchemas(className: string, propertyName: string): string {
+function createUpdateSchemas(className: string, propertyName: string) {
   return `/**
  * Request schema for updating a ${className}
  */
@@ -249,7 +249,7 @@ export type Update${className}Response = Schema.Schema.Type<typeof Update${class
 /**
  * Create Delete schemas
  */
-function createDeleteSchemas(className: string, propertyName: string): string {
+function createDeleteSchemas(className: string, propertyName: string) {
   return `/**
  * Request schema for deleting a ${className}
  */
@@ -280,7 +280,7 @@ export type Delete${className}Response = Schema.Schema.Type<typeof Delete${class
 /**
  * Create RPC errors
  */
-function createRpcErrors(className: string, propertyName: string): string {
+function createRpcErrors(className: string, propertyName: string) {
   return `/**
  * RPC error for ${className} not found
  *

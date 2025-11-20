@@ -12,7 +12,7 @@ import type { InfraTemplateOptions } from '../../../utils/shared/types';
 /**
  * Generate React hook file for infrastructure service
  */
-export function generateUseHookFile(options: InfraTemplateOptions): string {
+export function generateUseHookFile(options: InfraTemplateOptions) {
   const builder = new TypeScriptBuilder();
   const { className, fileName, includeClientServer } = options;
 

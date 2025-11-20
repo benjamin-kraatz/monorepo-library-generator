@@ -14,7 +14,7 @@ import type { FeatureTemplateOptions } from '../../../utils/shared/types';
  *
  * Creates domain-specific error classes using Data.TaggedError pattern.
  */
-export function generateErrorsFile(options: FeatureTemplateOptions): string {
+export function generateErrorsFile(options: FeatureTemplateOptions) {
   const builder = new TypeScriptBuilder();
   const { className, name } = options;
 

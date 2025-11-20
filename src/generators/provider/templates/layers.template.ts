@@ -24,7 +24,7 @@ import type { ProviderTemplateOptions } from '../../../utils/shared/types';
  * @param options - Provider template options
  * @returns Generated TypeScript code
  */
-export function generateLayersFile(options: ProviderTemplateOptions): string {
+export function generateLayersFile(options: ProviderTemplateOptions) {
   const builder = new TypeScriptBuilder();
   const {
     className,

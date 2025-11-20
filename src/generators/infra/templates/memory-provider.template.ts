@@ -12,9 +12,7 @@ import type { InfraTemplateOptions } from '../../../utils/shared/types';
 /**
  * Generate memory provider file for infrastructure service
  */
-export function generateMemoryProviderFile(
-  options: InfraTemplateOptions,
-): string {
+export function generateMemoryProviderFile(options: InfraTemplateOptions) {
   const builder = new TypeScriptBuilder();
   const { className, fileName } = options;
 

@@ -18,7 +18,7 @@ import type { ContractTemplateOptions } from '../../../utils/shared/types';
  * - Repository port (Context.Tag with inline interface)
  * - Service port (Context.Tag with inline interface)
  */
-export function generatePortsFile(options: ContractTemplateOptions): string {
+export function generatePortsFile(options: ContractTemplateOptions) {
   const builder = new TypeScriptBuilder();
   const { className, fileName, includeCQRS, propertyName } = options;
   const domainName = propertyName;
@@ -205,7 +205,7 @@ function createFileHeader(
   className: string,
   domainName: string,
   fileName: string,
-): string {
+) {
   return `/**
  * ${className} Ports (Interfaces)
  *
@@ -235,7 +235,7 @@ function createRepositoryTag(
   domainName: string,
   fileName: string,
   _propertyName: string,
-): string {
+) {
   return `/**
  * ${className}Repository Context Tag for dependency injection
  *
@@ -336,7 +336,7 @@ function createServiceTag(
   domainName: string,
   fileName: string,
   _propertyName: string,
-): string {
+) {
   return `/**
  * ${className}Service Context Tag for dependency injection
  *
@@ -408,7 +408,7 @@ function createProjectionRepositoryTag(
   className: string,
   domainName: string,
   fileName: string,
-): string {
+) {
   return `/**
  * ${className}ProjectionRepository Context Tag for CQRS read models
  *

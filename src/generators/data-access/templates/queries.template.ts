@@ -17,9 +17,7 @@ import type { DataAccessTemplateOptions } from '../../../utils/shared/types';
  * - Filter, sort, and pagination helpers
  * - Common query patterns
  */
-export function generateQueriesFile(
-  options: DataAccessTemplateOptions,
-): string {
+export function generateQueriesFile(options: DataAccessTemplateOptions) {
   const builder = new TypeScriptBuilder();
   const { className, fileName } = options;
 

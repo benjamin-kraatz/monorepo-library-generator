@@ -12,62 +12,66 @@
  * @module monorepo-library-generator/effect-patterns
  */
 
-import type { ClassConfig, MethodConfig, ParameterConfig } from "./typescript-builder.js"
+import type {
+  ClassConfig,
+  MethodConfig,
+  ParameterConfig,
+} from './typescript-builder';
 
 export interface TaggedErrorField {
-  name: string
-  type: string
-  readonly?: boolean
-  optional?: boolean
+  name: string;
+  type: string;
+  readonly?: boolean;
+  optional?: boolean;
 }
 
 export interface TaggedErrorConfig {
-  className: string
-  tagName: string
-  fields: Array<TaggedErrorField>
-  staticMethods?: Array<MethodConfig>
-  jsdoc?: string
+  className: string;
+  tagName: string;
+  fields: Array<TaggedErrorField>;
+  staticMethods?: Array<MethodConfig>;
+  jsdoc?: string;
 }
 
 export interface ContextTagConfig {
-  tagName: string
-  serviceName: string
-  serviceInterface: ServiceInterfaceConfig
-  jsdoc?: string
+  tagName: string;
+  serviceName: string;
+  serviceInterface: ServiceInterfaceConfig;
+  jsdoc?: string;
 }
 
 export interface ServiceInterfaceConfig {
-  methods: Array<ServiceMethod>
+  methods: Array<ServiceMethod>;
 }
 
 export interface ServiceMethod {
-  name: string
-  params: Array<ParameterConfig>
-  returnType: string
-  jsdoc?: string
+  name: string;
+  params: Array<ParameterConfig>;
+  returnType: string;
+  jsdoc?: string;
 }
 
 export interface LayerConfig {
-  serviceName: string
-  layerName?: string
-  implementation: string
-  dependencies?: Array<string>
-  layerType: "sync" | "effect" | "scoped"
-  jsdoc?: string
+  serviceName: string;
+  layerName?: string;
+  implementation: string;
+  dependencies?: Array<string>;
+  layerType: 'sync' | 'effect' | 'scoped';
+  jsdoc?: string;
 }
 
 export interface SchemaStructConfig {
-  name: string
-  fields: Array<SchemaField>
-  exported?: boolean
-  jsdoc?: string
+  name: string;
+  fields: Array<SchemaField>;
+  exported?: boolean;
+  jsdoc?: string;
 }
 
 export interface SchemaField {
-  name: string
-  schema: string
-  optional?: boolean
-  jsdoc?: string
+  name: string;
+  schema: string;
+  optional?: boolean;
+  jsdoc?: string;
 }
 
 /**
@@ -91,19 +95,21 @@ export class EffectPatterns {
    */
   static createTaggedError(config: TaggedErrorConfig): ClassConfig {
     // Build the type literal for the error fields
-    const fieldTypes = config.fields.map((field) => {
-      const readonlyModifier = field.readonly !== false ? "readonly " : ""
-      const optionalModifier = field.optional ? "?" : ""
-      return `    ${readonlyModifier}${field.name}${optionalModifier}: ${field.type};`
-    }).join("\n")
+    const fieldTypes = config.fields
+      .map((field) => {
+        const readonlyModifier = field.readonly !== false ? 'readonly ' : '';
+        const optionalModifier = field.optional ? '?' : '';
+        return `    ${readonlyModifier}${field.name}${optionalModifier}: ${field.type};`;
+      })
+      .join('\n');
 
     return {
       className: config.className,
       extends: `Data.TaggedError("${config.tagName}")<{\n${fieldTypes}\n  }>`,
       exported: true,
       ...(config.jsdoc !== undefined && { jsdoc: config.jsdoc }),
-      staticMethods: config.staticMethods || []
-    }
+      staticMethods: config.staticMethods || [],
+    };
   }
 
   /**
@@ -120,26 +126,28 @@ export class EffectPatterns {
    * >() {}
    * ```
    */
-  static createContextTag(config: ContextTagConfig): string {
-    const methods = config.serviceInterface.methods.map((method) => {
-      const params = method.params.map((p) => {
-        const optional = p.optional ? "?" : ""
-        return `${p.name}${optional}: ${p.type}`
-      }).join(", ")
+  static createContextTag(config: ContextTagConfig) {
+    const methods = config.serviceInterface.methods
+      .map((method) => {
+        const params = method.params
+          .map((p) => {
+            const optional = p.optional ? '?' : '';
+            return `${p.name}${optional}: ${p.type}`;
+          })
+          .join(', ');
 
-      return `    readonly ${method.name}: (${params}) => ${method.returnType};`
-    }).join("\n")
+        return `    readonly ${method.name}: (${params}) => ${method.returnType};`;
+      })
+      .join('\n');
 
-    const jsdocComment = config.jsdoc
-      ? `/**\n * ${config.jsdoc}\n */\n`
-      : ""
+    const jsdocComment = config.jsdoc ? `/**\n * ${config.jsdoc}\n */\n` : '';
 
     return `${jsdocComment}export class ${config.serviceName} extends Context.Tag("${config.tagName}")<
   ${config.serviceName},
   {
 ${methods}
   }
->() {}`
+>() {}`;
   }
 
   /**
@@ -165,28 +173,38 @@ ${methods}
    * );
    * ```
    */
-  static createLiveLayer(config: LayerConfig): string {
-    const layerName = config.layerName || "Live"
-    const layerMethod = `Layer.${config.layerType}`
+  static createLiveLayer(config: LayerConfig) {
+    const layerName = config.layerName || 'Live';
+    const layerMethod = `Layer.${config.layerType}`;
 
     const jsdocComment = config.jsdoc
       ? `  /**\n   * ${config.jsdoc}\n   */\n`
-      : ""
+      : '';
 
     // Generate dependency yields if specified
-    const dependencyYields = config.dependencies && config.dependencies.length > 0
-      ? config.dependencies.map((dep) => `    const ${dep.charAt(0).toLowerCase() + dep.slice(1)} = yield* ${dep};`)
-        .join("\n") + "\n\n"
-      : ""
+    const dependencyYields =
+      config.dependencies && config.dependencies.length > 0
+        ? config.dependencies
+            .map(
+              (dep) =>
+                `    const ${
+                  dep.charAt(0).toLowerCase() + dep.slice(1)
+                } = yield* ${dep};`,
+            )
+            .join('\n') + '\n\n'
+        : '';
 
-    const implementation = config.implementation.trim()
+    const implementation = config.implementation.trim();
 
     return `${jsdocComment}  static readonly ${layerName} = ${layerMethod}(
     ${config.serviceName},
     Effect.gen(function* () {
-${dependencyYields}${implementation.split("\n").map((line) => `      ${line}`).join("\n")}
+${dependencyYields}${implementation
+      .split('\n')
+      .map((line) => `      ${line}`)
+      .join('\n')}
     })
-  );`
+  );`;
   }
 
   /**
@@ -200,8 +218,8 @@ ${dependencyYields}${implementation.split("\n").map((line) => `      ${line}`).j
    * });
    * ```
    */
-  static createTestLayer(serviceName: string, mockImplementation: string): string {
-    return `  static readonly Test = Layer.succeed(${serviceName}, ${mockImplementation});`
+  static createTestLayer(serviceName: string, mockImplementation: string) {
+    return `  static readonly Test = Layer.succeed(${serviceName}, ${mockImplementation});`;
   }
 
   /**
@@ -217,22 +235,24 @@ ${dependencyYields}${implementation.split("\n").map((line) => `      ${line}`).j
    * });
    * ```
    */
-  static createSchemaStruct(config: SchemaStructConfig): string {
-    const exported = config.exported !== false ? "export " : ""
+  static createSchemaStruct(config: SchemaStructConfig) {
+    const exported = config.exported !== false ? 'export ' : '';
 
-    const fields = config.fields.map((field) => {
-      const schema = field.optional ? `Schema.optional(${field.schema})` : field.schema
-      const jsdoc = field.jsdoc ? `  /** ${field.jsdoc} */\n` : ""
-      return `${jsdoc}  ${field.name}: ${schema}`
-    }).join(",\n")
+    const fields = config.fields
+      .map((field) => {
+        const schema = field.optional
+          ? `Schema.optional(${field.schema})`
+          : field.schema;
+        const jsdoc = field.jsdoc ? `  /** ${field.jsdoc} */\n` : '';
+        return `${jsdoc}  ${field.name}: ${schema}`;
+      })
+      .join(',\n');
 
-    const jsdocComment = config.jsdoc
-      ? `/**\n * ${config.jsdoc}\n */\n`
-      : ""
+    const jsdocComment = config.jsdoc ? `/**\n * ${config.jsdoc}\n */\n` : '';
 
     return `${jsdocComment}${exported}const ${config.name} = Schema.Struct({
 ${fields}
-});`
+});`;
   }
 
   /**
@@ -242,9 +262,13 @@ ${fields}
    * export type Foo = Schema.Schema.Type<typeof FooSchema>;
    * ```
    */
-  static createSchemaType(typeName: string, schemaName: string, exported = true): string {
-    const exportKeyword = exported ? "export " : ""
-    return `${exportKeyword}type ${typeName} = Schema.Schema.Type<typeof ${schemaName}>;`
+  static createSchemaType(
+    typeName: string,
+    schemaName: string,
+    exported = true,
+  ) {
+    const exportKeyword = exported ? 'export ' : '';
+    return `${exportKeyword}type ${typeName} = Schema.Schema.Type<typeof ${schemaName}>;`;
   }
 
   /**
@@ -254,27 +278,33 @@ ${fields}
    * export type FooEncoded = Schema.Schema.Encoded<typeof FooSchema>;
    * ```
    */
-  static createSchemaEncodedType(typeName: string, schemaName: string, exported = true): string {
-    const exportKeyword = exported ? "export " : ""
-    return `${exportKeyword}type ${typeName} = Schema.Schema.Encoded<typeof ${schemaName}>;`
+  static createSchemaEncodedType(
+    typeName: string,
+    schemaName: string,
+    exported = true,
+  ) {
+    const exportKeyword = exported ? 'export ' : '';
+    return `${exportKeyword}type ${typeName} = Schema.Schema.Encoded<typeof ${schemaName}>;`;
   }
 
   /**
    * Generate a service implementation stub
    */
-  static createServiceImplementation(methods: Array<ServiceMethod>): string {
-    const implementations = methods.map((method) => {
-      const params = method.params.map((p) => p.name).join(", ")
-      return `      ${method.name}: (${params}) => Effect.gen(function* () {
+  static createServiceImplementation(methods: Array<ServiceMethod>) {
+    const implementations = methods
+      .map((method) => {
+        const params = method.params.map((p) => p.name).join(', ');
+        return `      ${method.name}: (${params}) => Effect.gen(function* () {
         // TODO: Implement ${method.name}
         yield* Effect.logDebug(\`${method.name} called with: \${JSON.stringify({ ${params} })}\`);
         return yield* Effect.fail(new Error("Not implemented"));
-      })`
-    }).join(",\n")
+      })`;
+      })
+      .join(',\n');
 
     return `return {
 ${implementations}
-    };`
+    };`;
   }
 
   /**
@@ -288,40 +318,40 @@ ${implementations}
    * export type CreateFooCommand = Schema.Schema.Type<typeof CreateFooCommand>;
    * ```
    */
-  static createCommand(commandName: string, dataSchema: string, jsdoc?: string): string {
-    const tag = commandName.replace("Command", "")
+  static createCommand(
+    commandName: string,
+    dataSchema: string,
+    jsdoc?: string,
+  ) {
+    const tag = commandName.replace('Command', '');
 
-    const jsdocComment = jsdoc
-      ? `/**\n * ${jsdoc}\n */\n`
-      : ""
+    const jsdocComment = jsdoc ? `/**\n * ${jsdoc}\n */\n` : '';
 
     return `${jsdocComment}export const ${commandName}Schema = Schema.Struct({
   _tag: Schema.Literal("${tag}"),
   data: ${dataSchema}
 });
 
-export type ${commandName} = Schema.Schema.Type<typeof ${commandName}Schema>;`
+export type ${commandName} = Schema.Schema.Type<typeof ${commandName}Schema>;`;
   }
 
   /**
    * Create CQRS query pattern
    */
-  static createQuery(queryName: string, paramsSchema?: string, jsdoc?: string): string {
-    const tag = queryName.replace("Query", "")
+  static createQuery(queryName: string, paramsSchema?: string, jsdoc?: string) {
+    const tag = queryName.replace('Query', '');
 
-    const jsdocComment = jsdoc
-      ? `/**\n * ${jsdoc}\n */\n`
-      : ""
+    const jsdocComment = jsdoc ? `/**\n * ${jsdoc}\n */\n` : '';
 
     const fields = paramsSchema
       ? `_tag: Schema.Literal("${tag}"),\n  params: ${paramsSchema}`
-      : `_tag: Schema.Literal("${tag}")`
+      : `_tag: Schema.Literal("${tag}")`;
 
     return `${jsdocComment}export const ${queryName}Schema = Schema.Struct({
   ${fields}
 });
 
-export type ${queryName} = Schema.Schema.Type<typeof ${queryName}Schema>;`
+export type ${queryName} = Schema.Schema.Type<typeof ${queryName}Schema>;`;
   }
 
   /**
@@ -337,28 +367,32 @@ export type ${queryName} = Schema.Schema.Type<typeof ${queryName}Schema>;`
    * });
    * ```
    */
-  static createRpcSchema(rpcName: string, endpoints: Array<RpcEndpoint>, jsdoc?: string): string {
-    const endpointDefs = endpoints.map((endpoint) => {
-      return `  ${endpoint.name}: {
+  static createRpcSchema(
+    rpcName: string,
+    endpoints: Array<RpcEndpoint>,
+    jsdoc?: string,
+  ) {
+    const endpointDefs = endpoints
+      .map((endpoint) => {
+        return `  ${endpoint.name}: {
     input: ${endpoint.inputSchema},
     output: ${endpoint.outputSchema},
     error: ${endpoint.errorType}
-  }`
-    }).join(",\n")
+  }`;
+      })
+      .join(',\n');
 
-    const jsdocComment = jsdoc
-      ? `/**\n * ${jsdoc}\n */\n`
-      : ""
+    const jsdocComment = jsdoc ? `/**\n * ${jsdoc}\n */\n` : '';
 
     return `${jsdocComment}export const ${rpcName} = RpcSchema.make({
 ${endpointDefs}
-});`
+});`;
   }
 }
 
 export interface RpcEndpoint {
-  name: string
-  inputSchema: string
-  outputSchema: string
-  errorType: string
+  name: string;
+  inputSchema: string;
+  outputSchema: string;
+  errorType: string;
 }

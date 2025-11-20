@@ -12,7 +12,7 @@ import type { InfraTemplateOptions } from '../../../utils/shared/types';
 /**
  * Generate service interface file for infrastructure service
  */
-export function generateInterfaceFile(options: InfraTemplateOptions): string {
+export function generateInterfaceFile(options: InfraTemplateOptions) {
   const builder = new TypeScriptBuilder();
   const { className, fileName } = options;
 

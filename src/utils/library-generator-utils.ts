@@ -20,11 +20,13 @@ import { join } from 'path';
 import {
   type BuildConfigOptions,
   createStandardTargets,
+  createEffectScripts,
   type LibraryType,
   type PlatformType,
 } from './build-config-utils';
 import { determinePlatformExports } from './platform-utils';
 import { addTsConfigFiles, type TsConfigOptions } from './tsconfig-utils';
+import { detectWorkspace, getBuildMode } from './workspace-detection';
 
 // __dirname is available in CommonJS mode (Node.js global)
 declare const __dirname: string;
@@ -108,7 +110,7 @@ export interface LibraryGeneratorOptions {
  * Generated file manifest
  */
 export interface GeneratedLibraryFiles {
-  projectConfig: ProjectConfiguration;
+  projectConfig?: ProjectConfiguration; // Optional - only in Nx mode
   packageJson: PackageJsonConfiguration;
   tsConfigFiles: {
     basePath: string;
@@ -135,6 +137,7 @@ export interface PackageJsonConfiguration {
   version: string;
   type: 'module';
   exports: Record<string, { import?: string; types?: string }>;
+  scripts?: Record<string, string>;
   peerDependencies?: Record<string, string>;
   devDependencies?: Record<string, string>;
   publishConfig?: {
@@ -181,28 +184,39 @@ function shouldGeneratePlatformExports(options: LibraryGeneratorOptions): {
 }
 
 /**
- * Generate complete Nx library with all required files
+ * Generate complete library with all required files
+ *
+ * Supports both Nx and Effect-native monorepo modes:
+ * - **Nx Mode**: Generates project.json with Nx targets
+ * - **Effect Mode**: Adds Effect-style scripts to package.json
  *
  * This is the main orchestrator function that:
- * 1. Creates project configuration (project.json)
- * 2. Generates TypeScript configurations (tsconfig files)
- * 3. Creates package.json with proper exports
- * 4. Generates source file templates
- * 5. Creates documentation files
- * 6. Updates workspace path mappings
+ * 1. Detects workspace mode (Nx or Effect)
+ * 2. Creates project configuration (project.json - Nx only)
+ * 3. Generates TypeScript configurations (tsconfig files)
+ * 4. Creates package.json with proper exports and scripts
+ * 5. Generates source file templates
+ * 6. Creates documentation files
  */
 export async function generateLibraryFiles(
   tree: Tree,
   options: LibraryGeneratorOptions,
 ): Promise<GeneratedLibraryFiles> {
-  // 1. Generate project.json
-  const projectConfig = generateProjectJson(tree, options);
+  // Detect workspace mode
+  const context = detectWorkspace(tree);
+  const buildMode = getBuildMode(context);
 
-  // 2. Generate TypeScript configurations (using existing utility)
+  // 1. Generate project.json (Nx mode only)
+  const projectConfig =
+    buildMode === 'nx'
+      ? generateProjectJson(tree, options, buildMode)
+      : undefined;
+
+  // 2. Generate TypeScript configurations
   const tsConfigPaths = await generateTsConfig(tree, options);
 
-  // 3. Generate package.json
-  const packageJson = generatePackageJson(tree, options);
+  // 3. Generate package.json with mode-specific configuration
+  const packageJson = generatePackageJson(tree, options, buildMode);
 
   // 4. Generate source files
   const sourceFiles = generateSourceFiles(tree, options);
@@ -217,7 +231,7 @@ export async function generateLibraryFiles(
   // See NX_STANDARDS.md for why tsconfig paths must not be used with pnpm workspaces
 
   return {
-    projectConfig,
+    ...(projectConfig && { projectConfig }),
     packageJson,
     tsConfigFiles: tsConfigPaths,
     sourceFiles,
@@ -226,17 +240,19 @@ export async function generateLibraryFiles(
 }
 
 /**
- * Generate project.json configuration
+ * Generate project.json configuration (Nx mode only)
  */
 function generateProjectJson(
   tree: Tree,
   options: LibraryGeneratorOptions,
+  buildMode: 'nx' | 'effect',
 ): ProjectConfiguration {
   const buildOptions: BuildConfigOptions = {
     projectRoot: options.projectRoot,
     platform: options.platform,
     libraryType: options.libraryType,
     includeClientServer: options.includeClientServer ?? false,
+    buildMode,
   };
 
   const config: ProjectConfiguration = {
@@ -280,11 +296,12 @@ async function generateTsConfig(
 }
 
 /**
- * Generate package.json
+ * Generate package.json with mode-specific configuration
  */
 function generatePackageJson(
   tree: Tree,
   options: LibraryGeneratorOptions,
+  buildMode: 'nx' | 'effect',
 ): PackageJsonConfiguration {
   const scopedName = `@custom-repo/${options.projectName}`;
 
@@ -330,11 +347,23 @@ function generatePackageJson(
       }
     : undefined;
 
+  // Add Effect build scripts in Effect mode
+  const scripts =
+    buildMode === 'effect'
+      ? createEffectScripts({
+          projectRoot: options.projectRoot,
+          platform: options.platform,
+          libraryType: options.libraryType,
+          buildMode,
+        })
+      : undefined;
+
   const packageJson: PackageJsonConfiguration = {
     name: scopedName,
     version: '0.0.1',
     type: 'module',
     exports,
+    ...(scripts && { scripts }),
     peerDependencies: {
       effect: '*',
     },
@@ -417,7 +446,7 @@ function generateSourceFiles(
 function generateIndexTemplate(
   options: LibraryGeneratorOptions,
   nameVars: ReturnType<typeof names>,
-): string {
+) {
   const structure = LIBRARY_STRUCTURES[options.libraryType];
   const typesPath = getStructurePath(structure, 'types') || './lib/types';
   const errorsPath = getStructurePath(structure, 'errors') || './lib/errors';
@@ -449,7 +478,7 @@ export * from '${errorsPath}';
 function generateServerTemplate(
   options: LibraryGeneratorOptions,
   _nameVars: ReturnType<typeof names>,
-): string {
+) {
   const structure = LIBRARY_STRUCTURES[options.libraryType];
   const servicePath = getStructurePath(structure, 'service') || './lib/service';
   const layersPath = getStructurePath(structure, 'layers') || './lib/layers';
@@ -484,7 +513,7 @@ export * from '${layersPath}';
 function generateClientTemplate(
   options: LibraryGeneratorOptions,
   _nameVars: ReturnType<typeof names>,
-): string {
+) {
   const structure = LIBRARY_STRUCTURES[options.libraryType];
   const typesPath = getStructurePath(structure, 'types') || './lib/types';
   const errorsPath = getStructurePath(structure, 'errors') || './lib/errors';
@@ -529,7 +558,7 @@ export type * from '${errorsPath}';
 function generateEdgeTemplate(
   options: LibraryGeneratorOptions,
   _nameVars: ReturnType<typeof names>,
-): string {
+) {
   const structure = LIBRARY_STRUCTURES[options.libraryType];
   const middlewarePath = getStructurePath(structure, 'middleware');
   const servicePath =
@@ -582,7 +611,7 @@ function generateDocumentation(
 function generateReadmeTemplate(
   options: LibraryGeneratorOptions,
   nameVars: ReturnType<typeof names>,
-): string {
+) {
   return `# @custom-repo/${options.projectName}
 
 ${options.description || `${nameVars.className} library`}
@@ -624,7 +653,7 @@ MIT
 function generateClaudeTemplate(
   options: LibraryGeneratorOptions,
   nameVars: ReturnType<typeof names>,
-): string {
+) {
   return `# @custom-repo/${options.projectName}
 
 > AI-optimized reference for ${nameVars.className}

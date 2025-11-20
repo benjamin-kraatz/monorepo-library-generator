@@ -12,9 +12,7 @@ import type { InfraTemplateOptions } from '../../../utils/shared/types';
 /**
  * Generate client layers file for infrastructure service
  */
-export function generateClientLayersFile(
-  options: InfraTemplateOptions,
-): string {
+export function generateClientLayersFile(options: InfraTemplateOptions) {
   const builder = new TypeScriptBuilder();
   const { className, fileName, includeClientServer } = options;
 

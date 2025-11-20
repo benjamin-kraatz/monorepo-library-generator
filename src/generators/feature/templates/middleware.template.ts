@@ -6,30 +6,28 @@
  * @module monorepo-library-generator/feature/middleware-template
  */
 
-import { TypeScriptBuilder } from "../../../utils/code-generation/typescript-builder.js"
-import type { FeatureTemplateOptions } from "../../../utils/shared/types.js"
+import { TypeScriptBuilder } from '../../../utils/code-generation/typescript-builder';
+import type { FeatureTemplateOptions } from '../../../utils/shared/types';
 
 /**
  * Generate edge/middleware.ts file for feature library
  *
  * Creates edge middleware for Vercel Edge, Cloudflare Workers, etc.
  */
-export function generateMiddlewareFile(options: FeatureTemplateOptions): string {
-  const builder = new TypeScriptBuilder()
-  const { className, name, propertyName } = options
+export function generateMiddlewareFile(options: FeatureTemplateOptions) {
+  const builder = new TypeScriptBuilder();
+  const { className, name, propertyName } = options;
 
   // Add file header
   builder.addFileHeader({
     title: `${className} Edge Middleware`,
     description: `Edge runtime middleware for ${name} feature.
-Compatible with Vercel Edge, Cloudflare Workers, etc.`
-  })
+Compatible with Vercel Edge, Cloudflare Workers, etc.`,
+  });
 
   // Add imports
-  builder.addImports([
-    { from: "effect", imports: ["Effect"] }
-  ])
-  builder.addBlankLine()
+  builder.addImports([{ from: 'effect', imports: ['Effect'] }]);
+  builder.addBlankLine();
 
   // Add middleware
   builder.addRaw(`/**
@@ -42,8 +40,8 @@ export const ${propertyName}Middleware = Effect.gen(function* () {
   // Example: authentication, rate limiting, request validation
 
   yield* Effect.logInfo("${className} edge middleware executed");
-});`)
-  builder.addBlankLine()
+});`);
+  builder.addBlankLine();
 
-  return builder.toString()
+  return builder.toString();
 }

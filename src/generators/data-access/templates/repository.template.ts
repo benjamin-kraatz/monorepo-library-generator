@@ -18,9 +18,7 @@ import type { DataAccessTemplateOptions } from '../../../utils/shared/types';
  * - Full CRUD operations with Kysely
  * - Error handling and validation
  */
-export function generateRepositoryFile(
-  options: DataAccessTemplateOptions,
-): string {
+export function generateRepositoryFile(options: DataAccessTemplateOptions) {
   const builder = new TypeScriptBuilder();
   const { className, fileName, propertyName: _propertyName } = options;
 

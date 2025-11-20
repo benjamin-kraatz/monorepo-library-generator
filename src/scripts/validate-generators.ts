@@ -12,9 +12,9 @@
  *   NODE_OPTIONS="--experimental-vm-modules" pnpm exec tsx tools/workspace-plugin/scripts/validate-generators.ts
  */
 
-import { execSync } from "child_process";
-import { existsSync, rmSync } from "fs";
-import { join } from "path";
+import { execSync } from 'child_process';
+import { existsSync, rmSync } from 'fs';
+import { join } from 'path';
 
 interface GeneratorTest {
   name: string;
@@ -29,40 +29,40 @@ const WORKSPACE_ROOT = join(process.cwd());
 
 const generators: GeneratorTest[] = [
   {
-    name: "Contract Generator",
-    generator: "@workspace:contract",
-    libraryName: "test-contract",
-    libraryPath: "libs/contract/test-contract",
-    buildCommand: "pnpm exec nx build contract-test-contract",
+    name: 'Contract Generator',
+    generator: '@workspace:contract',
+    libraryName: 'test-contract',
+    libraryPath: 'libs/contract/test-contract',
+    buildCommand: 'pnpm exec nx build contract-test-contract',
     options: {
-      domain: "test",
+      domain: 'test',
     },
   },
   {
-    name: "Data Access Generator",
-    generator: "@workspace:data-access",
-    libraryName: "test-data-access",
-    libraryPath: "libs/data-access/test-data-access",
-    buildCommand: "pnpm exec nx build data-access-test-data-access",
+    name: 'Data Access Generator',
+    generator: '@workspace:data-access',
+    libraryName: 'test-data-access',
+    libraryPath: 'libs/data-access/test-data-access',
+    buildCommand: 'pnpm exec nx build data-access-test-data-access',
   },
   {
-    name: "Infrastructure Generator",
-    generator: "@workspace:infra",
-    libraryName: "test-infra",
-    libraryPath: "libs/infra/test-infra",
-    buildCommand: "pnpm exec nx build infra-test-infra",
+    name: 'Infrastructure Generator',
+    generator: '@workspace:infra',
+    libraryName: 'test-infra',
+    libraryPath: 'libs/infra/test-infra',
+    buildCommand: 'pnpm exec nx build infra-test-infra',
     options: {
-      domain: "test",
+      domain: 'test',
     },
   },
   {
-    name: "Provider Generator",
-    generator: "@workspace:provider",
-    libraryName: "test-provider",
-    libraryPath: "libs/provider/test-provider",
-    buildCommand: "pnpm exec nx build provider-test-provider",
+    name: 'Provider Generator',
+    generator: '@workspace:provider',
+    libraryName: 'test-provider',
+    libraryPath: 'libs/provider/test-provider',
+    buildCommand: 'pnpm exec nx build provider-test-provider',
     options: {
-      externalService: "TestService",
+      externalService: 'TestService',
     },
   },
 ];
@@ -70,23 +70,27 @@ const generators: GeneratorTest[] = [
 interface ValidationResult {
   name: string;
   success: boolean;
-  stage: "cleanup" | "generate" | "build";
+  stage: 'cleanup' | 'generate' | 'build';
   error?: string;
 }
 
-function exec(command: string, cwd = WORKSPACE_ROOT): string {
+function exec(command: string, cwd = WORKSPACE_ROOT) {
   console.log(`  $ ${command}`);
   try {
     return execSync(command, {
       cwd,
-      encoding: "utf-8",
-      stdio: "pipe",
+      encoding: 'utf-8',
+      stdio: 'pipe',
     });
   } catch (error) {
-    if (error instanceof Error && "stdout" in error && "stderr" in error) {
-      const execError = error as { stdout: string; stderr: string; message: string };
+    if (error instanceof Error && 'stdout' in error && 'stderr' in error) {
+      const execError = error as {
+        stdout: string;
+        stderr: string;
+        message: string;
+      };
       throw new Error(
-        `Command failed: ${command}\n${execError.stdout}\n${execError.stderr}`
+        `Command failed: ${command}\n${execError.stdout}\n${execError.stderr}`,
       );
     }
     throw error;
@@ -102,20 +106,20 @@ function cleanup(libraryPath: string): void {
 }
 
 function validateGenerator(test: GeneratorTest): ValidationResult {
-  console.log(`\n${"=".repeat(80)}`);
+  console.log(`\n${'='.repeat(80)}`);
   console.log(`Validating: ${test.name}`);
-  console.log(`${"=".repeat(80)}\n`);
+  console.log(`${'='.repeat(80)}\n`);
 
   try {
     // Stage 1: Cleanup
-    console.log("Stage 1: Cleanup");
+    console.log('Stage 1: Cleanup');
     cleanup(test.libraryPath);
 
     // Stage 2: Generate
-    console.log("\nStage 2: Generate Library");
+    console.log('\nStage 2: Generate Library');
     const optionsArgs = Object.entries(test.options || {})
       .map(([key, value]) => `--${key}=${value}`)
-      .join(" ");
+      .join(' ');
 
     const generateCommand = `pnpm exec nx g ${test.generator} ${test.libraryName} ${optionsArgs}`;
     exec(generateCommand);
@@ -126,20 +130,23 @@ function validateGenerator(test: GeneratorTest): ValidationResult {
     }
 
     // Stage 3: Build
-    console.log("\nStage 3: Build Library");
+    console.log('\nStage 3: Build Library');
     exec(test.buildCommand);
 
     console.log(`\n✅ ${test.name} validation PASSED\n`);
-    return { name: test.name, success: true, stage: "build" };
+    return { name: test.name, success: true, stage: 'build' };
   } catch (error) {
-    const stage = error instanceof Error && error.message.includes("Build")
-      ? "build"
-      : error instanceof Error && error.message.includes("Generate")
-      ? "generate"
-      : "cleanup";
+    const stage =
+      error instanceof Error && error.message.includes('Build')
+        ? 'build'
+        : error instanceof Error && error.message.includes('Generate')
+        ? 'generate'
+        : 'cleanup';
 
     console.error(`\n❌ ${test.name} validation FAILED at ${stage} stage`);
-    console.error(`Error: ${error instanceof Error ? error.message : String(error)}\n`);
+    console.error(
+      `Error: ${error instanceof Error ? error.message : String(error)}\n`,
+    );
 
     return {
       name: test.name,
@@ -151,9 +158,9 @@ function validateGenerator(test: GeneratorTest): ValidationResult {
 }
 
 function printSummary(results: ValidationResult[]): void {
-  console.log(`\n${"=".repeat(80)}`);
-  console.log("VALIDATION SUMMARY");
-  console.log(`${"=".repeat(80)}\n`);
+  console.log(`\n${'='.repeat(80)}`);
+  console.log('VALIDATION SUMMARY');
+  console.log(`${'='.repeat(80)}\n`);
 
   const passed = results.filter((r) => r.success);
   const failed = results.filter((r) => !r.success);
@@ -163,24 +170,24 @@ function printSummary(results: ValidationResult[]): void {
   console.log(`Failed: ${failed.length}\n`);
 
   if (failed.length > 0) {
-    console.log("Failed Generators:");
+    console.log('Failed Generators:');
     failed.forEach((result) => {
       console.log(`  ❌ ${result.name} (failed at ${result.stage} stage)`);
     });
-    console.log("");
+    console.log('');
   }
 
   if (passed.length > 0) {
-    console.log("Passed Generators:");
+    console.log('Passed Generators:');
     passed.forEach((result) => {
       console.log(`  ✅ ${result.name}`);
     });
-    console.log("");
+    console.log('');
   }
 }
 
 async function main(): Promise<void> {
-  console.log("Generator Validation Starting...\n");
+  console.log('Generator Validation Starting...\n');
 
   const results: ValidationResult[] = [];
 
@@ -199,16 +206,16 @@ async function main(): Promise<void> {
 
   // Exit with error code if any validation failed
   if (results.some((r) => !r.success)) {
-    console.error("\n⚠️  Some generators failed validation");
+    console.error('\n⚠️  Some generators failed validation');
     process.exit(1);
   }
 
-  console.log("\n✅ All generators validated successfully!");
+  console.log('\n✅ All generators validated successfully!');
   process.exit(0);
 }
 
 // Run validation
 main().catch((error) => {
-  console.error("Validation script failed:", error);
+  console.error('Validation script failed:', error);
   process.exit(1);
 });

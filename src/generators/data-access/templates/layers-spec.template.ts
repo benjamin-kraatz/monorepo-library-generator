@@ -20,9 +20,7 @@ import type { DataAccessTemplateOptions } from '../../../utils/shared/types';
  * - CRUD operation tests
  * - Performance tests
  */
-export function generateLayersSpecFile(
-  options: DataAccessTemplateOptions,
-): string {
+export function generateLayersSpecFile(options: DataAccessTemplateOptions) {
   const builder = new TypeScriptBuilder();
   const { className, fileName } = options;
 

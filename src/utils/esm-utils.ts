@@ -6,8 +6,8 @@
  * which doesn't fully support import.meta.url in TypeScript files.
  */
 
-import { dirname, resolve } from "node:path"
-import { fileURLToPath } from "node:url"
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 /**
  * Get the directory name from import.meta.url
@@ -26,18 +26,18 @@ import { fileURLToPath } from "node:url"
  * const templatePath = path.join(__dirname, 'files');
  * ```
  */
-export function getDirname(importMetaUrl: string | undefined): string {
+export function getDirname(importMetaUrl: string | undefined) {
   // Handle cases where import.meta.url might be undefined (CommonJS loader context)
-  if (!importMetaUrl || typeof importMetaUrl !== "string") {
+  if (!importMetaUrl || typeof importMetaUrl !== 'string') {
     // Fallback: return the workspace-plugin source directory
     // This works because all generators are in the same directory structure
-    return resolve(__dirname, ".")
+    return resolve(__dirname, '.');
   }
 
   try {
-    return dirname(fileURLToPath(importMetaUrl))
+    return dirname(fileURLToPath(importMetaUrl));
   } catch {
     // Fallback if fileURLToPath fails
-    return resolve(__dirname, ".")
+    return resolve(__dirname, '.');
   }
 }

@@ -18,9 +18,7 @@ import type { ContractTemplateOptions } from '../../../utils/shared/types';
  * - Detail projection (optimized for detail views)
  * - Documentation about JOIN-based implementation
  */
-export function generateProjectionsFile(
-  options: ContractTemplateOptions,
-): string {
+export function generateProjectionsFile(options: ContractTemplateOptions) {
   const builder = new TypeScriptBuilder();
   const { className, fileName, propertyName } = options;
   const domainName = propertyName;
@@ -72,7 +70,7 @@ function createFileHeader(
   className: string,
   domainName: string,
   fileName: string,
-): string {
+) {
   return `/**
  * ${className} Projections (CQRS Read Models)
  *
@@ -97,7 +95,7 @@ function createFileHeader(
 /**
  * Create List projection
  */
-function createListProjection(className: string, propertyName: string): string {
+function createListProjection(className: string, propertyName: string) {
   return `/**
  * ${className} List Projection
  *
@@ -136,10 +134,7 @@ export class ${className}ListProjection extends Schema.Class<${className}ListPro
 /**
  * Create Detail projection
  */
-function createDetailProjection(
-  className: string,
-  propertyName: string,
-): string {
+function createDetailProjection(className: string, propertyName: string) {
   return `/**
  * ${className} Detail Projection
  *
@@ -193,7 +188,7 @@ export class ${className}DetailProjection extends Schema.Class<${className}Detai
 /**
  * Create implementation notes
  */
-function createImplementationNotes(className: string): string {
+function createImplementationNotes(className: string) {
   return `/**
  * Implementation Guide for ${className} Projections
  *

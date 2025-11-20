@@ -36,7 +36,7 @@ export interface ComputeDependenciesOptions {
 /**
  * Get default directory for library type
  */
-function getLibraryDirectory(libraryType: LibraryType): string {
+function getLibraryDirectory(libraryType: LibraryType) {
   const directories: Record<LibraryType, string> = {
     contract: 'libs/contract',
     'data-access': 'libs/data-access',

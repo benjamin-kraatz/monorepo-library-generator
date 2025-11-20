@@ -12,16 +12,43 @@
  * Standard Effect.ts imports used across all libraries
  */
 export const EFFECT_CORE_IMPORTS = {
-  effect: ['Effect', 'Context', 'Layer', 'Data', 'Schema', 'Option', 'Either', 'Array'],
+  effect: [
+    'Effect',
+    'Context',
+    'Layer',
+    'Data',
+    'Schema',
+    'Option',
+    'Either',
+    'Array',
+  ],
 } as const;
 
 /**
  * Additional Effect.ts imports for specific use cases
  */
 export const EFFECT_EXTENDED_IMPORTS = {
-  concurrent: ['Effect', 'Context', 'Layer', 'Data', 'Schema', 'Ref', 'Queue', 'Fiber'],
+  concurrent: [
+    'Effect',
+    'Context',
+    'Layer',
+    'Data',
+    'Schema',
+    'Ref',
+    'Queue',
+    'Fiber',
+  ],
   reactive: ['Effect', 'Context', 'Layer', 'Data', 'Schema', 'Stream', 'Sink'],
-  testing: ['Effect', 'Context', 'Layer', 'Data', 'Schema', 'TestContext', 'it', 'expect'],
+  testing: [
+    'Effect',
+    'Context',
+    'Layer',
+    'Data',
+    'Schema',
+    'TestContext',
+    'it',
+    'expect',
+  ],
 } as const;
 
 /**
@@ -49,7 +76,7 @@ export function createFileHeader(options: {
   moduleName: string;
   since?: string;
   see?: string[];
-}): string {
+}) {
   const lines = [
     '/**',
     ` * ${options.title}`,
@@ -79,90 +106,112 @@ export function createFileHeader(options: {
  */
 export const LIBRARY_FILE_HEADERS = {
   contract: {
-    errors: (className: string) => createFileHeader({
-      title: `${className} Domain Errors`,
-      description: 'Defines all error types for domain operations using Data.TaggedError pattern.',
-      moduleName: `contract/${className.toLowerCase()}/errors`,
-      see: ['https://effect.website/docs/guides/error-management']
-    }),
-    entities: (className: string) => createFileHeader({
-      title: `${className} Domain Entities`,
-      description: 'Defines domain entities using Schema.Struct for type-safe data modeling.',
-      moduleName: `contract/${className.toLowerCase()}/entities`,
-      see: ['https://effect.website/docs/schema/introduction']
-    }),
-    ports: (className: string) => createFileHeader({
-      title: `${className} Repository Port`,
-      description: 'Defines repository interface using Context.Tag for dependency injection.',
-      moduleName: `contract/${className.toLowerCase()}/ports`,
-      see: ['https://effect.website/docs/guides/context-management']
-    }),
-    events: (className: string) => createFileHeader({
-      title: `${className} Domain Events`,
-      description: 'Defines domain events using Data.TaggedError pattern for event sourcing.',
-      moduleName: `contract/${className.toLowerCase()}/events`
-    }),
-    commands: (className: string) => createFileHeader({
-      title: `${className} CQRS Commands`,
-      description: 'Defines command schemas for write operations following CQRS pattern.',
-      moduleName: `contract/${className.toLowerCase()}/commands`,
-      see: ['https://effect.website/docs/schema/introduction']
-    }),
-    queries: (className: string) => createFileHeader({
-      title: `${className} CQRS Queries`,
-      description: 'Defines query schemas for read operations following CQRS pattern.',
-      moduleName: `contract/${className.toLowerCase()}/queries`
-    }),
-    projections: (className: string) => createFileHeader({
-      title: `${className} CQRS Projections`,
-      description: 'Defines projection schemas for materialized views.',
-      moduleName: `contract/${className.toLowerCase()}/projections`
-    }),
-    rpc: (className: string) => createFileHeader({
-      title: `${className} RPC Schema`,
-      description: 'Defines RPC endpoint schemas for remote procedure calls.',
-      moduleName: `contract/${className.toLowerCase()}/rpc`,
-      see: ['https://effect.website/docs/rpc/introduction']
-    }),
+    errors: (className: string) =>
+      createFileHeader({
+        title: `${className} Domain Errors`,
+        description:
+          'Defines all error types for domain operations using Data.TaggedError pattern.',
+        moduleName: `contract/${className.toLowerCase()}/errors`,
+        see: ['https://effect.website/docs/guides/error-management'],
+      }),
+    entities: (className: string) =>
+      createFileHeader({
+        title: `${className} Domain Entities`,
+        description:
+          'Defines domain entities using Schema.Struct for type-safe data modeling.',
+        moduleName: `contract/${className.toLowerCase()}/entities`,
+        see: ['https://effect.website/docs/schema/introduction'],
+      }),
+    ports: (className: string) =>
+      createFileHeader({
+        title: `${className} Repository Port`,
+        description:
+          'Defines repository interface using Context.Tag for dependency injection.',
+        moduleName: `contract/${className.toLowerCase()}/ports`,
+        see: ['https://effect.website/docs/guides/context-management'],
+      }),
+    events: (className: string) =>
+      createFileHeader({
+        title: `${className} Domain Events`,
+        description:
+          'Defines domain events using Data.TaggedError pattern for event sourcing.',
+        moduleName: `contract/${className.toLowerCase()}/events`,
+      }),
+    commands: (className: string) =>
+      createFileHeader({
+        title: `${className} CQRS Commands`,
+        description:
+          'Defines command schemas for write operations following CQRS pattern.',
+        moduleName: `contract/${className.toLowerCase()}/commands`,
+        see: ['https://effect.website/docs/schema/introduction'],
+      }),
+    queries: (className: string) =>
+      createFileHeader({
+        title: `${className} CQRS Queries`,
+        description:
+          'Defines query schemas for read operations following CQRS pattern.',
+        moduleName: `contract/${className.toLowerCase()}/queries`,
+      }),
+    projections: (className: string) =>
+      createFileHeader({
+        title: `${className} CQRS Projections`,
+        description: 'Defines projection schemas for materialized views.',
+        moduleName: `contract/${className.toLowerCase()}/projections`,
+      }),
+    rpc: (className: string) =>
+      createFileHeader({
+        title: `${className} RPC Schema`,
+        description: 'Defines RPC endpoint schemas for remote procedure calls.',
+        moduleName: `contract/${className.toLowerCase()}/rpc`,
+        see: ['https://effect.website/docs/rpc/introduction'],
+      }),
   },
   feature: {
-    service: (featureName: string) => createFileHeader({
-      title: `${featureName} Feature Service`,
-      description: 'Business logic orchestration service for the feature.',
-      moduleName: `feature/${featureName.toLowerCase()}/service`
-    }),
-    layers: (featureName: string) => createFileHeader({
-      title: `${featureName} Feature Layers`,
-      description: 'Service layer implementations and dependency wiring.',
-      moduleName: `feature/${featureName.toLowerCase()}/layers`
-    }),
-    handlers: (featureName: string) => createFileHeader({
-      title: `${featureName} RPC Handlers`,
-      description: 'RPC endpoint handler implementations.',
-      moduleName: `feature/${featureName.toLowerCase()}/handlers`
-    }),
+    service: (featureName: string) =>
+      createFileHeader({
+        title: `${featureName} Feature Service`,
+        description: 'Business logic orchestration service for the feature.',
+        moduleName: `feature/${featureName.toLowerCase()}/service`,
+      }),
+    layers: (featureName: string) =>
+      createFileHeader({
+        title: `${featureName} Feature Layers`,
+        description: 'Service layer implementations and dependency wiring.',
+        moduleName: `feature/${featureName.toLowerCase()}/layers`,
+      }),
+    handlers: (featureName: string) =>
+      createFileHeader({
+        title: `${featureName} RPC Handlers`,
+        description: 'RPC endpoint handler implementations.',
+        moduleName: `feature/${featureName.toLowerCase()}/handlers`,
+      }),
   },
   dataAccess: {
-    repository: (entityName: string) => createFileHeader({
-      title: `${entityName} Repository Implementation`,
-      description: 'Repository implementation using Kysely for type-safe database access.',
-      moduleName: `data-access/${entityName.toLowerCase()}/repository`,
-      see: ['https://kysely.dev/docs/intro']
-    }),
+    repository: (entityName: string) =>
+      createFileHeader({
+        title: `${entityName} Repository Implementation`,
+        description:
+          'Repository implementation using Kysely for type-safe database access.',
+        moduleName: `data-access/${entityName.toLowerCase()}/repository`,
+        see: ['https://kysely.dev/docs/intro'],
+      }),
   },
   infrastructure: {
-    service: (serviceName: string) => createFileHeader({
-      title: `${serviceName} Infrastructure Service`,
-      description: 'Cross-cutting infrastructure concern providing shared capabilities.',
-      moduleName: `infra/${serviceName.toLowerCase()}/service`
-    }),
+    service: (serviceName: string) =>
+      createFileHeader({
+        title: `${serviceName} Infrastructure Service`,
+        description:
+          'Cross-cutting infrastructure concern providing shared capabilities.',
+        moduleName: `infra/${serviceName.toLowerCase()}/service`,
+      }),
   },
   provider: {
-    service: (providerName: string) => createFileHeader({
-      title: `${providerName} Provider`,
-      description: 'External service adapter wrapping third-party SDK.',
-      moduleName: `provider/${providerName.toLowerCase()}/service`
-    }),
+    service: (providerName: string) =>
+      createFileHeader({
+        title: `${providerName} Provider`,
+        description: 'External service adapter wrapping third-party SDK.',
+        moduleName: `provider/${providerName.toLowerCase()}/service`,
+      }),
   },
 } as const;
 

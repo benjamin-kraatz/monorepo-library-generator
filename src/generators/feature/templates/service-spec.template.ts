@@ -6,17 +6,17 @@
  * @module monorepo-library-generator/feature/service-spec-template
  */
 
-import { TypeScriptBuilder } from "../../../utils/code-generation/typescript-builder.js"
-import type { FeatureTemplateOptions } from "../../../utils/shared/types.js"
+import { TypeScriptBuilder } from '../../../utils/code-generation/typescript-builder';
+import type { FeatureTemplateOptions } from '../../../utils/shared/types';
 
 /**
  * Generate server/service.spec.ts file for feature library
  *
  * Creates test suite using @effect/vitest for proper resource management.
  */
-export function generateServiceSpecFile(options: FeatureTemplateOptions): string {
-  const builder = new TypeScriptBuilder()
-  const { className, propertyName } = options
+export function generateServiceSpecFile(options: FeatureTemplateOptions) {
+  const builder = new TypeScriptBuilder();
+  const { className, propertyName } = options;
 
   // Add file header with testing pattern comparison
   builder.addFileHeader({
@@ -35,21 +35,21 @@ TESTING PATTERN COMPARISON:
    - Better error messages
    - Simpler syntax
 
-See: https://effect.website/docs/guides/testing/vitest`
-  })
+See: https://effect.website/docs/guides/testing/vitest`,
+  });
 
   // Add imports
   builder.addImports([
-    { from: "effect", imports: ["Effect", "Layer"] },
-    { from: "@effect/vitest", imports: ["describe", "expect"] },
-    { from: "@effect/vitest", imports: ["it"] },
-    { from: "./service", imports: [`${className}Service`] }
-  ])
-  builder.addBlankLine()
+    { from: 'effect', imports: ['Effect', 'Layer'] },
+    { from: '@effect/vitest', imports: ['describe', 'expect'] },
+    { from: '@effect/vitest', imports: ['it'] },
+    { from: './service', imports: [`${className}Service`] },
+  ]);
+  builder.addBlankLine();
 
   // Add test suite
-  builder.addRaw(`describe("${className}Service", () => {`)
-  builder.addBlankLine()
+  builder.addRaw(`describe("${className}Service", () => {`);
+  builder.addBlankLine();
 
   // Test with default layer
   builder.addRaw(`  // ==========================================================================
@@ -64,8 +64,8 @@ See: https://effect.website/docs/guides/testing/vitest`
       const service = yield* ${className}Service;
       yield* service.exampleOperation();
     }).pipe(Effect.provide(${className}Service.Test))
-  );`)
-  builder.addBlankLine()
+  );`);
+  builder.addBlankLine();
 
   // Test with mocked dependencies
   builder.addRaw(`  // ==========================================================================
@@ -94,8 +94,8 @@ See: https://effect.website/docs/guides/testing/vitest`
   //       })
   //     )
   //   )
-  // );`)
-  builder.addBlankLine()
+  // );`);
+  builder.addBlankLine();
 
   // Test with custom assertions
   builder.addRaw(`  // ==========================================================================
@@ -113,8 +113,8 @@ See: https://effect.website/docs/guides/testing/vitest`
       expect(service.exampleOperation).toBeDefined();
       expect(typeof service.exampleOperation).toBe("function");
     }).pipe(Effect.provide(${className}Service.Test))
-  );`)
-  builder.addBlankLine()
+  );`);
+  builder.addBlankLine();
 
   // Test with multiple services
   builder.addRaw(`  // ==========================================================================
@@ -140,8 +140,8 @@ See: https://effect.website/docs/guides/testing/vitest`
   //     Effect.provide(AuthService.Test),
   //     Effect.provide(UserRepositoryTest)
   //   )
-  // );`)
-  builder.addBlankLine()
+  // );`);
+  builder.addBlankLine();
 
   // Add TODO comments
   builder.addRaw(`  // TODO: Add more comprehensive tests for your service methods
@@ -149,8 +149,8 @@ See: https://effect.website/docs/guides/testing/vitest`
   // - Test different input scenarios
   // - Test service orchestration
   // - Test with mocked dependencies
-});`)
-  builder.addBlankLine()
+});`);
+  builder.addBlankLine();
 
-  return builder.toString()
+  return builder.toString();
 }

@@ -15,7 +15,7 @@ import type { DataAccessTemplateOptions } from '../../../utils/shared/types';
  *
  * Creates main entry point with all exports organized by category
  */
-export function generateIndexFile(options: DataAccessTemplateOptions): string {
+export function generateIndexFile(options: DataAccessTemplateOptions) {
   const builder = new TypeScriptBuilder();
   const { className, fileName, propertyName } = options;
   const domainName = propertyName;

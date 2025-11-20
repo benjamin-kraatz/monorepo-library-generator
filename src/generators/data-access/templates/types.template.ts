@@ -23,7 +23,7 @@ import type { DataAccessTemplateOptions } from '../../../utils/shared/types';
  * - Response types
  * - Helper type utilities
  */
-export function generateTypesFile(options: DataAccessTemplateOptions): string {
+export function generateTypesFile(options: DataAccessTemplateOptions) {
   const builder = new TypeScriptBuilder();
   const { className, fileName } = options;
 

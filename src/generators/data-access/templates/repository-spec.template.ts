@@ -17,9 +17,7 @@ import type { DataAccessTemplateOptions } from '../../../utils/shared/types';
  * - Mock setup examples
  * - Test structure with it.scoped
  */
-export function generateRepositorySpecFile(
-  options: DataAccessTemplateOptions,
-): string {
+export function generateRepositorySpecFile(options: DataAccessTemplateOptions) {
   const builder = new TypeScriptBuilder();
   const { className } = options;
 

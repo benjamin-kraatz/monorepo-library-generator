@@ -59,7 +59,7 @@ export interface NormalizedBaseOptions {
 /**
  * Get default directory for library type
  */
-function getDefaultDirectory(libraryType: LibraryType): string {
+function getDefaultDirectory(libraryType: LibraryType) {
   const directories: Record<LibraryType, string> = {
     contract: 'libs/contract',
     'data-access': 'libs/data-access',
@@ -74,7 +74,7 @@ function getDefaultDirectory(libraryType: LibraryType): string {
 /**
  * Convert kebab-case fileName to Title Case domain name
  */
-function createDomainName(fileName: string): string {
+function createDomainName(fileName: string) {
   return fileName
     .split('-')
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
@@ -88,7 +88,7 @@ function buildTags(
   libraryType: LibraryType,
   fileName: string,
   additionalTags?: Array<string>,
-): string {
+) {
   const baseTags = [`type:${libraryType}`, `scope:${fileName}`];
 
   if (additionalTags) {

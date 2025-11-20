@@ -14,7 +14,7 @@ import type { FeatureTemplateOptions } from '../../../utils/shared/types';
  *
  * Creates Jotai atoms for client-side state management.
  */
-export function generateAtomsFile(options: FeatureTemplateOptions): string {
+export function generateAtomsFile(options: FeatureTemplateOptions) {
   const builder = new TypeScriptBuilder();
   const { className, name, propertyName } = options;
 

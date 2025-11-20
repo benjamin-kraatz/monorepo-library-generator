@@ -14,9 +14,7 @@ import type { FeatureTemplateOptions } from '../../../utils/shared/types';
  *
  * Creates barrel export for client atoms.
  */
-export function generateAtomsIndexFile(
-  options: FeatureTemplateOptions,
-): string {
+export function generateAtomsIndexFile(options: FeatureTemplateOptions) {
   const builder = new TypeScriptBuilder();
   const { fileName } = options;
 

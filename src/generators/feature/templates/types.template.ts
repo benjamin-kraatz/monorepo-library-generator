@@ -14,7 +14,7 @@ import type { FeatureTemplateOptions } from '../../../utils/shared/types';
  *
  * Creates shared type definitions for the domain.
  */
-export function generateTypesFile(options: FeatureTemplateOptions): string {
+export function generateTypesFile(options: FeatureTemplateOptions) {
   const builder = new TypeScriptBuilder();
   const { className, name } = options;
 

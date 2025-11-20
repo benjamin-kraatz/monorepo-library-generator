@@ -24,7 +24,7 @@ import type { DataAccessTemplateOptions } from '../../../utils/shared/types';
  * - Error union types
  * - Type guards
  */
-export function generateErrorsFile(options: DataAccessTemplateOptions): string {
+export function generateErrorsFile(options: DataAccessTemplateOptions) {
   const builder = new TypeScriptBuilder();
   const { className, fileName } = options;
 

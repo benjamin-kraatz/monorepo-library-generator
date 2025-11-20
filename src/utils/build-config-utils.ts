@@ -23,6 +23,7 @@ export interface BuildConfigOptions {
   libraryType: LibraryType;
   includeClientServer?: boolean;
   additionalEntryPoints?: Array<string>;
+  buildMode?: 'nx' | 'effect';
 }
 
 /**
@@ -159,4 +160,31 @@ export function createStandardTargets(options: BuildConfigOptions) {
   targets.test = createTestTarget(options.projectRoot);
 
   return targets;
+}
+
+/**
+ * Generate Effect-style build scripts for package.json
+ *
+ * These scripts follow the Effect monorepo pattern:
+ * codegen → build-esm → build-annotate → build-cjs → pack
+ *
+ * @param options - Build configuration options
+ * @returns Scripts object for package.json
+ */
+export function createEffectScripts(options: BuildConfigOptions) {
+  return {
+    codegen: 'build-utils prepare-v2',
+    build:
+      'pnpm build-esm && pnpm build-annotate && pnpm build-cjs && build-utils pack-v2',
+    'build-esm': `tsc -b tsconfig.lib.json`,
+    'build-cjs':
+      'babel build/esm --plugins @babel/transform-export-namespace-from --plugins @babel/transform-modules-commonjs --out-dir build/cjs --source-maps',
+    'build-annotate':
+      'babel build/esm --plugins annotate-pure-calls --out-dir build/esm --source-maps',
+    check: 'tsc -b tsconfig.json',
+    test: 'vitest',
+    'test:ci': 'vitest run',
+    lint: 'eslint "**/{src,test}/**/*.{ts,mjs}"',
+    'lint-fix': 'pnpm lint --fix',
+  };
 }

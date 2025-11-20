@@ -20,7 +20,7 @@ import type { ContractTemplateOptions } from '../../../utils/shared/types';
  * - Helper factory methods
  * - Error union types
  */
-export function generateErrorsFile(options: ContractTemplateOptions): string {
+export function generateErrorsFile(options: ContractTemplateOptions) {
   const builder = new TypeScriptBuilder();
   const { className, fileName, propertyName } = options;
   const domainName = propertyName;
@@ -404,7 +404,7 @@ function createFileHeader(
   className: string,
   domainName: string,
   fileName: string,
-): string {
+) {
   return `/**
  * ${className} Domain Errors
  *

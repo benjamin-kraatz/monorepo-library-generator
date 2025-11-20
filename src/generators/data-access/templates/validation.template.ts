@@ -19,9 +19,7 @@ import type { DataAccessTemplateOptions } from '../../../utils/shared/types';
  * - Pagination validation
  * - Type guards
  */
-export function generateValidationFile(
-  options: DataAccessTemplateOptions,
-): string {
+export function generateValidationFile(options: DataAccessTemplateOptions) {
   const builder = new TypeScriptBuilder();
   const { className, fileName, propertyName: _propertyName } = options;
 
@@ -198,7 +196,7 @@ export function validate${className}Filter(
  * const id = validate${className}Id('550e8400-e29b-41d4-a716-446655440000');
  * \`\`\`
  */
-export function validate${className}Id(id: unknown): string {
+export function validate${className}Id(id: unknown) {
   // TODO: Implement ID format validation
   // Currently accepts any string - replace with actual validation
   if (typeof id !== 'string' || id.length === 0) {

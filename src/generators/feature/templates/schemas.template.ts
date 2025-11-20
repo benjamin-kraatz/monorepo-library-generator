@@ -6,44 +6,42 @@
  * @module monorepo-library-generator/feature/schemas-template
  */
 
-import { TypeScriptBuilder } from "../../../utils/code-generation/typescript-builder.js"
-import type { FeatureTemplateOptions } from "../../../utils/shared/types.js"
+import { TypeScriptBuilder } from '../../../utils/code-generation/typescript-builder';
+import type { FeatureTemplateOptions } from '../../../utils/shared/types';
 
 /**
  * Generate shared/schemas.ts file for feature library
  *
  * Creates shared schema definitions using Effect Schema.
  */
-export function generateSchemasFile(options: FeatureTemplateOptions): string {
-  const builder = new TypeScriptBuilder()
-  const { className } = options
+export function generateSchemasFile(options: FeatureTemplateOptions) {
+  const builder = new TypeScriptBuilder();
+  const { className } = options;
 
   // Add file header
   builder.addFileHeader({
     title: `${className} Schemas`,
-    description: "Shared schema definitions using Effect Schema."
-  })
+    description: 'Shared schema definitions using Effect Schema.',
+  });
 
   // Add imports
-  builder.addImports([
-    { from: "effect", imports: ["Schema"] }
-  ])
-  builder.addBlankLine()
+  builder.addImports([{ from: 'effect', imports: ['Schema'] }]);
+  builder.addBlankLine();
 
   // Add TODO comment
-  builder.addComment("TODO: Add domain schemas")
+  builder.addComment('TODO: Add domain schemas');
 
   // Add Config schema
   builder.addRaw(`export const ${className}ConfigSchema = Schema.Struct({
   // Add configuration schema fields
-});`)
-  builder.addBlankLine()
+});`);
+  builder.addBlankLine();
 
   // Add Result schema
   builder.addRaw(`export const ${className}ResultSchema = Schema.Struct({
   // Add result schema fields
-});`)
-  builder.addBlankLine()
+});`);
+  builder.addBlankLine();
 
-  return builder.toString()
+  return builder.toString();
 }

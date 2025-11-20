@@ -6,14 +6,14 @@
  */
 
 import type { Tree } from '@nx/devkit';
-import { createTree } from '@nx/devkit/testing';
+import { createTreeWithEmptyWorkspace } from '@nx/devkit/testing';
 import { generateLibraryFiles } from './library-generator-utils';
 
 describe('library-generator-utils', () => {
   let tree: Tree;
 
   beforeEach(() => {
-    tree = createTree();
+    tree = createTreeWithEmptyWorkspace();
   });
 
   describe('Entry Point Generation', () => {

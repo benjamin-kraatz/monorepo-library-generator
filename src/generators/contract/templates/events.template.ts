@@ -18,7 +18,7 @@ import type { ContractTemplateOptions } from '../../../utils/shared/types';
  * - Aggregate metadata for event sourcing
  * - CRUD domain events (Created, Updated, Deleted)
  */
-export function generateEventsFile(options: ContractTemplateOptions): string {
+export function generateEventsFile(options: ContractTemplateOptions) {
   const builder = new TypeScriptBuilder();
   const { className, fileName, propertyName } = options;
   const domainName = propertyName;
@@ -137,7 +137,7 @@ function createFileHeader(
   className: string,
   domainName: string,
   fileName: string,
-): string {
+) {
   return `/**
  * ${className} Domain Events
  *
@@ -162,7 +162,7 @@ function createFileHeader(
 /**
  * Create CreatedEvent class
  */
-function createCreatedEvent(className: string, propertyName: string): string {
+function createCreatedEvent(className: string, propertyName: string) {
   return `/**
  * Event emitted when a ${propertyName} is created
  */
@@ -204,7 +204,7 @@ export class ${className}CreatedEvent extends Schema.Class<${className}CreatedEv
 /**
  * Create UpdatedEvent class
  */
-function createUpdatedEvent(className: string, propertyName: string): string {
+function createUpdatedEvent(className: string, propertyName: string) {
   return `/**
  * Event emitted when a ${propertyName} is updated
  */
@@ -252,7 +252,7 @@ export class ${className}UpdatedEvent extends Schema.Class<${className}UpdatedEv
 /**
  * Create DeletedEvent class
  */
-function createDeletedEvent(className: string, propertyName: string): string {
+function createDeletedEvent(className: string, propertyName: string) {
   return `/**
  * Event emitted when a ${propertyName} is deleted
  */

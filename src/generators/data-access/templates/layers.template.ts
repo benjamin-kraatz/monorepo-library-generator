@@ -18,7 +18,7 @@ import type { DataAccessTemplateOptions } from '../../../utils/shared/types';
  * - Dev layer (with logging)
  * - Auto layer (environment-based selection)
  */
-export function generateLayersFile(options: DataAccessTemplateOptions): string {
+export function generateLayersFile(options: DataAccessTemplateOptions) {
   const builder = new TypeScriptBuilder();
   const { className, fileName, propertyName } = options;
   const domainName = propertyName;

@@ -19,7 +19,7 @@ import type { ContractTemplateOptions } from '../../../utils/shared/types';
  * - Filter and sort options
  * - Query union types
  */
-export function generateQueriesFile(options: ContractTemplateOptions): string {
+export function generateQueriesFile(options: ContractTemplateOptions) {
   const builder = new TypeScriptBuilder();
   const { className, fileName, propertyName } = options;
   const domainName = propertyName;
@@ -111,7 +111,7 @@ function createFileHeader(
   className: string,
   domainName: string,
   fileName: string,
-): string {
+) {
   return `/**
  * ${className} Queries (CQRS Read Operations)
  *
@@ -131,7 +131,7 @@ function createFileHeader(
 /**
  * Create Get query
  */
-function createGetQuery(className: string, propertyName: string): string {
+function createGetQuery(className: string, propertyName: string) {
   return `/**
  * Query to get a single ${className} by ID
  */
@@ -150,7 +150,7 @@ export class Get${className}Query extends Schema.Class<Get${className}Query>("Ge
 /**
  * Create List query
  */
-function createListQuery(className: string): string {
+function createListQuery(className: string) {
   return `/**
  * Query to list ${className}s with filters and pagination
  */
@@ -204,7 +204,7 @@ export class List${className}sQuery extends Schema.Class<List${className}sQuery>
 /**
  * Create Search query
  */
-function createSearchQuery(className: string): string {
+function createSearchQuery(className: string) {
   return `/**
  * Query to search ${className}s by text
  */
