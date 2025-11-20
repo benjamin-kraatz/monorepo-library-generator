@@ -1,15 +1,24 @@
-coverage/
-*.tsbuildinfo
+# Dependencies
 node_modules/
-.DS_Store
-tmp/
+
+# Build outputs
 dist/
 build/
-docs/
-scratchpad/*
-!scratchpad/tsconfig.json
+*.tsbuildinfo
+.tsbuildinfo/
+
+# Test artifacts
+coverage/
+libs/
+packages/
+
+# Development
 .direnv/
 .idea/
+.DS_Store
+tmp/
+
+# Environment files
 .env
 .env.local
 .env.development.local
