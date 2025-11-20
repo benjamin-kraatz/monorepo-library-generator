@@ -97,7 +97,7 @@ export default async function featureGenerator(
     projectName: options.projectName,
     projectRoot: options.projectRoot,
     offsetFromRoot: options.offsetFromRoot,
-    libraryType: 'feature',
+    libraryType: 'feature' as const,
     platform,
     description: options.description,
     tags: tags,

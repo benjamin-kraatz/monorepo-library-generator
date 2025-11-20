@@ -147,6 +147,9 @@ export function generateExportSections(
   for (let i = 0; i < sections.length; i++) {
     const section = sections[i];
 
+    // TypeScript strict array access requires this check
+    if (!section) continue;
+
     builder.addSectionComment(section.title);
     builder.addBlankLine();
 

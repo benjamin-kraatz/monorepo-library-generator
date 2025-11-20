@@ -825,6 +825,41 @@
     "type": "static"
   },
   {
+    "source": "npm:@effect/cli",
+    "target": "npm:@effect/platform",
+    "type": "static"
+  },
+  {
+    "source": "npm:@effect/cli",
+    "target": "npm:@effect/printer",
+    "type": "static"
+  },
+  {
+    "source": "npm:@effect/cli",
+    "target": "npm:@effect/printer-ansi",
+    "type": "static"
+  },
+  {
+    "source": "npm:@effect/cli",
+    "target": "npm:effect",
+    "type": "static"
+  },
+  {
+    "source": "npm:@effect/cli",
+    "target": "npm:ini",
+    "type": "static"
+  },
+  {
+    "source": "npm:@effect/cli",
+    "target": "npm:toml",
+    "type": "static"
+  },
+  {
+    "source": "npm:@effect/cli",
+    "target": "npm:yaml",
+    "type": "static"
+  },
+  {
     "source": "npm:@effect/cluster",
     "target": "npm:@effect/platform",
     "type": "static"
@@ -985,6 +1020,31 @@
     "type": "static"
   },
   {
+    "source": "npm:@effect/printer-ansi",
+    "target": "npm:@effect/printer",
+    "type": "static"
+  },
+  {
+    "source": "npm:@effect/printer-ansi",
+    "target": "npm:@effect/typeclass",
+    "type": "static"
+  },
+  {
+    "source": "npm:@effect/printer-ansi",
+    "target": "npm:effect",
+    "type": "static"
+  },
+  {
+    "source": "npm:@effect/printer",
+    "target": "npm:@effect/typeclass",
+    "type": "static"
+  },
+  {
+    "source": "npm:@effect/printer",
+    "target": "npm:effect",
+    "type": "static"
+  },
+  {
     "source": "npm:@effect/rpc",
     "target": "npm:@effect/platform",
     "type": "static"
@@ -1017,6 +1077,11 @@
   {
     "source": "npm:@effect/sql",
     "target": "npm:uuid",
+    "type": "static"
+  },
+  {
+    "source": "npm:@effect/typeclass",
+    "target": "npm:effect",
     "type": "static"
   },
   {

@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
-    "target": "es2022",
-    "lib": ["dom", "dom.iterable", "es2022"],
+    "target": "ES2022",
+    "lib": ["dom", "dom.iterable", "ES2022"],
     "allowJs": true,
     "checkJs": true,
     "strict": true,
@@ -26,7 +26,7 @@
     "preserveSymlinks": true,
     "skipLibCheck": true,
     "baseUrl": ".",
-    "plugins": [{ "name": "@effect/language-service" }],
-    "exclude": ["node_modules", "tmp"]
-  }
+    "plugins": [{ "name": "@effect/language-service" }]
+  },
+  "exclude": ["node_modules", "tmp"]
 }

@@ -64,9 +64,9 @@ function normalizeOptions(
   const platform = options.platform || 'node';
   // Only set includeClientServer when explicitly provided or when platform requires it
   // For universal platform, always generate both client and server
-  // For other platforms, use explicit option or undefined (let platform defaults apply)
+  // For other platforms, use explicit option or false (let platform defaults apply)
   const includeClientServer =
-    platform === 'universal' ? true : options.includeClientServer;
+    platform === 'universal' ? true : (options.includeClientServer ?? false);
 
   // Generate human-readable description
   const description =
@@ -108,6 +108,14 @@ function normalizeOptions(
 function addDomainFiles(tree: Tree, options: NormalizedProviderOptions) {
   const nameVariations = names(options.name);
 
+  // Map PlatformType to Platform for template options
+  const platformMapping = {
+    node: 'server' as const,
+    browser: 'client' as const,
+    edge: 'edge' as const,
+    universal: 'universal' as const,
+  };
+
   const templateOptions: ProviderTemplateOptions = {
     // Naming variants
     name: options.name,
@@ -128,7 +136,7 @@ function addDomainFiles(tree: Tree, options: NormalizedProviderOptions) {
 
     // Provider-specific
     externalService: options.externalService,
-    platforms: [options.platform],
+    platforms: [platformMapping[options.platform]],
   };
 
   const sourceLibPath = `${templateOptions.sourceRoot}/lib`;

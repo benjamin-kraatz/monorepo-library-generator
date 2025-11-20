@@ -4,6 +4,9 @@
     "types": ["node"],
     "tsBuildInfoFile": ".tsbuildinfo/build.tsbuildinfo",
     "outDir": "build/esm",
+    "noEmit": false,
+    "declaration": true,
+    "declarationMap": true,
     "declarationDir": "build/dts",
     "stripInternal": true
   }
