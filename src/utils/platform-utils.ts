@@ -201,7 +201,7 @@ export function computePlatformConfiguration(
   const { shouldGenerateClient, shouldGenerateServer } = determinePlatformExports({
     libraryType: defaults.libraryType,
     platform,
-    includeClientServer: input.includeClientServer
+    ...(input.includeClientServer !== undefined && { includeClientServer: input.includeClientServer })
   })
 
   // Client and server exports are generated together - both must be needed

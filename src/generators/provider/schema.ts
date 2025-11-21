@@ -18,12 +18,23 @@ export interface ProviderGeneratorSchema {
 /**
  * Normalized options with defaults applied and computed values
  */
-export interface NormalizedProviderOptions extends Required<Omit<ProviderGeneratorSchema, "tags" | "description">> {
+export interface NormalizedProviderOptions {
+  name: string
+  directory?: string
+  externalService: string
   description: string
+  platform: "node" | "browser" | "universal" | "edge"
+  includeClientServer: boolean
   projectName: string
   projectRoot: string
   projectClassName: string
   projectConstantName: string
   parsedTags: Array<string>
   offsetFromRoot: string
+  className: string
+  propertyName: string
+  fileName: string
+  constantName: string
+  sourceRoot: string
+  packageName: string
 }

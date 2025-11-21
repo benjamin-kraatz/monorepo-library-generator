@@ -43,9 +43,9 @@ export default async function infraGenerator(
   // Use shared platform configuration helper
   const platformConfig = computePlatformConfiguration(
     {
-      platform: schema.platform,
-      includeClientServer: schema.includeClientServer,
-      includeEdge: schema.includeEdge
+      ...(schema.platform !== undefined && { platform: schema.platform }),
+      ...(schema.includeClientServer !== undefined && { includeClientServer: schema.includeClientServer }),
+      ...(schema.includeEdge !== undefined && { includeEdge: schema.includeEdge })
     },
     {
       defaultPlatform: "node",

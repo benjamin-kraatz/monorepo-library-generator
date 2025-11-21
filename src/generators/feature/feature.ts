@@ -7,28 +7,14 @@
 
 import type { Tree } from "@nx/devkit"
 import { formatFiles } from "@nx/devkit"
+import { Effect } from "effect"
 import { parseTags } from "../../utils/generator-utils"
 import { generateLibraryFiles } from "../../utils/library-generator-utils"
 import { normalizeBaseOptions, type NormalizedBaseOptions } from "../../utils/normalization-utils"
 import { computePlatformConfiguration } from "../../utils/platform-utils"
-import type { FeatureTemplateOptions } from "../../utils/shared/types"
+import { createTreeAdapter } from "../../utils/tree-adapter"
+import { generateFeatureCore, type GeneratorResult } from "../core/feature-generator-core"
 import type { FeatureGeneratorSchema } from "./schema"
-import {
-  generateAtomsFile,
-  generateAtomsIndexFile,
-  generateErrorsFile,
-  generateHooksFile,
-  generateHooksIndexFile,
-  generateLayersFile,
-  generateMiddlewareFile,
-  generateRpcErrorsFile,
-  generateRpcFile,
-  generateRpcHandlersFile,
-  generateSchemasFile,
-  generateServiceFile,
-  generateServiceSpecFile,
-  generateTypesFile
-} from "./templates/index"
 
 /**
  * Normalized options with computed values
@@ -58,9 +44,9 @@ export default async function featureGenerator(
   // Use shared platform configuration helper
   const platformConfig = computePlatformConfiguration(
     {
-      platform: schema.platform,
-      includeClientServer,
-      includeEdge
+      ...(schema.platform !== undefined && { platform: schema.platform }),
+      ...(includeClientServer !== undefined && { includeClientServer }),
+      ...(includeEdge && { includeEdge })
     },
     {
       defaultPlatform: "universal",
@@ -94,116 +80,72 @@ export default async function featureGenerator(
 
   await generateLibraryFiles(tree, libraryOptions)
 
-  // 2. Generate domain-specific files using code-based templates
-  const templateOptions: FeatureTemplateOptions = {
-    // Naming variants
+  // 2. Generate domain-specific files using shared core
+  const adapter = createTreeAdapter(tree)
+  const coreOptions = {
     name: options.name,
     className: options.className,
     propertyName: options.propertyName,
     fileName: options.fileName,
     constantName: options.constantName,
-
-    // Library metadata
-    libraryType: "feature",
-    packageName: options.packageName,
     projectName: options.projectName,
     projectRoot: options.projectRoot,
     sourceRoot: options.sourceRoot,
-    offsetFromRoot: options.offsetFromRoot,
+    packageName: options.packageName,
     description: options.description,
-    tags,
-
-    // Feature flags
-    includeClient: shouldIncludeClientServer,
-    includeServer: true, // Server is always generated for features
-    includeRPC,
-    includeCQRS,
-    includeEdge: shouldIncludeEdge
+    tags: tags.join(","), // Convert array to comma-separated string for core
+    offsetFromRoot: options.offsetFromRoot,
+    platform,
+    ...(schema.scope !== undefined && { scope: schema.scope }),
+    ...(includeClientServer !== undefined && { includeClientServer }),
+    ...(includeRPC && { includeRPC }),
+    ...(includeCQRS && { includeCQRS }),
+    ...(includeEdge && { includeEdge })
   }
 
-  const sourceLibPath = `${options.sourceRoot}/lib`
-  const sharedPath = `${sourceLibPath}/shared`
-  const serverPath = `${sourceLibPath}/server`
-  const rpcPath = `${sourceLibPath}/rpc`
-  const clientPath = `${sourceLibPath}/client`
-  const edgePath = `${sourceLibPath}/edge`
-
-  // Always generate shared layer
-  tree.write(`${sharedPath}/errors.ts`, generateErrorsFile(templateOptions))
-  tree.write(`${sharedPath}/types.ts`, generateTypesFile(templateOptions))
-  tree.write(`${sharedPath}/schemas.ts`, generateSchemasFile(templateOptions))
-
-  // Generate server layer (always generated for features)
-  tree.write(`${serverPath}/service.ts`, generateServiceFile(templateOptions))
-  tree.write(`${serverPath}/layers.ts`, generateLayersFile(templateOptions))
-  tree.write(`${serverPath}/service.spec.ts`, generateServiceSpecFile(templateOptions))
-
-  // Create CQRS directory placeholders (conditional)
-  if (includeCQRS) {
-    tree.write(`${serverPath}/commands/.gitkeep`, "")
-    tree.write(`${serverPath}/queries/.gitkeep`, "")
-    tree.write(`${serverPath}/operations/.gitkeep`, "")
-    tree.write(`${serverPath}/projections/.gitkeep`, "")
-  }
-
-  // Generate RPC layer (conditional)
-  if (includeRPC) {
-    tree.write(`${rpcPath}/rpc.ts`, generateRpcFile(templateOptions))
-    tree.write(`${rpcPath}/handlers.ts`, generateRpcHandlersFile(templateOptions))
-    tree.write(`${rpcPath}/errors.ts`, generateRpcErrorsFile(templateOptions))
-  }
-
-  // Generate client layer (conditional - client and server are generated together)
-  if (shouldIncludeClientServer) {
-    tree.write(`${clientPath}/hooks/use-${options.fileName}.ts`, generateHooksFile(templateOptions))
-    tree.write(`${clientPath}/hooks/index.ts`, generateHooksIndexFile(templateOptions))
-    tree.write(`${clientPath}/atoms/${options.fileName}-atoms.ts`, generateAtomsFile(templateOptions))
-    tree.write(`${clientPath}/atoms/index.ts`, generateAtomsIndexFile(templateOptions))
-    tree.write(`${clientPath}/components/.gitkeep`, "")
-  }
-
-  // Generate edge layer (conditional)
-  if (shouldIncludeEdge) {
-    tree.write(`${edgePath}/middleware.ts`, generateMiddlewareFile(templateOptions))
-  }
+  // Use shared core via Effect
+  const result = await Effect.runPromise(
+    generateFeatureCore(adapter, coreOptions) as Effect.Effect<GeneratorResult, never>
+  )
 
   // 3. Format files
   await formatFiles(tree)
 
-  // 5. Return post-generation instructions
+  // 4. Return post-generation instructions
   return () => {
     console.log(`
-✅ Feature library created: ${options.packageName}
+✅ Feature library created: ${result.packageName}
 
-📁 Location: ${options.projectRoot}
-📦 Package: ${options.packageName}
+📁 Location: ${result.projectRoot}
+📦 Package: ${result.packageName}
+📂 Files generated: ${result.filesGenerated.length}
 
 🎯 Configuration:
    - Platform: ${platform}
    - Scope: ${schema.scope || schema.name}
-${shouldGenerateServer ? "   - ✅ Server exports generated" : "   - No server exports"}
-${shouldGenerateClient ? "   - ✅ Client exports generated" : "   - No client exports"}
+   - ✅ Server exports generated
+${shouldIncludeClientServer ? "   - ✅ Client exports generated" : "   - No client exports"}
 ${includeRPC ? "   - ✅ RPC router enabled" : "   - No RPC router"}
 ${includeCQRS ? "   - ✅ CQRS structure enabled" : "   - No CQRS structure"}
-${includeEdge ? "   - ✅ Edge runtime support enabled" : "   - No edge runtime support"}
+${shouldIncludeEdge ? "   - ✅ Edge runtime support enabled" : "   - No edge runtime support"}
 
 🎯 Next Steps:
 1. Customize service implementation (see TODO comments):
-   - ${options.sourceRoot}/lib/server/service.ts - Implement business logic
-   - ${options.sourceRoot}/lib/server/errors.ts  - Add domain-specific errors
-${includeRPC ? `   - ${options.sourceRoot}/lib/rpc/handlers.ts   - Implement RPC handlers\n` : ""}
-${includeClientServer ? `   - ${options.sourceRoot}/lib/client/hooks      - Add React hooks\n` : ""}
+   - ${result.sourceRoot}/lib/server/service.ts - Implement business logic
+   - ${result.sourceRoot}/lib/server/errors.ts  - Add domain-specific errors
+${includeRPC ? `   - ${result.sourceRoot}/lib/rpc/handlers.ts   - Implement RPC handlers\n` : ""}
+${shouldIncludeClientServer ? `   - ${result.sourceRoot}/lib/client/hooks      - Add React hooks\n` : ""}
 
 2. Build and test:
-   - pnpm exec nx build ${options.projectName} --batch
-   - pnpm exec nx test ${options.projectName}
+   - pnpm exec nx build ${result.projectName} --batch
+   - pnpm exec nx test ${result.projectName}
 
 3. Auto-sync TypeScript project references:
    - pnpm exec nx sync
 
 📚 Documentation:
    - See /libs/ARCHITECTURE.md for feature patterns
-   - See ${options.projectRoot}/README.md for usage examples
+   - See ${result.projectRoot}/README.md for usage examples
     `)
   }
 }

@@ -42,7 +42,7 @@ function normalizeOptions(
   // Use shared normalization (without additional tags, we'll build tags manually)
   const baseOptions = normalizeBaseOptions(tree, {
     name: options.name,
-    directory: options.directory,
+    ...(options.directory !== undefined && { directory: options.directory }),
     description: options.description ?? `${names(options.name).className} provider for ${options.externalService}`,
     libraryType: "provider"
   })
@@ -63,7 +63,6 @@ function normalizeOptions(
 
   return {
     ...baseOptions,
-    tags: parsedTags.join(","),
     externalService: options.externalService,
     platform,
     includeClientServer,
