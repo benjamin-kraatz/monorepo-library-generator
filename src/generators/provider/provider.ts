@@ -8,9 +8,9 @@
  */
 
 import type { Tree } from "@nx/devkit"
-import { formatFiles, installPackagesTask, names, offsetFromRoot } from "@nx/devkit"
-import { parseTags, validateLibraryDoesNotExist } from "../../utils/generator-utils"
+import { formatFiles, installPackagesTask, names } from "@nx/devkit"
 import { generateLibraryFiles, type LibraryGeneratorOptions } from "../../utils/library-generator-utils"
+import { normalizeBaseOptions } from "../../utils/normalization-utils"
 import type { ProviderTemplateOptions } from "../../utils/shared/types"
 import type { NormalizedProviderOptions, ProviderGeneratorSchema } from "./schema"
 import { generateErrorsFile } from "./templates/errors.template"
@@ -27,7 +27,7 @@ function normalizeOptions(
   tree: Tree,
   options: ProviderGeneratorSchema
 ): NormalizedProviderOptions {
-  // Validate required options
+  // Validate required fields
   if (!options.name || options.name.trim() === "") {
     throw new Error("Provider name is required")
   }
@@ -35,52 +35,41 @@ function normalizeOptions(
     throw new Error("External service name is required")
   }
 
-  const projectName = `provider-${names(options.name).fileName}`
-  const directory = options.directory || "libs/provider"
-  const projectRoot = `${directory}/${names(options.name).fileName}`
-
-  // Validate library doesn't already exist
-  validateLibraryDoesNotExist(tree, projectRoot, projectName)
-
-  const nameVariations = names(options.name)
-  const projectClassName = `${nameVariations.className}Service` // Changed from Provider to Service
-  const projectConstantName = `${nameVariations.constantName}_SERVICE`
-
   // Platform determination
   const platform = options.platform || "node"
-  // Only set includeClientServer when explicitly provided or when platform requires it
-  // For universal platform, always generate both client and server
-  // For other platforms, use explicit option or false (let platform defaults apply)
   const includeClientServer = platform === "universal" ? true : (options.includeClientServer ?? false)
 
-  // Generate human-readable description
-  const description = options.description ||
-    `${nameVariations.className} provider for ${options.externalService}`
+  // Use shared normalization (without additional tags, we'll build tags manually)
+  const baseOptions = normalizeBaseOptions(tree, {
+    name: options.name,
+    directory: options.directory,
+    description: options.description ?? `${names(options.name).className} provider for ${options.externalService}`,
+    libraryType: "provider"
+  })
 
-  // Create standardized tags following {type}-{scope}-{platform}-{service} pattern
+  // Provider-specific naming: use "Service" suffix instead of "Provider"
+  const projectClassName = `${baseOptions.className}Service`
+  const projectConstantName = `${baseOptions.constantName}_SERVICE`
+
+  // Provider-specific tags: always use "scope:provider" instead of "scope:${fileName}"
+  const serviceTag = `service:${names(options.externalService).fileName}`
   const defaultTags = [
     "type:provider",
-    "scope:provider", // Provider scope for external service adapters
+    "scope:provider", // Providers always use "provider" scope
     `platform:${platform}`,
-    `service:${names(options.externalService).fileName}`
+    serviceTag
   ]
-  const parsedTags = parseTags(options.tags, defaultTags)
+  const parsedTags = options.tags ? [...defaultTags, ...options.tags.split(",").map((t) => t.trim())] : defaultTags
 
   return {
-    name: options.name,
-    directory,
+    ...baseOptions,
+    tags: parsedTags.join(","),
     externalService: options.externalService,
-    description,
     platform,
     includeClientServer,
-
-    // Computed values
-    projectName,
-    projectRoot,
     projectClassName,
     projectConstantName,
-    parsedTags,
-    offsetFromRoot: offsetFromRoot(projectRoot)
+    parsedTags
   }
 }
 

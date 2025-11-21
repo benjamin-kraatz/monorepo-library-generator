@@ -168,7 +168,7 @@
       },
       {
         "file": "src/generators/contract/config.ts",
-        "hash": "7987743701880184430"
+        "hash": "10688930376050154196"
       },
       {
         "file": "src/generators/contract/contract.spec.ts",
@@ -300,7 +300,7 @@
       },
       {
         "file": "src/generators/feature/feature.ts",
-        "hash": "7337501463177702961"
+        "hash": "3113962253188319929"
       },
       {
         "file": "src/generators/feature/schema.d.ts",
@@ -380,7 +380,7 @@
       },
       {
         "file": "src/generators/infra/infra.ts",
-        "hash": "1944778447493024110"
+        "hash": "13813368510088472507"
       },
       {
         "file": "src/generators/infra/schema.d.ts",
@@ -452,7 +452,7 @@
       },
       {
         "file": "src/generators/provider/provider.ts",
-        "hash": "2546246178038793195"
+        "hash": "12114302470572611088"
       },
       {
         "file": "src/generators/provider/schema.json",
@@ -564,7 +564,7 @@
       },
       {
         "file": "src/utils/platform-utils.ts",
-        "hash": "7030640654239002115"
+        "hash": "7315130300981131233"
       },
       {
         "file": "src/utils/shared/base-config.ts",

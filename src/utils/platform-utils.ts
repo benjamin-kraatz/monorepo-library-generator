@@ -129,3 +129,90 @@ export function determinePlatformExports(
 export function supportsPlatformExports(libraryType: LibraryType): boolean {
   return libraryType !== "data-access" && libraryType !== "contract"
 }
+
+/**
+ * Options for computing platform configuration
+ */
+export interface PlatformConfigurationInput {
+  readonly platform?: PlatformType
+  readonly includeClientServer?: boolean
+  readonly includeEdge?: boolean
+}
+
+/**
+ * Complete platform configuration for a generator
+ */
+export interface PlatformConfiguration {
+  readonly platform: PlatformType
+  readonly includeClientServer: boolean
+  readonly includeEdge: boolean
+}
+
+/**
+ * Compute complete platform configuration for a generator
+ *
+ * Consolidates all platform-related logic including:
+ * - Platform defaulting
+ * - Client/server export determination
+ * - Edge export handling
+ *
+ * This is the primary helper used by generators to avoid duplicating platform logic.
+ *
+ * @param input - Platform configuration input from schema
+ * @param defaults - Default values for this generator
+ * @returns Complete platform configuration with all flags computed
+ *
+ * @example
+ * ```typescript
+ * // Feature generator with defaults
+ * const config = computePlatformConfiguration(
+ *   { platform: 'universal', includeRPC: true },
+ *   { defaultPlatform: 'universal', libraryType: 'feature' }
+ * );
+ * // => { platform: 'universal', shouldGenerateServer: true, shouldGenerateClient: true, shouldGenerateEdge: false }
+ *
+ * // Infra generator with client/server override
+ * const config = computePlatformConfiguration(
+ *   { includeClientServer: true },
+ *   { defaultPlatform: 'node', libraryType: 'infra' }
+ * );
+ * // => { platform: 'node', shouldGenerateServer: true, shouldGenerateClient: true, shouldGenerateEdge: false }
+ *
+ * // Provider with edge support
+ * const config = computePlatformConfiguration(
+ *   { platform: 'edge', includeEdge: true },
+ *   { defaultPlatform: 'node', libraryType: 'provider' }
+ * );
+ * // => { platform: 'edge', shouldGenerateServer: false, shouldGenerateClient: false, shouldGenerateEdge: true }
+ * ```
+ */
+export function computePlatformConfiguration(
+  input: PlatformConfigurationInput,
+  defaults: {
+    readonly defaultPlatform: PlatformType
+    readonly libraryType: LibraryType
+  }
+): PlatformConfiguration {
+  // Use provided platform or default
+  const platform = input.platform ?? defaults.defaultPlatform
+
+  // Determine if client/server exports should be generated
+  // Client and server are always generated together as a package
+  const { shouldGenerateClient, shouldGenerateServer } = determinePlatformExports({
+    libraryType: defaults.libraryType,
+    platform,
+    includeClientServer: input.includeClientServer
+  })
+
+  // Client and server exports are generated together - both must be needed
+  const includeClientServer = shouldGenerateClient && shouldGenerateServer
+
+  // Edge is explicitly opt-in
+  const includeEdge = input.includeEdge ?? false
+
+  return {
+    platform,
+    includeClientServer,
+    includeEdge
+  }
+}

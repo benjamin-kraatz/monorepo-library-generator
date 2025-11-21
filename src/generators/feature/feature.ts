@@ -7,8 +7,10 @@
 
 import type { Tree } from "@nx/devkit"
 import { formatFiles } from "@nx/devkit"
+import { parseTags } from "../../utils/generator-utils"
 import { generateLibraryFiles } from "../../utils/library-generator-utils"
 import { normalizeBaseOptions, type NormalizedBaseOptions } from "../../utils/normalization-utils"
+import { computePlatformConfiguration } from "../../utils/platform-utils"
 import type { FeatureTemplateOptions } from "../../utils/shared/types"
 import type { FeatureGeneratorSchema } from "./schema"
 import {
@@ -53,34 +55,27 @@ export default async function featureGenerator(
   const includeCQRS = schema.includeCQRS ?? false
   const includeEdge = schema.includeEdge ?? false
 
-  // CORRECTED: Platform is explicit from schema, with universal as default for features
-  // (Features can work in both server and browser contexts)
-  const platform = schema.platform || "universal"
+  // Use shared platform configuration helper
+  const platformConfig = computePlatformConfiguration(
+    {
+      platform: schema.platform,
+      includeClientServer,
+      includeEdge
+    },
+    {
+      defaultPlatform: "universal",
+      libraryType: "feature"
+    }
+  )
+  const { includeClientServer: shouldIncludeClientServer, includeEdge: shouldIncludeEdge, platform } = platformConfig
 
-  // CORRECTED: Entry point logic follows OR-based pattern from library-generator-utils.ts
-  const shouldGenerateServer = includeClientServer ||
-    platform === "node" ||
-    platform === "universal"
-
-  const shouldGenerateClient = includeClientServer ||
-    platform === "browser" ||
-    platform === "universal"
-
-  // Build tags with corrected scope logic
-  let tags = [
+  // Build tags using shared tag utility
+  const defaultTags = [
     "type:feature",
-    `scope:${schema.scope || schema.name}`
+    `scope:${schema.scope || schema.name}`,
+    `platform:${platform}`
   ]
-
-  // Add platform tag for all platforms
-  if (platform) {
-    tags.push(`platform:${platform}`)
-  }
-
-  // Add any additional user tags
-  if (schema.tags) {
-    tags = tags.concat(schema.tags.split(",").map((t) => t.trim()))
-  }
+  const tags = parseTags(schema.tags, defaultTags)
 
   // 1. Generate base library files using centralized utility
   const libraryOptions = {
@@ -119,11 +114,11 @@ export default async function featureGenerator(
     tags,
 
     // Feature flags
-    includeClient: shouldGenerateClient,
-    includeServer: shouldGenerateServer,
+    includeClient: shouldIncludeClientServer,
+    includeServer: true, // Server is always generated for features
     includeRPC,
     includeCQRS,
-    includeEdge
+    includeEdge: shouldIncludeEdge
   }
 
   const sourceLibPath = `${options.sourceRoot}/lib`
@@ -138,19 +133,17 @@ export default async function featureGenerator(
   tree.write(`${sharedPath}/types.ts`, generateTypesFile(templateOptions))
   tree.write(`${sharedPath}/schemas.ts`, generateSchemasFile(templateOptions))
 
-  // Generate server layer (conditional)
-  if (shouldGenerateServer) {
-    tree.write(`${serverPath}/service.ts`, generateServiceFile(templateOptions))
-    tree.write(`${serverPath}/layers.ts`, generateLayersFile(templateOptions))
-    tree.write(`${serverPath}/service.spec.ts`, generateServiceSpecFile(templateOptions))
+  // Generate server layer (always generated for features)
+  tree.write(`${serverPath}/service.ts`, generateServiceFile(templateOptions))
+  tree.write(`${serverPath}/layers.ts`, generateLayersFile(templateOptions))
+  tree.write(`${serverPath}/service.spec.ts`, generateServiceSpecFile(templateOptions))
 
-    // Create CQRS directory placeholders (conditional)
-    if (includeCQRS) {
-      tree.write(`${serverPath}/commands/.gitkeep`, "")
-      tree.write(`${serverPath}/queries/.gitkeep`, "")
-      tree.write(`${serverPath}/operations/.gitkeep`, "")
-      tree.write(`${serverPath}/projections/.gitkeep`, "")
-    }
+  // Create CQRS directory placeholders (conditional)
+  if (includeCQRS) {
+    tree.write(`${serverPath}/commands/.gitkeep`, "")
+    tree.write(`${serverPath}/queries/.gitkeep`, "")
+    tree.write(`${serverPath}/operations/.gitkeep`, "")
+    tree.write(`${serverPath}/projections/.gitkeep`, "")
   }
 
   // Generate RPC layer (conditional)
@@ -160,8 +153,8 @@ export default async function featureGenerator(
     tree.write(`${rpcPath}/errors.ts`, generateRpcErrorsFile(templateOptions))
   }
 
-  // Generate client layer (conditional)
-  if (shouldGenerateClient) {
+  // Generate client layer (conditional - client and server are generated together)
+  if (shouldIncludeClientServer) {
     tree.write(`${clientPath}/hooks/use-${options.fileName}.ts`, generateHooksFile(templateOptions))
     tree.write(`${clientPath}/hooks/index.ts`, generateHooksIndexFile(templateOptions))
     tree.write(`${clientPath}/atoms/${options.fileName}-atoms.ts`, generateAtomsFile(templateOptions))
@@ -170,7 +163,7 @@ export default async function featureGenerator(
   }
 
   // Generate edge layer (conditional)
-  if (includeEdge) {
+  if (shouldIncludeEdge) {
     tree.write(`${edgePath}/middleware.ts`, generateMiddlewareFile(templateOptions))
   }
 

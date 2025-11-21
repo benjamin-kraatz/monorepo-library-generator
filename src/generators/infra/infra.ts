@@ -7,8 +7,10 @@
 
 import type { Tree } from "@nx/devkit"
 import { formatFiles } from "@nx/devkit"
+import { parseTags } from "../../utils/generator-utils"
 import { generateLibraryFiles } from "../../utils/library-generator-utils"
 import { normalizeBaseOptions, type NormalizedBaseOptions } from "../../utils/normalization-utils"
+import { computePlatformConfiguration } from "../../utils/platform-utils"
 import type { InfraTemplateOptions } from "../../utils/shared/types"
 import type { InfraGeneratorSchema } from "./schema"
 import { generateClientLayersFile } from "./templates/client-layers.template"
@@ -38,8 +40,27 @@ export default async function infraGenerator(
 ) {
   const options = normalizeOptions(tree, schema)
 
-  const includeClientServer = schema.includeClientServer ?? false
-  const includeEdge = schema.includeEdge ?? false
+  // Use shared platform configuration helper
+  const platformConfig = computePlatformConfiguration(
+    {
+      platform: schema.platform,
+      includeClientServer: schema.includeClientServer,
+      includeEdge: schema.includeEdge
+    },
+    {
+      defaultPlatform: "node",
+      libraryType: "infra"
+    }
+  )
+  const { includeClientServer, includeEdge, platform } = platformConfig
+
+  // Build tags using shared tag utility
+  const defaultTags = [
+    "type:infra",
+    "scope:shared",
+    `platform:${platform}`
+  ]
+  const tags = parseTags(schema.tags, defaultTags)
 
   // 1. Generate base library files (project.json, package.json, tsconfig, etc.)
   const libraryOptions = {
@@ -48,9 +69,9 @@ export default async function infraGenerator(
     projectRoot: options.projectRoot,
     offsetFromRoot: options.offsetFromRoot,
     libraryType: "infra" as const,
-    platform: includeClientServer ? ("universal" as const) : ("node" as const),
+    platform,
     description: options.description,
-    tags: ["type:infra", "scope:shared", `platform:${includeClientServer ? "universal" : "node"}`],
+    tags,
     includeClientServer,
     includeEdgeExports: includeEdge
   }
@@ -97,7 +118,7 @@ export default async function infraGenerator(
   // Generate server layers (always)
   tree.write(`${layersLibPath}/server-layers.ts`, generateServerLayersFile(templateOptions))
 
-  // Generate client files (conditional)
+  // Generate client files (conditional - client and server are generated together)
   if (includeClientServer) {
     const clientLayersContent = generateClientLayersFile(templateOptions)
     if (clientLayersContent) {
