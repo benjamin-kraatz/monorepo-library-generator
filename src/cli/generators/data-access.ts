@@ -5,7 +5,6 @@
  * Uses Effect FileSystem via EffectFsAdapter.
  */
 
-import { FileSystem, Path } from "@effect/platform"
 import { Console, Effect } from "effect"
 import { generateDataAccessCore, type GeneratorResult } from "../../generators/core/data-access-generator-core"
 import { createEffectFsAdapter } from "../../utils/effect-fs-adapter"

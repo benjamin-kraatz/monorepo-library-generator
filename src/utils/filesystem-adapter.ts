@@ -10,15 +10,8 @@
  * @module monorepo-library-generator/filesystem-adapter
  */
 
+import { Context, Data } from "effect"
 import type { Effect } from "effect"
-import { Data } from "effect"
-
-/**
- * File System Service Tag
- *
- * Context.Tag for dependency injection of FileSystemAdapter
- */
-import { Context } from "effect"
 
 /**
  * File System Errors

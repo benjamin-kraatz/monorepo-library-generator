@@ -31,9 +31,7 @@ import {
 /**
  * Normalized options with computed values
  */
-interface NormalizedFeatureOptions extends NormalizedBaseOptions {
-  // Feature generators have no additional specific fields beyond base
-}
+type NormalizedFeatureOptions = NormalizedBaseOptions
 
 /**
  * Main generator function
@@ -81,7 +79,7 @@ export default async function featureGenerator(
 
   // Add any additional user tags
   if (schema.tags) {
-    tags.push(...schema.tags.split(",").map((t) => t.trim()))
+    tags = tags.concat(schema.tags.split(",").map((t) => t.trim()))
   }
 
   // 1. Generate base library files using centralized utility

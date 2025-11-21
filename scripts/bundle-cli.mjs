@@ -7,8 +7,10 @@
  */
 
 import * as esbuild from "esbuild"
-import { chmodSync } from "fs"
-import { join } from "path"
+import console from "node:console"
+import { chmodSync } from "node:fs"
+import { join } from "node:path"
+import process from "node:process"
 
 const distDir = join(process.cwd(), "dist")
 

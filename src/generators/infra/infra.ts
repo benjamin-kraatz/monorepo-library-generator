@@ -27,9 +27,7 @@ import { generateUseHookFile } from "./templates/use-hook.template"
 /**
  * Normalized options with computed values
  */
-interface NormalizedInfraOptions extends NormalizedBaseOptions {
-  // Infra generators have no additional specific fields beyond base
-}
+type NormalizedInfraOptions = NormalizedBaseOptions
 
 /**
  * Main generator function

@@ -1,6 +1,6 @@
 import { readProjectConfiguration } from "@nx/devkit"
-import { createTreeWithEmptyWorkspace } from "@nx/devkit/testing"
 import type { Tree } from "@nx/devkit"
+import { createTreeWithEmptyWorkspace } from "@nx/devkit/testing"
 
 import infraGenerator from "./infra"
 

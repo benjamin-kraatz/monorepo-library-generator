@@ -7,7 +7,6 @@
  * @module monorepo-library-generator/cli/generators/contract
  */
 
-import { FileSystem, Path } from "@effect/platform"
 import { Console, Effect } from "effect"
 import { generateContractCore, type GeneratorResult } from "../../generators/core/contract-generator-core"
 import { createEffectFsAdapter } from "../../utils/effect-fs-adapter"

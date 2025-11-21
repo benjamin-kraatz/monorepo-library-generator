@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import console from "node:console"
 import {
   chmodSync,
   cpSync,
@@ -9,8 +10,9 @@ import {
   rmSync,
   statSync,
   writeFileSync
-} from "fs"
-import { join } from "path"
+} from "node:fs"
+import { join } from "node:path"
+import process from "node:process"
 
 const distDir = join(process.cwd(), "dist")
 
@@ -39,7 +41,7 @@ const packageJson = JSON.parse(readFileSync(distPackageJsonPath, "utf-8"))
 
 // Add generators field and update bin to use .mjs extension
 // pack-v3 already handles exports correctly, we just need to add Nx-specific fields
-const { bin, name, version, ...rest } = packageJson
+const { bin: _bin, name, version, ...rest } = packageJson
 const updatedPackageJson = {
   name,
   version,
@@ -138,7 +140,7 @@ console.log("\n📦 Bundling CLI...")
 const { execSync } = await import("child_process")
 try {
   execSync("node scripts/bundle-cli.mjs", { stdio: "inherit" })
-} catch (error) {
+} catch {
   console.error("❌ CLI bundling failed")
   process.exit(1)
 }
