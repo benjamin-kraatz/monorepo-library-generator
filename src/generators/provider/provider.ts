@@ -68,7 +68,6 @@ function normalizeOptions(
   }
 }
 
-
 /**
  * Main provider generator function
  *
