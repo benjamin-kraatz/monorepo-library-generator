@@ -6,23 +6,24 @@
  * @module monorepo-library-generator/infra-templates
  */
 
-import { generateStandardErrorExports } from '../../../utils/code-generation/barrel-export-utils';
-import { TypeScriptBuilder } from '../../../utils/code-generation/typescript-builder';
-import type { InfraTemplateOptions } from '../../../utils/shared/types';
+import { generateStandardErrorExports } from "../../../utils/code-generation/barrel-export-utils"
+import { TypeScriptBuilder } from "../../../utils/code-generation/typescript-builder"
+import type { InfraTemplateOptions } from "../../../utils/shared/types"
 
 /**
  * Generate server.ts file for infrastructure service
  */
 export function generateServerFile(options: InfraTemplateOptions) {
-  const builder = new TypeScriptBuilder();
-  const { className, fileName } = options;
+  const builder = new TypeScriptBuilder()
+  const { className, fileName } = options
 
   // File header
   builder.addFileHeader({
     title: `@custom-repo/infra-${fileName}/server`,
-    description: `Server-side exports for ${className} infrastructure service.\nContains service implementations, layers, and server-specific functionality.`,
-    module: `@custom-repo/infra-${fileName}/server`,
-  });
+    description:
+      `Server-side exports for ${className} infrastructure service.\nContains service implementations, layers, and server-specific functionality.`,
+    module: `@custom-repo/infra-${fileName}/server`
+  })
 
   builder.addRaw(`// Service layers (server-specific)
 export {
@@ -44,15 +45,15 @@ export {
 } from "./lib/providers/memory";
 
 // Errors
-`);
+`)
 
   builder.addRaw(
     generateStandardErrorExports({
       className,
-      importPath: './lib/service/errors',
-      unionTypeSuffix: 'ServiceError',
-    }),
-  );
+      importPath: "./lib/service/errors",
+      unionTypeSuffix: "ServiceError"
+    })
+  )
 
-  return builder.toString();
+  return builder.toString()
 }

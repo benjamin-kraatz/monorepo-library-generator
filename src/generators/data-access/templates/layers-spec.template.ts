@@ -6,8 +6,8 @@
  * @module monorepo-library-generator/data-access/layers-spec-template
  */
 
-import { TypeScriptBuilder } from '../../../utils/code-generation/typescript-builder';
-import type { DataAccessTemplateOptions } from '../../../utils/shared/types';
+import { TypeScriptBuilder } from "../../../utils/code-generation/typescript-builder"
+import type { DataAccessTemplateOptions } from "../../../utils/shared/types"
 
 /**
  * Generate layers.spec.ts file for data-access library
@@ -21,8 +21,8 @@ import type { DataAccessTemplateOptions } from '../../../utils/shared/types';
  * - Performance tests
  */
 export function generateLayersSpecFile(options: DataAccessTemplateOptions) {
-  const builder = new TypeScriptBuilder();
-  const { className, fileName } = options;
+  const builder = new TypeScriptBuilder()
+  const { className, fileName } = options
 
   // Add file header
   builder.addFileHeader({
@@ -38,28 +38,28 @@ TODO: Customize this file:
 5. Test caching layer if implemented
 
 @see https://effect.website/docs/guides/testing for Effect testing patterns`,
-    module: `@custom-repo/data-access-${fileName}/server`,
-  });
-  builder.addBlankLine();
+    module: `@custom-repo/data-access-${fileName}/server`
+  })
+  builder.addBlankLine()
 
   // Add imports
   builder.addImports([
     {
-      from: 'vitest',
-      imports: ['describe', 'it', 'expect', 'beforeEach', 'afterEach'],
+      from: "vitest",
+      imports: ["describe", "it", "expect", "beforeEach", "afterEach"]
     },
-    { from: 'effect', imports: ['Effect', 'Layer', 'Exit'] },
-  ]);
-  builder.addBlankLine();
+    { from: "effect", imports: ["Effect", "Layer", "Exit"] }
+  ])
+  builder.addBlankLine()
 
   builder.addRaw(`// TODO: Import your layers
 // import { ${className}RepositoryLive } from './repository';
-// import { ${className}QueryBuilderLive } from './queries';`);
-  builder.addBlankLine();
+// import { ${className}QueryBuilderLive } from './queries';`)
+  builder.addBlankLine()
 
   // Layer Composition Tests
-  builder.addSectionComment('Layer Composition Tests');
-  builder.addBlankLine();
+  builder.addSectionComment("Layer Composition Tests")
+  builder.addBlankLine()
 
   builder.addRaw(`describe('${className} Layers', () => {
   // TODO: Add layer composition tests
@@ -330,7 +330,7 @@ TODO: Customize this file:
     });
   });
 });
-`);
+`)
 
-  return builder.toString();
+  return builder.toString()
 }

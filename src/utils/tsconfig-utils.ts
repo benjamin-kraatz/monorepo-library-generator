@@ -9,29 +9,29 @@
  * - TypeScript incremental compilation support
  */
 
-import type { Tree } from '@nx/devkit';
-import { createProjectGraphAsync, readProjectConfiguration } from '@nx/devkit';
-import { join, relative } from 'path';
-import type { LibraryType, PlatformType } from './build-config-utils';
+import type { Tree } from "@nx/devkit"
+import { createProjectGraphAsync, readProjectConfiguration } from "@nx/devkit"
+import { join, relative } from "path"
+import type { LibraryType, PlatformType } from "./build-config-utils"
 
 export interface TsConfigOptions {
-  projectRoot: string;
-  projectName: string;
-  offsetFromRoot: string;
-  libraryType: LibraryType;
-  platform: PlatformType;
-  includeClientServer?: boolean;
-  includeEdgeExports?: boolean;
+  projectRoot: string
+  projectName: string
+  offsetFromRoot: string
+  libraryType: LibraryType
+  platform: PlatformType
+  includeClientServer?: boolean
+  includeEdgeExports?: boolean
 }
 
 interface ProjectReference {
-  path: string;
+  path: string
 }
 
 interface DependencyInfo {
-  projectName: string;
-  projectRoot: string;
-  relativeLibPath: string;
+  projectName: string
+  projectRoot: string
+  relativeLibPath: string
 }
 
 /**
@@ -45,72 +45,72 @@ interface DependencyInfo {
  */
 export async function computeProjectReferences(
   tree: Tree,
-  projectName: string,
+  projectName: string
 ): Promise<{
-  references: Array<ProjectReference>;
-  dependencies: Array<DependencyInfo>;
+  references: Array<ProjectReference>
+  dependencies: Array<DependencyInfo>
 }> {
   try {
-    const graph = await createProjectGraphAsync();
-    const project = graph.nodes[projectName];
+    const graph = await createProjectGraphAsync()
+    const project = graph.nodes[projectName]
 
     if (!project) {
-      console.warn(`Project ${projectName} not found in project graph`);
-      return { references: [], dependencies: [] };
+      console.warn(`Project ${projectName} not found in project graph`)
+      return { references: [], dependencies: [] }
     }
 
-    const projectConfig = readProjectConfiguration(tree, projectName);
-    const projectRoot = projectConfig.root;
+    const projectConfig = readProjectConfiguration(tree, projectName)
+    const projectRoot = projectConfig.root
 
     // Get all dependencies from the graph
-    const deps = graph.dependencies[projectName] || [];
+    const deps = graph.dependencies[projectName] || []
 
-    const dependencies: Array<DependencyInfo> = [];
-    const references: Array<ProjectReference> = [];
+    const dependencies: Array<DependencyInfo> = []
+    const references: Array<ProjectReference> = []
 
     for (const dep of deps) {
-      const targetNode = graph.nodes[dep.target];
+      const targetNode = graph.nodes[dep.target]
 
       // Skip external dependencies (npm packages)
-      if (!targetNode || dep.target.startsWith('npm:')) {
-        continue;
+      if (!targetNode || dep.target.startsWith("npm:")) {
+        continue
       }
 
       // Only include library dependencies (not apps)
       try {
-        const targetConfig = readProjectConfiguration(tree, dep.target);
-        if (targetConfig.projectType !== 'library') {
-          continue;
+        const targetConfig = readProjectConfiguration(tree, dep.target)
+        if (targetConfig.projectType !== "library") {
+          continue
         }
 
         // Check if the dependency's tsconfig.lib.json exists
-        const depTsConfigPath = join(targetConfig.root, 'tsconfig.lib.json');
+        const depTsConfigPath = join(targetConfig.root, "tsconfig.lib.json")
         if (!tree.exists(depTsConfigPath)) {
           console.warn(
-            `tsconfig.lib.json not found for ${dep.target} at ${depTsConfigPath}`,
-          );
-          continue;
+            `tsconfig.lib.json not found for ${dep.target} at ${depTsConfigPath}`
+          )
+          continue
         }
 
         // Compute relative path from current project to dependency's tsconfig.lib.json
-        const relativePath = relative(projectRoot, depTsConfigPath);
+        const relativePath = relative(projectRoot, depTsConfigPath)
 
         dependencies.push({
           projectName: dep.target,
           projectRoot: targetConfig.root,
-          relativeLibPath: relativePath,
-        });
+          relativeLibPath: relativePath
+        })
 
         references.push({
-          path: relativePath,
-        });
+          path: relativePath
+        })
       } catch (error) {
         // Skip dependencies that don't exist in the workspace (e.g., in test environments)
-        const message = error instanceof Error ? error.message : String(error);
+        const message = error instanceof Error ? error.message : String(error)
         console.warn(
-          `Could not read configuration for ${dep.target}: ${message}. Skipping project reference.`,
-        );
-        continue;
+          `Could not read configuration for ${dep.target}: ${message}. Skipping project reference.`
+        )
+        continue
       }
     }
 
@@ -118,23 +118,25 @@ export async function computeProjectReferences(
     const circularDeps = detectCircularReferences(
       graph,
       projectName,
-      new Set(),
-    );
+      new Set()
+    )
     if (circularDeps.length > 0) {
       throw new Error(
-        `Circular dependency detected in ${projectName}: ${circularDeps.join(
-          ' -> ',
-        )}`,
-      );
+        `Circular dependency detected in ${projectName}: ${
+          circularDeps.join(
+            " -> "
+          )
+        }`
+      )
     }
 
-    return { references, dependencies };
+    return { references, dependencies }
   } catch (error) {
     console.error(
       `Error computing project references for ${projectName}:`,
-      error,
-    );
-    return { references: [], dependencies: [] };
+      error
+    )
+    return { references: [], dependencies: [] }
   }
 }
 
@@ -146,39 +148,39 @@ function detectCircularReferences(
   graph: any,
   projectName: string,
   visited: Set<string>,
-  path: Array<string> = [],
+  path: Array<string> = []
 ): Array<string> {
   if (visited.has(projectName)) {
     // Found a cycle - return the path
-    const cycleStart = path.indexOf(projectName);
+    const cycleStart = path.indexOf(projectName)
     if (cycleStart !== -1) {
-      return [...path.slice(cycleStart), projectName];
+      return [...path.slice(cycleStart), projectName]
     }
-    return [];
+    return []
   }
 
-  visited.add(projectName);
-  path.push(projectName);
+  visited.add(projectName)
+  path.push(projectName)
 
-  const deps = graph.dependencies[projectName] || [];
+  const deps = graph.dependencies[projectName] || []
   for (const dep of deps) {
     // Skip external dependencies
-    if (!graph.nodes[dep.target] || dep.target.startsWith('npm:')) {
-      continue;
+    if (!graph.nodes[dep.target] || dep.target.startsWith("npm:")) {
+      continue
     }
 
     const cycle = detectCircularReferences(
       graph,
       dep.target,
       new Set(visited),
-      [...path],
-    );
+      [...path]
+    )
     if (cycle.length > 0) {
-      return cycle;
+      return cycle
     }
   }
 
-  return [];
+  return []
 }
 
 /**
@@ -191,27 +193,27 @@ function detectCircularReferences(
  * - References tsconfig.lib.json (NOT tsconfig.spec.json)
  */
 export function generateBaseTsConfig(options: TsConfigOptions) {
-  const { offsetFromRoot } = options;
+  const { offsetFromRoot } = options
 
   return {
     extends: `${offsetFromRoot}/tsconfig.base.json`,
     compilerOptions: {
-      module: 'esnext',
+      module: "esnext",
       forceConsistentCasingInFileNames: true,
       strict: true,
       noImplicitOverride: true,
       noPropertyAccessFromIndexSignature: true,
       noImplicitReturns: true,
-      noFallthroughCasesInSwitch: true,
+      noFallthroughCasesInSwitch: true
     },
     files: [],
-    include: ['src/**/*.ts'],
+    include: ["src/**/*.ts"],
     references: [
       {
-        path: './tsconfig.lib.json',
-      },
-    ],
-  };
+        path: "./tsconfig.lib.json"
+      }
+    ]
+  }
 }
 
 /**
@@ -226,13 +228,13 @@ export function generateBaseTsConfig(options: TsConfigOptions) {
  */
 export function generateLibTsConfig(
   options: TsConfigOptions,
-  references: Array<ProjectReference>,
+  references: Array<ProjectReference>
 ) {
-  const { libraryType, offsetFromRoot, platform, projectRoot } = options;
+  const { libraryType, offsetFromRoot, platform, projectRoot } = options
 
   // Platform-specific type definitions
   // Contract libraries are platform-agnostic and don't need platform types
-  const types = libraryType === 'contract' ? [] : getPlatformTypes(platform);
+  const types = libraryType === "contract" ? [] : getPlatformTypes(platform)
 
   // Contract libraries need typeRoots: [] to prevent auto-inclusion of all @types/* packages
   // TypeScript defaults to ["node_modules/@types"] which auto-includes packages like
@@ -245,22 +247,22 @@ export function generateLibTsConfig(
     tsBuildInfoFile: `${offsetFromRoot}dist/${projectRoot}/tsconfig.lib.tsbuildinfo`,
     noEmit: false,
     ...(types.length > 0 && { types }),
-    ...(libraryType === 'contract' && { typeRoots: [] }),
-  };
+    ...(libraryType === "contract" && { typeRoots: [] })
+  }
 
   return {
-    extends: './tsconfig.json',
+    extends: "./tsconfig.json",
     compilerOptions,
-    include: ['src/**/*.ts'],
+    include: ["src/**/*.ts"],
     exclude: [
-      'vitest.config.ts',
+      "vitest.config.ts",
 
-      'src/**/*.spec.ts',
-      'src/**/*.test.ts',
-      'src/**/__tests__/**/*',
+      "src/**/*.spec.ts",
+      "src/**/*.test.ts",
+      "src/**/__tests__/**/*"
     ],
-    ...(references.length > 0 && { references }),
-  };
+    ...(references.length > 0 && { references })
+  }
 }
 
 /**
@@ -273,25 +275,25 @@ export function generateLibTsConfig(
  * - Does NOT use composite mode (tests aren't referenced by other projects)
  */
 export function generateSpecTsConfig(options: TsConfigOptions) {
-  const { offsetFromRoot, platform, projectRoot } = options;
+  const { offsetFromRoot, platform, projectRoot } = options
 
-  const types = [...getPlatformTypes(platform), 'vitest'];
+  const types = [...getPlatformTypes(platform), "vitest"]
 
   return {
-    extends: './tsconfig.json',
+    extends: "./tsconfig.json",
     compilerOptions: {
       outDir: `${offsetFromRoot}dist/libs/${projectRoot}/src`,
       types,
-      target: 'es2022',
-      module: 'esnext',
+      target: "es2022",
+      module: "esnext"
     },
     include: [
-      'vitest.config.ts',
-      'src/**/*.test.ts',
-      'src/**/*.spec.ts',
-      'src/**/*.d.ts',
-    ],
-  };
+      "vitest.config.ts",
+      "src/**/*.test.ts",
+      "src/**/*.spec.ts",
+      "src/**/*.d.ts"
+    ]
+  }
 }
 
 /**
@@ -308,16 +310,16 @@ export function generateSpecTsConfig(options: TsConfigOptions) {
  */
 function getPlatformTypes(platform: PlatformType): Array<string> {
   switch (platform) {
-    case 'node':
-      return ['node'];
-    case 'browser':
-      return [];
-    case 'edge':
-      return [];
-    case 'universal':
-      return ['node'];
+    case "node":
+      return ["node"]
+    case "browser":
+      return []
+    case "edge":
+      return []
+    case "universal":
+      return ["node"]
     default:
-      return ['node'];
+      return ["node"]
   }
 }
 
@@ -326,28 +328,28 @@ function getPlatformTypes(platform: PlatformType): Array<string> {
  */
 export function getLibraryTypeOptions(libraryType: LibraryType) {
   switch (libraryType) {
-    case 'contract':
+    case "contract":
       // Pure type definitions, minimal runtime
       return {
-        noEmitOnError: true,
-      };
-    case 'data-access':
+        noEmitOnError: true
+      }
+    case "data-access":
       // Database and data layer
       return {
         strictNullChecks: true,
-        strictPropertyInitialization: true,
-      };
-    case 'feature':
+        strictPropertyInitialization: true
+      }
+    case "feature":
       // Business logic, may include React
-      return {};
-    case 'provider':
+      return {}
+    case "provider":
       // Provider service adapters
-      return {};
-    case 'infra':
+      return {}
+    case "infra":
       // Infrastructure services
-      return {};
+      return {}
     default:
-      return {};
+      return {}
   }
 }
 
@@ -358,36 +360,36 @@ export function getLibraryTypeOptions(libraryType: LibraryType) {
  * TypeScript configurations dynamically instead of using templates
  */
 export async function addTsConfigFiles(tree: Tree, options: TsConfigOptions) {
-  const { projectName, projectRoot } = options;
+  const { projectName, projectRoot } = options
 
   // Compute project references from Nx graph
   const { dependencies, references } = await computeProjectReferences(
     tree,
-    projectName,
-  );
+    projectName
+  )
 
   // Generate base tsconfig.json
-  const baseTsConfig = generateBaseTsConfig(options);
+  const baseTsConfig = generateBaseTsConfig(options)
   tree.write(
-    join(projectRoot, 'tsconfig.json'),
-    JSON.stringify(baseTsConfig, null, 2) + '\n',
-  );
+    join(projectRoot, "tsconfig.json"),
+    JSON.stringify(baseTsConfig, null, 2) + "\n"
+  )
 
   // Generate tsconfig.lib.json with project references
-  const libTsConfig = generateLibTsConfig(options, references);
+  const libTsConfig = generateLibTsConfig(options, references)
   tree.write(
-    join(projectRoot, 'tsconfig.lib.json'),
-    JSON.stringify(libTsConfig, null, 2) + '\n',
-  );
+    join(projectRoot, "tsconfig.lib.json"),
+    JSON.stringify(libTsConfig, null, 2) + "\n"
+  )
 
   // Generate tsconfig.spec.json
-  const specTsConfig = generateSpecTsConfig(options);
+  const specTsConfig = generateSpecTsConfig(options)
   tree.write(
-    join(projectRoot, 'tsconfig.spec.json'),
-    JSON.stringify(specTsConfig, null, 2) + '\n',
-  );
+    join(projectRoot, "tsconfig.spec.json"),
+    JSON.stringify(specTsConfig, null, 2) + "\n"
+  )
 
-  return { references, dependencies };
+  return { references, dependencies }
 }
 
 /**
@@ -395,8 +397,8 @@ export async function addTsConfigFiles(tree: Tree, options: TsConfigOptions) {
  * Used for computing relative paths in tsconfig
  */
 export function getOffsetFromRoot(projectRoot: string) {
-  const depth = projectRoot.split('/').length;
-  return depth === 1 ? './' : '../'.repeat(depth);
+  const depth = projectRoot.split("/").length
+  return depth === 1 ? "./" : "../".repeat(depth)
 }
 
 // ============================================================================

@@ -5,11 +5,12 @@
  * Uses Nx Tree API via TreeAdapter.
  */
 
-import { Tree, formatFiles, addProjectConfiguration } from "@nx/devkit";
-import { Effect } from "effect";
-import type { ContractGeneratorSchema } from "./schema";
-import { createTreeAdapter } from "../../utils/tree-adapter";
-import { generateContractCore, type GeneratorResult } from "../core/contract-generator-core";
+import type { Tree } from "@nx/devkit"
+import { addProjectConfiguration, formatFiles } from "@nx/devkit"
+import { Effect } from "effect"
+import { createTreeAdapter } from "../../utils/tree-adapter"
+import { generateContractCore, type GeneratorResult } from "../core/contract-generator-core"
+import type { ContractGeneratorSchema } from "./schema"
 
 /**
  * Contract generator for Nx workspaces
@@ -26,7 +27,7 @@ export default async function contractGenerator(
   schema: ContractGeneratorSchema
 ) {
   // 1. Create Tree adapter
-  const adapter = createTreeAdapter(tree);
+  const adapter = createTreeAdapter(tree)
 
   // 2. Map schema to core options
   const coreOptions: Parameters<typeof generateContractCore>[1] = {
@@ -36,75 +37,75 @@ export default async function contractGenerator(
     ...(schema.directory && { directory: schema.directory }),
     includeCQRS: schema.includeCQRS ?? false,
     includeRPC: schema.includeRPC ?? false,
-    workspaceRoot: tree.root,
-  };
+    workspaceRoot: tree.root
+  }
 
   // 3. Run core generator with Effect runtime
   const result: GeneratorResult = await Effect.runPromise(
     generateContractCore(adapter, coreOptions) as Effect.Effect<GeneratorResult, never>
-  );
+  )
 
   // Generate Nx-specific tsconfig files
   const tsconfigLib = {
-    extends: './tsconfig.json',
+    extends: "./tsconfig.json",
     compilerOptions: {
-      outDir: '../../dist/out-tsc',
+      outDir: "../../dist/out-tsc",
       declaration: true,
-      types: ['node'],
+      types: ["node"]
     },
-    include: ['src/**/*.ts'],
-    exclude: ['jest.config.ts', 'src/**/*.spec.ts', 'src/**/*.test.ts'],
-  };
+    include: ["src/**/*.ts"],
+    exclude: ["jest.config.ts", "src/**/*.spec.ts", "src/**/*.test.ts"]
+  }
 
   tree.write(
     `${result.projectRoot}/tsconfig.lib.json`,
     JSON.stringify(tsconfigLib, null, 2)
-  );
+  )
 
   const tsconfigSpec = {
-    extends: './tsconfig.json',
+    extends: "./tsconfig.json",
     compilerOptions: {
-      outDir: '../../dist/out-tsc',
-      types: ['vitest/globals', 'node'],
+      outDir: "../../dist/out-tsc",
+      types: ["vitest/globals", "node"]
     },
-    include: ['vite.config.ts', 'src/**/*.test.ts', 'src/**/*.spec.ts'],
-  };
+    include: ["vite.config.ts", "src/**/*.test.ts", "src/**/*.spec.ts"]
+  }
 
   tree.write(
     `${result.projectRoot}/tsconfig.spec.json`,
     JSON.stringify(tsconfigSpec, null, 2)
-  );
+  )
 
   // 4. Register project with Nx
   addProjectConfiguration(tree, result.projectName, {
     root: result.projectRoot,
-    projectType: 'library',
+    projectType: "library",
     sourceRoot: result.sourceRoot,
     targets: {
       build: {
-        executor: '@nx/js:tsc',
-        outputs: ['{options.outputPath}'],
+        executor: "@nx/js:tsc",
+        outputs: ["{options.outputPath}"],
         options: {
           outputPath: `dist/${result.projectRoot}`,
           tsConfig: `${result.projectRoot}/tsconfig.json`,
           packageJson: `${result.projectRoot}/package.json`,
-          main: `${result.projectRoot}/src/index.ts`,
-        },
+          main: `${result.projectRoot}/src/index.ts`
+        }
       },
       test: {
-        executor: '@nx/vite:test',
-        outputs: ['{options.reportsDirectory}'],
+        executor: "@nx/vite:test",
+        outputs: ["{options.reportsDirectory}"],
         options: {
           passWithNoTests: true,
-          reportsDirectory: `../../coverage/${result.projectRoot}`,
-        },
-      },
+          reportsDirectory: `../../coverage/${result.projectRoot}`
+        }
+      }
     },
-    tags: coreOptions.tags?.split(',').map(t => t.trim()).filter(Boolean) || [],
-  });
+    tags: coreOptions.tags?.split(",").map((t) => t.trim()).filter(Boolean) || []
+  })
 
   // 5. Nx-specific post-processing
-  await formatFiles(tree);
+  await formatFiles(tree)
 
   // 6. Return Nx callback for console output
   return () => {
@@ -135,8 +136,6 @@ Next steps:
 📚 Documentation:
    - See /libs/ARCHITECTURE.md for repository patterns
    - See ${result.projectRoot}/README.md for customization examples
-    `);
-  };
+    `)
+  }
 }
-
-

@@ -14,22 +14,22 @@
  * - Minimal source templates (lib/service.ts, lib/errors.ts, lib/layers.ts)
  */
 
-import type { ProjectConfiguration, Tree } from '@nx/devkit';
-import { addProjectConfiguration, names } from '@nx/devkit';
-import { join } from 'path';
+import type { ProjectConfiguration, Tree } from "@nx/devkit"
+import { addProjectConfiguration, names } from "@nx/devkit"
+import { join } from "path"
 import {
   type BuildConfigOptions,
-  createStandardTargets,
   createEffectScripts,
+  createStandardTargets,
   type LibraryType,
-  type PlatformType,
-} from './build-config-utils';
-import { determinePlatformExports } from './platform-utils';
-import { addTsConfigFiles, type TsConfigOptions } from './tsconfig-utils';
-import { detectWorkspace, getBuildMode } from './workspace-detection';
+  type PlatformType
+} from "./build-config-utils"
+import { determinePlatformExports } from "./platform-utils"
+import { addTsConfigFiles, type TsConfigOptions } from "./tsconfig-utils"
+import { detectWorkspace, getBuildMode } from "./workspace-detection"
 
 // __dirname is available in CommonJS mode (Node.js global)
-declare const __dirname: string;
+declare const __dirname: string
 
 /**
  * Library Structure Configuration
@@ -42,107 +42,107 @@ declare const __dirname: string;
  */
 const LIBRARY_STRUCTURES = {
   feature: {
-    types: './lib/shared/types',
-    errors: './lib/shared/errors',
-    service: './lib/server/service',
-    layers: './lib/server/layers',
-    rpc: './lib/rpc/handlers',
-    hooks: './lib/client/hooks',
-    atoms: './lib/client/atoms',
-    middleware: './lib/edge/middleware',
+    types: "./lib/shared/types",
+    errors: "./lib/shared/errors",
+    service: "./lib/server/service",
+    layers: "./lib/server/layers",
+    rpc: "./lib/rpc/handlers",
+    hooks: "./lib/client/hooks",
+    atoms: "./lib/client/atoms",
+    middleware: "./lib/edge/middleware"
   },
-  'data-access': {
-    types: './lib/domain',
-    errors: './lib/errors',
-    service: './lib/repositories',
-    layers: './lib/layers',
-    rpc: './lib/rpc',
+  "data-access": {
+    types: "./lib/domain",
+    errors: "./lib/errors",
+    service: "./lib/repositories",
+    layers: "./lib/layers",
+    rpc: "./lib/rpc"
   },
   infra: {
-    types: './lib/service/interface',
-    errors: './lib/service/errors',
-    service: './lib/service/service',
-    layers: './lib/layers',
+    types: "./lib/service/interface",
+    errors: "./lib/service/errors",
+    service: "./lib/service/service",
+    layers: "./lib/layers"
   },
   provider: {
-    types: './lib/types',
-    errors: './lib/errors',
-    service: './lib/service',
-    layers: './lib/layers',
+    types: "./lib/types",
+    errors: "./lib/errors",
+    service: "./lib/service",
+    layers: "./lib/layers"
   },
   contract: {
-    types: './lib/types',
-    errors: './lib/errors',
+    types: "./lib/types",
+    errors: "./lib/errors"
   },
   util: {
-    types: './lib/types',
-  },
-} as const;
+    types: "./lib/types"
+  }
+} as const
 
 /**
  * Complete options for library generation
  */
 export interface LibraryGeneratorOptions {
   // Identity
-  name: string;
-  projectName: string;
-  projectRoot: string;
-  offsetFromRoot: string;
+  name: string
+  projectName: string
+  projectRoot: string
+  offsetFromRoot: string
 
   // Classification
-  libraryType: LibraryType;
-  platform: PlatformType;
+  libraryType: LibraryType
+  platform: PlatformType
 
   // Metadata
-  description?: string;
-  tags: Array<string>;
+  description?: string
+  tags: Array<string>
 
   // Features
-  includeClientServer?: boolean;
-  includeEdgeExports?: boolean;
-  includeRPC?: boolean; // Enable RPC router and handlers
+  includeClientServer?: boolean
+  includeEdgeExports?: boolean
+  includeRPC?: boolean // Enable RPC router and handlers
 
   // Custom data for templates
-  templateData?: Record<string, unknown>;
+  templateData?: Record<string, unknown>
 }
 
 /**
  * Generated file manifest
  */
 export interface GeneratedLibraryFiles {
-  projectConfig?: ProjectConfiguration; // Optional - only in Nx mode
-  packageJson: PackageJsonConfiguration;
+  projectConfig?: ProjectConfiguration // Optional - only in Nx mode
+  packageJson: PackageJsonConfiguration
   tsConfigFiles: {
-    basePath: string;
-    libPath: string;
-    specPath?: string;
-  };
+    basePath: string
+    libPath: string
+    specPath?: string
+  }
   sourceFiles: {
-    index: string;
-    server?: string;
-    client?: string;
-    edge?: string;
-  };
+    index: string
+    server?: string
+    client?: string
+    edge?: string
+  }
   documentation?: {
-    readme?: string;
-    claude?: string;
-  };
+    readme?: string
+    claude?: string
+  }
 }
 
 /**
  * Package.json configuration structure
  */
 export interface PackageJsonConfiguration {
-  name: string;
-  version: string;
-  type: 'module';
-  exports: Record<string, { import?: string; types?: string }>;
-  scripts?: Record<string, string>;
-  peerDependencies?: Record<string, string>;
-  devDependencies?: Record<string, string>;
+  name: string
+  version: string
+  type: "module"
+  exports: Record<string, { import?: string; types?: string }>
+  scripts?: Record<string, string>
+  peerDependencies?: Record<string, string>
+  devDependencies?: Record<string, string>
   publishConfig?: {
-    access: string;
-  };
+    access: string
+  }
 }
 
 /**
@@ -152,10 +152,10 @@ function getStructurePath(
   structure:
     | (typeof LIBRARY_STRUCTURES)[keyof typeof LIBRARY_STRUCTURES]
     | undefined,
-  key: string,
+  key: string
 ): string | undefined {
-  if (!structure) return undefined;
-  return (structure as Record<string, string>)[key];
+  if (!structure) return undefined
+  return (structure as Record<string, string>)[key]
 }
 
 /**
@@ -170,17 +170,17 @@ function getStructurePath(
  * @returns Object with shouldGenerateServer and shouldGenerateClient flags
  */
 function shouldGeneratePlatformExports(options: LibraryGeneratorOptions): {
-  shouldGenerateServer: boolean;
-  shouldGenerateClient: boolean;
+  shouldGenerateServer: boolean
+  shouldGenerateClient: boolean
 } {
   // Use shared platform utilities for consistent logic
   return determinePlatformExports({
     libraryType: options.libraryType,
     platform: options.platform,
     ...(options.includeClientServer !== undefined && {
-      includeClientServer: options.includeClientServer,
-    }),
-  });
+      includeClientServer: options.includeClientServer
+    })
+  })
 }
 
 /**
@@ -200,32 +200,31 @@ function shouldGeneratePlatformExports(options: LibraryGeneratorOptions): {
  */
 export async function generateLibraryFiles(
   tree: Tree,
-  options: LibraryGeneratorOptions,
+  options: LibraryGeneratorOptions
 ): Promise<GeneratedLibraryFiles> {
   // Detect workspace mode
-  const context = detectWorkspace(tree);
-  const buildMode = getBuildMode(context);
+  const context = detectWorkspace(tree)
+  const buildMode = getBuildMode(context)
 
   // 1. Generate project.json (Nx mode only)
-  const projectConfig =
-    buildMode === 'nx'
-      ? generateProjectJson(tree, options, buildMode)
-      : undefined;
+  const projectConfig = buildMode === "nx"
+    ? generateProjectJson(tree, options, buildMode)
+    : undefined
 
   // 2. Generate TypeScript configurations
-  const tsConfigPaths = await generateTsConfig(tree, options);
+  const tsConfigPaths = await generateTsConfig(tree, options)
 
   // 3. Generate package.json with mode-specific configuration
-  const packageJson = generatePackageJson(tree, options, buildMode);
+  const packageJson = generatePackageJson(tree, options, buildMode)
 
   // 4. Generate source files
-  const sourceFiles = generateSourceFiles(tree, options);
+  const sourceFiles = generateSourceFiles(tree, options)
 
   // 5. Generate documentation
-  const documentation = generateDocumentation(tree, options);
+  const documentation = generateDocumentation(tree, options)
 
   // 6. Generate vitest config
-  generateVitestConfig(tree, options);
+  generateVitestConfig(tree, options)
 
   // 7. Path mappings are NOT needed - pnpm workspace handles imports via package.json exports
   // See NX_STANDARDS.md for why tsconfig paths must not be used with pnpm workspaces
@@ -235,8 +234,8 @@ export async function generateLibraryFiles(
     packageJson,
     tsConfigFiles: tsConfigPaths,
     sourceFiles,
-    documentation,
-  };
+    documentation
+  }
 }
 
 /**
@@ -245,27 +244,27 @@ export async function generateLibraryFiles(
 function generateProjectJson(
   tree: Tree,
   options: LibraryGeneratorOptions,
-  buildMode: 'nx' | 'effect',
+  buildMode: "nx" | "effect"
 ): ProjectConfiguration {
   const buildOptions: BuildConfigOptions = {
     projectRoot: options.projectRoot,
     platform: options.platform,
     libraryType: options.libraryType,
     includeClientServer: options.includeClientServer ?? false,
-    buildMode,
-  };
+    buildMode
+  }
 
   const config: ProjectConfiguration = {
     name: options.projectName,
     root: options.projectRoot,
-    projectType: 'library',
+    projectType: "library",
     sourceRoot: `${options.projectRoot}/src`,
     targets: createStandardTargets(buildOptions),
-    tags: options.tags,
-  };
+    tags: options.tags
+  }
 
-  addProjectConfiguration(tree, options.projectName, config);
-  return config;
+  addProjectConfiguration(tree, options.projectName, config)
+  return config
 }
 
 /**
@@ -274,7 +273,7 @@ function generateProjectJson(
  */
 async function generateTsConfig(
   tree: Tree,
-  options: LibraryGeneratorOptions,
+  options: LibraryGeneratorOptions
 ): Promise<{ basePath: string; libPath: string; specPath?: string }> {
   const tsConfigOptions: TsConfigOptions = {
     projectRoot: options.projectRoot,
@@ -283,16 +282,16 @@ async function generateTsConfig(
     libraryType: options.libraryType,
     platform: options.platform,
     includeClientServer: options.includeClientServer ?? false,
-    includeEdgeExports: options.includeEdgeExports ?? false,
-  };
+    includeEdgeExports: options.includeEdgeExports ?? false
+  }
 
-  await addTsConfigFiles(tree, tsConfigOptions);
+  await addTsConfigFiles(tree, tsConfigOptions)
 
   return {
-    basePath: join(options.projectRoot, 'tsconfig.json'),
-    libPath: join(options.projectRoot, 'tsconfig.lib.json'),
-    specPath: join(options.projectRoot, 'tsconfig.spec.json'),
-  };
+    basePath: join(options.projectRoot, "tsconfig.json"),
+    libPath: join(options.projectRoot, "tsconfig.lib.json"),
+    specPath: join(options.projectRoot, "tsconfig.spec.json")
+  }
 }
 
 /**
@@ -301,84 +300,82 @@ async function generateTsConfig(
 function generatePackageJson(
   tree: Tree,
   options: LibraryGeneratorOptions,
-  buildMode: 'nx' | 'effect',
+  buildMode: "nx" | "effect"
 ): PackageJsonConfiguration {
-  const scopedName = `@custom-repo/${options.projectName}`;
+  const scopedName = `@custom-repo/${options.projectName}`
 
   // Build exports map
   const exports: Record<string, { import?: string; types?: string }> = {
-    '.': {
+    ".": {
       import: `./src/index.ts`,
-      types: `./src/index.ts`,
-    },
-  };
+      types: `./src/index.ts`
+    }
+  }
 
-  const { shouldGenerateClient, shouldGenerateServer } =
-    shouldGeneratePlatformExports(options);
+  const { shouldGenerateClient, shouldGenerateServer } = shouldGeneratePlatformExports(options)
 
   if (shouldGenerateServer) {
-    exports['./server'] = {
+    exports["./server"] = {
       import: `./src/server.ts`,
-      types: `./src/server.ts`,
-    };
+      types: `./src/server.ts`
+    }
   }
 
   if (shouldGenerateClient) {
-    exports['./client'] = {
+    exports["./client"] = {
       import: `./src/client.ts`,
-      types: `./src/client.ts`,
-    };
+      types: `./src/client.ts`
+    }
   }
 
   if (options.includeEdgeExports) {
-    exports['./edge'] = {
+    exports["./edge"] = {
       import: `./src/edge.ts`,
-      types: `./src/edge.ts`,
-    };
+      types: `./src/edge.ts`
+    }
   }
 
   // Add @effect/vitest for Effect-based libraries
-  const needsEffectVitest = ['provider', 'infra', 'feature'].includes(
-    options.libraryType,
-  );
+  const needsEffectVitest = ["provider", "infra", "feature"].includes(
+    options.libraryType
+  )
   const devDependencies = needsEffectVitest
     ? {
-        '@effect/vitest': 'workspace:*',
-      }
-    : undefined;
+      "@effect/vitest": "workspace:*"
+    }
+    : undefined
 
   // Add Effect build scripts in Effect mode
-  const scripts =
-    buildMode === 'effect'
-      ? createEffectScripts({
-          projectRoot: options.projectRoot,
-          platform: options.platform,
-          libraryType: options.libraryType,
-          buildMode,
-        })
-      : undefined;
+  const scripts = buildMode === "effect"
+    ? createEffectScripts({
+      projectRoot: options.projectRoot,
+      platform: options.platform,
+      libraryType: options.libraryType,
+      buildMode
+    })
+    : undefined
 
   const packageJson: PackageJsonConfiguration = {
     name: scopedName,
-    version: '0.0.1',
-    type: 'module',
+    version: "0.0.1",
+    type: "module",
     exports,
     ...(scripts && { scripts }),
     peerDependencies: {
-      effect: '*',
+      effect: "*"
     },
     ...(devDependencies && { devDependencies }),
     publishConfig: {
-      access: 'public',
-    },
-  };
+      access: "public"
+    }
+  }
 
   tree.write(
-    join(options.projectRoot, 'package.json'),
-    JSON.stringify(packageJson, null, 2) + '\n',
-  );
+    join(options.projectRoot, "package.json"),
+    JSON.stringify(packageJson, null, 2) + "\n"
+  )
 
-  return packageJson;
+  return packageJson
 }
 
 /**
@@ -386,49 +383,48 @@ function generatePackageJson(
  */
 function generateSourceFiles(
   tree: Tree,
-  options: LibraryGeneratorOptions,
+  options: LibraryGeneratorOptions
 ): {
-  index: string;
-  server?: string;
-  client?: string;
-  edge?: string;
+  index: string
+  server?: string
+  client?: string
+  edge?: string
 } {
-  const nameVars = names(options.name);
+  const nameVars = names(options.name)
 
   // Generate index.ts
-  const indexContent = generateIndexTemplate(options, nameVars);
-  const indexPath = join(options.projectRoot, 'src', 'index.ts');
-  tree.write(indexPath, indexContent);
+  const indexContent = generateIndexTemplate(options, nameVars)
+  const indexPath = join(options.projectRoot, "src", "index.ts")
+  tree.write(indexPath, indexContent)
 
-  const sourceFiles: any = { index: indexPath };
+  const sourceFiles: any = { index: indexPath }
 
   // Generate server.ts and client.ts based on platform or includeClientServer flag
-  const { shouldGenerateClient, shouldGenerateServer } =
-    shouldGeneratePlatformExports(options);
+  const { shouldGenerateClient, shouldGenerateServer } = shouldGeneratePlatformExports(options)
 
   if (shouldGenerateServer) {
-    const serverContent = generateServerTemplate(options, nameVars);
-    const serverPath = join(options.projectRoot, 'src', 'server.ts');
-    tree.write(serverPath, serverContent);
-    sourceFiles.server = serverPath;
+    const serverContent = generateServerTemplate(options, nameVars)
+    const serverPath = join(options.projectRoot, "src", "server.ts")
+    tree.write(serverPath, serverContent)
+    sourceFiles.server = serverPath
   }
 
   if (shouldGenerateClient) {
-    const clientContent = generateClientTemplate(options, nameVars);
-    const clientPath = join(options.projectRoot, 'src', 'client.ts');
-    tree.write(clientPath, clientContent);
-    sourceFiles.client = clientPath;
+    const clientContent = generateClientTemplate(options, nameVars)
+    const clientPath = join(options.projectRoot, "src", "client.ts")
+    tree.write(clientPath, clientContent)
+    sourceFiles.client = clientPath
   }
 
   // Generate edge.ts if needed
   if (options.includeEdgeExports) {
-    const edgeContent = generateEdgeTemplate(options, nameVars);
-    const edgePath = join(options.projectRoot, 'src', 'edge.ts');
-    tree.write(edgePath, edgeContent);
-    sourceFiles.edge = edgePath;
+    const edgeContent = generateEdgeTemplate(options, nameVars)
+    const edgePath = join(options.projectRoot, "src", "edge.ts")
+    tree.write(edgePath, edgeContent)
+    sourceFiles.edge = edgePath
   }
 
-  return sourceFiles;
+  return sourceFiles
 }
 
 /**
@@ -445,25 +441,25 @@ function generateSourceFiles(
  */
 function generateIndexTemplate(
   options: LibraryGeneratorOptions,
-  nameVars: ReturnType<typeof names>,
+  nameVars: ReturnType<typeof names>
 ) {
-  const structure = LIBRARY_STRUCTURES[options.libraryType];
-  const typesPath = getStructurePath(structure, 'types') || './lib/types';
-  const errorsPath = getStructurePath(structure, 'errors') || './lib/errors';
+  const structure = LIBRARY_STRUCTURES[options.libraryType]
+  const typesPath = getStructurePath(structure, "types") || "./lib/types"
+  const errorsPath = getStructurePath(structure, "errors") || "./lib/errors"
 
   return `/**
  * ${nameVars.className} Library
  *
  * ${
-   options.description ||
-   `${nameVars.className} library for ${options.projectName}`
- }
+    options.description ||
+    `${nameVars.className} library for ${options.projectName}`
+  }
  */
 
 // Export public API
 export * from '${typesPath}';
 export * from '${errorsPath}';
-`;
+`
 }
 
 /**
@@ -477,11 +473,11 @@ export * from '${errorsPath}';
  */
 function generateServerTemplate(
   options: LibraryGeneratorOptions,
-  _nameVars: ReturnType<typeof names>,
+  _nameVars: ReturnType<typeof names>
 ) {
-  const structure = LIBRARY_STRUCTURES[options.libraryType];
-  const servicePath = getStructurePath(structure, 'service') || './lib/service';
-  const layersPath = getStructurePath(structure, 'layers') || './lib/layers';
+  const structure = LIBRARY_STRUCTURES[options.libraryType]
+  const servicePath = getStructurePath(structure, "service") || "./lib/service"
+  const layersPath = getStructurePath(structure, "layers") || "./lib/layers"
 
   let exports = `/**
  * Server-side exports
@@ -491,15 +487,15 @@ function generateServerTemplate(
 
 export * from '${servicePath}';
 export * from '${layersPath}';
-`;
+`
 
   // Feature libraries with RPC
-  const rpcPath = getStructurePath(structure, 'rpc');
-  if (options.libraryType === 'feature' && options.includeRPC && rpcPath) {
-    exports += `export * from '${rpcPath}';\n`;
+  const rpcPath = getStructurePath(structure, "rpc")
+  if (options.libraryType === "feature" && options.includeRPC && rpcPath) {
+    exports += `export * from '${rpcPath}';\n`
   }
 
-  return exports;
+  return exports
 }
 
 /**
@@ -512,11 +508,11 @@ export * from '${layersPath}';
  */
 function generateClientTemplate(
   options: LibraryGeneratorOptions,
-  _nameVars: ReturnType<typeof names>,
+  _nameVars: ReturnType<typeof names>
 ) {
-  const structure = LIBRARY_STRUCTURES[options.libraryType];
-  const typesPath = getStructurePath(structure, 'types') || './lib/types';
-  const errorsPath = getStructurePath(structure, 'errors') || './lib/errors';
+  const structure = LIBRARY_STRUCTURES[options.libraryType]
+  const typesPath = getStructurePath(structure, "types") || "./lib/types"
+  const errorsPath = getStructurePath(structure, "errors") || "./lib/errors"
 
   let exports = `/**
  * Client-side exports
@@ -528,23 +524,23 @@ function generateClientTemplate(
 // Export only types and client-safe utilities
 export type * from '${typesPath}';
 export type * from '${errorsPath}';
-`;
+`
 
   // Feature libraries export hooks and atoms
-  if (options.libraryType === 'feature' && options.includeClientServer) {
-    const hooksPath = getStructurePath(structure, 'hooks');
-    const atomsPath = getStructurePath(structure, 'atoms');
+  if (options.libraryType === "feature" && options.includeClientServer) {
+    const hooksPath = getStructurePath(structure, "hooks")
+    const atomsPath = getStructurePath(structure, "atoms")
 
     if (hooksPath) {
-      exports += `\n// Client-side implementation\n`;
-      exports += `export * from '${hooksPath}';\n`;
+      exports += `\n// Client-side implementation\n`
+      exports += `export * from '${hooksPath}';\n`
     }
     if (atomsPath) {
-      exports += `export * from '${atomsPath}';\n`;
+      exports += `export * from '${atomsPath}';\n`
     }
   }
 
-  return exports;
+  return exports
 }
 
 /**
@@ -557,16 +553,15 @@ export type * from '${errorsPath}';
  */
 function generateEdgeTemplate(
   options: LibraryGeneratorOptions,
-  _nameVars: ReturnType<typeof names>,
+  _nameVars: ReturnType<typeof names>
 ) {
-  const structure = LIBRARY_STRUCTURES[options.libraryType];
-  const middlewarePath = getStructurePath(structure, 'middleware');
-  const servicePath =
-    options.libraryType === 'feature' && middlewarePath
-      ? middlewarePath
-      : getStructurePath(structure, 'service') || './lib/service';
-  const typesPath = getStructurePath(structure, 'types') || './lib/types';
-  const errorsPath = getStructurePath(structure, 'errors') || './lib/errors';
+  const structure = LIBRARY_STRUCTURES[options.libraryType]
+  const middlewarePath = getStructurePath(structure, "middleware")
+  const servicePath = options.libraryType === "feature" && middlewarePath
+    ? middlewarePath
+    : getStructurePath(structure, "service") || "./lib/service"
+  const typesPath = getStructurePath(structure, "types") || "./lib/types"
+  const errorsPath = getStructurePath(structure, "errors") || "./lib/errors"
 
   return `/**
  * Edge runtime exports
@@ -577,7 +572,7 @@ function generateEdgeTemplate(
 export * from '${servicePath}';
 export * from '${typesPath}';
 export * from '${errorsPath}';
-`;
+`
 }
 
 /**
@@ -585,24 +580,24 @@ export * from '${errorsPath}';
  */
 function generateDocumentation(
   tree: Tree,
-  options: LibraryGeneratorOptions,
+  options: LibraryGeneratorOptions
 ): { readme: string; claude: string } {
-  const nameVars = names(options.name);
+  const nameVars = names(options.name)
 
   // Generate README.md
-  const readmeContent = generateReadmeTemplate(options, nameVars);
-  const readmePath = join(options.projectRoot, 'README.md');
-  tree.write(readmePath, readmeContent);
+  const readmeContent = generateReadmeTemplate(options, nameVars)
+  const readmePath = join(options.projectRoot, "README.md")
+  tree.write(readmePath, readmeContent)
 
   // Generate CLAUDE.md
-  const claudeContent = generateClaudeTemplate(options, nameVars);
-  const claudePath = join(options.projectRoot, 'CLAUDE.md');
-  tree.write(claudePath, claudeContent);
+  const claudeContent = generateClaudeTemplate(options, nameVars)
+  const claudePath = join(options.projectRoot, "CLAUDE.md")
+  tree.write(claudePath, claudeContent)
 
   return {
     readme: readmePath,
-    claude: claudePath,
-  };
+    claude: claudePath
+  }
 }
 
 /**
@@ -610,7 +605,7 @@ function generateDocumentation(
  */
 function generateReadmeTemplate(
   options: LibraryGeneratorOptions,
-  nameVars: ReturnType<typeof names>,
+  nameVars: ReturnType<typeof names>
 ) {
   return `# @custom-repo/${options.projectName}
 
@@ -644,7 +639,7 @@ pnpm exec nx lint ${options.projectName}
 ## License
 
 MIT
-`;
+`
 }
 
 /**
@@ -652,7 +647,7 @@ MIT
  */
 function generateClaudeTemplate(
   options: LibraryGeneratorOptions,
-  nameVars: ReturnType<typeof names>,
+  nameVars: ReturnType<typeof names>
 ) {
   return `# @custom-repo/${options.projectName}
 
@@ -671,23 +666,23 @@ function generateClaudeTemplate(
 import { ${nameVars.className} } from '@custom-repo/${options.projectName}';
 
 ${
-  options.libraryType !== 'data-access' &&
-  options.libraryType !== 'contract' &&
-  (options.includeClientServer ||
-    options.platform === 'node' ||
-    options.platform === 'universal')
-    ? `// Server exports\nimport { ${nameVars.className}Live } from '@custom-repo/${options.projectName}/server';\n`
-    : ''
-}
+    options.libraryType !== "data-access" &&
+      options.libraryType !== "contract" &&
+      (options.includeClientServer ||
+        options.platform === "node" ||
+        options.platform === "universal")
+      ? `// Server exports\nimport { ${nameVars.className}Live } from '@custom-repo/${options.projectName}/server';\n`
+      : ""
+  }
 ${
-  options.libraryType !== 'data-access' &&
-  options.libraryType !== 'contract' &&
-  (options.includeClientServer ||
-    options.platform === 'browser' ||
-    options.platform === 'universal')
-    ? `// Client exports\nimport type { ${nameVars.className}Type } from '@custom-repo/${options.projectName}/client';\n`
-    : ''
-}
+    options.libraryType !== "data-access" &&
+      options.libraryType !== "contract" &&
+      (options.includeClientServer ||
+        options.platform === "browser" ||
+        options.platform === "universal")
+      ? `// Client exports\nimport type { ${nameVars.className}Type } from '@custom-repo/${options.projectName}/client';\n`
+      : ""
+  }
 \`\`\`
 
 ## Architecture
@@ -745,9 +740,7 @@ This library uses **pnpm workspace packages** for imports, not TypeScript path a
 
 \`\`\`typescript
 // ✅ Correct: Import via package name
-import { ${nameVars.className}Service } from '@custom-repo/${
-    options.projectName
-  }/server';
+import { ${nameVars.className}Service } from '@custom-repo/${options.projectName}/server';
 
 // ❌ Wrong: Path aliases are NOT used
 // import { ${nameVars.className}Service } from 'libs/...';
@@ -760,7 +753,7 @@ import { ${nameVars.className}Service } from '@custom-repo/${
 4. No tsconfig.base.json paths needed
 
 **See also:** NX_STANDARDS.md for pnpm workspace conventions
-`;
+`
 }
 
 /**
@@ -768,17 +761,17 @@ import { ${nameVars.className}Service } from '@custom-repo/${
  */
 function generateVitestConfig(
   tree: Tree,
-  options: LibraryGeneratorOptions,
+  options: LibraryGeneratorOptions
 ): void {
   // Only include @effect/vitest setup for libraries that use Effect
   // Provider, infra, and feature libraries use Effect patterns
   // Util, contract, and types libraries typically don't
-  const needsEffectSetup = ['provider', 'infra', 'feature'].includes(
-    options.libraryType,
-  );
+  const needsEffectSetup = ["provider", "infra", "feature"].includes(
+    options.libraryType
+  )
   const setupFiles = needsEffectSetup
     ? `    setupFiles: ['@effect/vitest/setup'],\n`
-    : '';
+    : ""
 
   const content = `import { defineConfig } from 'vitest/config';
 import { nxViteTsPaths } from '@nx/vite/plugins/nx-tsconfig-paths.plugin';
@@ -799,7 +792,7 @@ ${setupFiles}    include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}
     },
   },
 });
-`;
+`
 
-  tree.write(join(options.projectRoot, 'vitest.config.ts'), content);
+  tree.write(join(options.projectRoot, "vitest.config.ts"), content)
 }

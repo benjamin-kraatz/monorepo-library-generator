@@ -7,7 +7,7 @@
  * @module monorepo-library-generator/barrel-export-utils
  */
 
-import type { TypeScriptBuilder } from '../template-utils';
+import type { TypeScriptBuilder } from "../template-utils"
 
 /**
  * Configuration for standard error exports
@@ -16,20 +16,20 @@ export interface StandardErrorExportConfig {
   /**
    * Class name prefix (e.g., "User" for UserError, UserNotFoundError, etc.)
    */
-  readonly className: string;
+  readonly className: string
 
   /**
    * Import path for error exports
    * @example "./lib/shared/errors.js"
    */
-  readonly importPath: string;
+  readonly importPath: string
 
   /**
    * Union type name suffix
    * @example "RepositoryError" or "ServiceError"
    * @default "ServiceError"
    */
-  readonly unionTypeSuffix?: string;
+  readonly unionTypeSuffix?: string
 }
 
 /**
@@ -57,9 +57,9 @@ export interface StandardErrorExportConfig {
  * ```
  */
 export function generateStandardErrorExports(
-  config: StandardErrorExportConfig,
+  config: StandardErrorExportConfig
 ) {
-  const { className, importPath, unionTypeSuffix = 'ServiceError' } = config;
+  const { className, importPath, unionTypeSuffix = "ServiceError" } = config
 
   const errorTypes = [
     `${className}Error`,
@@ -69,15 +69,15 @@ export function generateStandardErrorExports(
     `${className}ConfigError`,
     `${className}ConnectionError`,
     `${className}TimeoutError`,
-    `${className}InternalError`,
-  ];
+    `${className}InternalError`
+  ]
 
-  let output = `export {\n`;
-  output += errorTypes.map((e) => `  ${e},`).join('\n');
-  output += `\n} from "${importPath}";\n`;
-  output += `export type { ${className}${unionTypeSuffix} } from "${importPath}";`;
+  let output = `export {\n`
+  output += errorTypes.map((e) => `  ${e},`).join("\n")
+  output += `\n} from "${importPath}";\n`
+  output += `export type { ${className}${unionTypeSuffix} } from "${importPath}";`
 
-  return output;
+  return output
 }
 
 /**
@@ -87,13 +87,13 @@ export interface ExportSectionItem {
   /**
    * Optional comment above the export
    */
-  readonly comment?: string;
+  readonly comment?: string
 
   /**
    * The export statement
    * @example "export * from './lib/errors';"
    */
-  readonly exports: string;
+  readonly exports: string
 }
 
 /**
@@ -103,12 +103,12 @@ export interface ExportSection {
   /**
    * Section title for the section comment
    */
-  readonly title: string;
+  readonly title: string
 
   /**
    * Export items within this section
    */
-  readonly items: ReadonlyArray<ExportSectionItem>;
+  readonly items: ReadonlyArray<ExportSectionItem>
 }
 
 /**
@@ -142,28 +142,28 @@ export interface ExportSection {
  */
 export function generateExportSections(
   builder: TypeScriptBuilder,
-  sections: ReadonlyArray<ExportSection>,
+  sections: ReadonlyArray<ExportSection>
 ): void {
   for (let i = 0; i < sections.length; i++) {
-    const section = sections[i];
+    const section = sections[i]
 
     // TypeScript strict array access requires this check
-    if (!section) continue;
+    if (!section) continue
 
-    builder.addSectionComment(section.title);
-    builder.addBlankLine();
+    builder.addSectionComment(section.title)
+    builder.addBlankLine()
 
     for (const item of section.items) {
       if (item.comment) {
-        builder.addComment(item.comment);
+        builder.addComment(item.comment)
       }
-      builder.addRaw(item.exports);
-      builder.addBlankLine();
+      builder.addRaw(item.exports)
+      builder.addBlankLine()
     }
 
     // Add extra spacing between sections (except after last section)
     if (i < sections.length - 1) {
-      builder.addBlankLine();
+      builder.addBlankLine()
     }
   }
 }
@@ -175,17 +175,17 @@ export interface ConditionalExport {
   /**
    * Condition that must be true for exports to be generated
    */
-  readonly condition: boolean;
+  readonly condition: boolean
 
   /**
    * Section title when condition is true
    */
-  readonly sectionTitle: string;
+  readonly sectionTitle: string
 
   /**
    * Export items to generate when condition is true
    */
-  readonly exports: ReadonlyArray<ExportSectionItem>;
+  readonly exports: ReadonlyArray<ExportSectionItem>
 }
 
 /**
@@ -216,20 +216,20 @@ export interface ConditionalExport {
  */
 export function addConditionalExports(
   builder: TypeScriptBuilder,
-  exports: ReadonlyArray<ConditionalExport>,
+  exports: ReadonlyArray<ConditionalExport>
 ): void {
   for (const item of exports) {
     if (item.condition) {
-      builder.addBlankLine();
-      builder.addSectionComment(item.sectionTitle);
-      builder.addBlankLine();
+      builder.addBlankLine()
+      builder.addSectionComment(item.sectionTitle)
+      builder.addBlankLine()
 
       for (const exp of item.exports) {
         if (exp.comment) {
-          builder.addComment(exp.comment);
+          builder.addComment(exp.comment)
         }
-        builder.addRaw(exp.exports);
-        builder.addBlankLine();
+        builder.addRaw(exp.exports)
+        builder.addBlankLine()
       }
     }
   }
@@ -243,22 +243,22 @@ export interface PlatformExportConfig {
    * Package name
    * @example "@custom-repo/infra-cache"
    */
-  readonly packageName: string;
+  readonly packageName: string
 
   /**
    * Export type (determines description)
    */
-  readonly exportType: 'server' | 'client' | 'edge' | 'main';
+  readonly exportType: "server" | "client" | "edge" | "main"
 
   /**
    * Optional custom title
    */
-  readonly title?: string;
+  readonly title?: string
 
   /**
    * Optional custom module path
    */
-  readonly module?: string;
+  readonly module?: string
 }
 
 /**
@@ -276,18 +276,21 @@ export interface PlatformExportConfig {
  */
 export function addPlatformExportHeader(
   builder: TypeScriptBuilder,
-  config: PlatformExportConfig,
+  config: PlatformExportConfig
 ): void {
   const descriptions = {
-    server: `Server-side exports for ${config.packageName}.\nContains service implementations, layers, and server-specific functionality.`,
-    client: `Client-side exports for ${config.packageName}.\nContains React hooks, client-specific layers, and browser-safe functionality.`,
-    edge: `Edge runtime exports for ${config.packageName}.\nContains edge-specific layers and functionality for edge runtime environments.`,
-    main: `Main entry point for ${config.packageName}.`,
-  };
+    server:
+      `Server-side exports for ${config.packageName}.\nContains service implementations, layers, and server-specific functionality.`,
+    client:
+      `Client-side exports for ${config.packageName}.\nContains React hooks, client-specific layers, and browser-safe functionality.`,
+    edge:
+      `Edge runtime exports for ${config.packageName}.\nContains edge-specific layers and functionality for edge runtime environments.`,
+    main: `Main entry point for ${config.packageName}.`
+  }
 
   builder.addFileHeader({
     title: config.title || `${config.packageName} - ${config.exportType}`,
     description: descriptions[config.exportType],
-    module: config.module || config.packageName,
-  });
+    module: config.module || config.packageName
+  })
 }

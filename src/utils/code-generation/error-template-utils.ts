@@ -15,25 +15,25 @@ export interface ErrorField {
    * Field name
    * @example "id", "message", "field"
    */
-  readonly name: string;
+  readonly name: string
 
   /**
    * TypeScript type
    * @example "string", "number", "unknown"
    */
-  readonly type: string;
+  readonly type: string
 
   /**
    * Whether field is optional
    * @default false
    */
-  readonly optional?: boolean;
+  readonly optional?: boolean
 
   /**
    * Whether field is readonly
    * @default true
    */
-  readonly readonly?: boolean;
+  readonly readonly?: boolean
 }
 
 /**
@@ -43,18 +43,18 @@ export interface MethodParameter {
   /**
    * Parameter name
    */
-  readonly name: string;
+  readonly name: string
 
   /**
    * TypeScript type
    */
-  readonly type: string;
+  readonly type: string
 
   /**
    * Whether parameter is optional
    * @default false
    */
-  readonly optional?: boolean;
+  readonly optional?: boolean
 }
 
 /**
@@ -64,22 +64,22 @@ export interface StaticFactoryMethod {
   /**
    * Method name (usually "create")
    */
-  readonly name: string;
+  readonly name: string
 
   /**
    * Method parameters
    */
-  readonly params: ReadonlyArray<MethodParameter>;
+  readonly params: ReadonlyArray<MethodParameter>
 
   /**
    * Return type
    */
-  readonly returnType: string;
+  readonly returnType: string
 
   /**
    * Method body (JavaScript code as string)
    */
-  readonly body: string;
+  readonly body: string
 }
 
 /**
@@ -90,28 +90,28 @@ export interface TaggedErrorConfig {
    * Class name
    * @example "UserNotFoundError"
    */
-  readonly className: string;
+  readonly className: string
 
   /**
    * Tag name for Data.TaggedError
    * @example "UserNotFoundError"
    */
-  readonly tagName: string;
+  readonly tagName: string
 
   /**
    * Error class fields
    */
-  readonly fields: ReadonlyArray<ErrorField>;
+  readonly fields: ReadonlyArray<ErrorField>
 
   /**
    * Optional static methods (typically a "create" factory)
    */
-  readonly staticMethods?: ReadonlyArray<StaticFactoryMethod>;
+  readonly staticMethods?: ReadonlyArray<StaticFactoryMethod>
 
   /**
    * Optional JSDoc comment
    */
-  readonly jsdoc?: string;
+  readonly jsdoc?: string
 }
 
 /**
@@ -148,46 +148,46 @@ export interface TaggedErrorConfig {
  * ```
  */
 export function createTaggedErrorClass(config: TaggedErrorConfig) {
-  const { className, fields, jsdoc, staticMethods, tagName } = config;
+  const { className, fields, jsdoc, staticMethods, tagName } = config
 
   // Generate field definitions
   const fieldDefs = fields
     .map((f) => {
-      const readonly = f.readonly !== false ? 'readonly ' : '';
-      const optional = f.optional ? '?' : '';
-      return `  ${readonly}${f.name}${optional}: ${f.type};`;
+      const readonly = f.readonly !== false ? "readonly " : ""
+      const optional = f.optional ? "?" : ""
+      return `  ${readonly}${f.name}${optional}: ${f.type};`
     })
-    .join('\n');
+    .join("\n")
 
   // Generate static methods
   const methodDefs = staticMethods?.length
-    ? '\n  ' +
+    ? "\n  " +
       staticMethods
         .map((method) => {
           const params = method.params
-            .map((p) => `${p.name}${p.optional ? '?' : ''}: ${p.type}`)
-            .join(', ');
+            .map((p) => `${p.name}${p.optional ? "?" : ""}: ${p.type}`)
+            .join(", ")
 
           // Indent method body lines
           const indentedBody = method.body
-            .split('\n')
+            .split("\n")
             .map((line) => `    ${line}`)
-            .join('\n');
+            .join("\n")
 
-          return `static ${method.name}(${params}): ${method.returnType} {\n${indentedBody}\n  }`;
+          return `static ${method.name}(${params}): ${method.returnType} {\n${indentedBody}\n  }`
         })
-        .join('\n\n  ')
-    : '';
+        .join("\n\n  ")
+    : ""
 
   // Generate JSDoc
-  const jsdocComment = jsdoc ? `/**\n * ${jsdoc}\n */\n` : '';
+  const jsdocComment = jsdoc ? `/**\n * ${jsdoc}\n */\n` : ""
 
   // Build complete class
   return `${jsdocComment}export class ${className} extends Data.TaggedError(
   "${tagName}"
 )<{
 ${fieldDefs}
-}>${methodDefs ? ' {' + methodDefs + '\n}' : ' {}'}`;
+}>${methodDefs ? " {" + methodDefs + "\n}" : " {}"}`
 }
 
 /**
@@ -198,13 +198,13 @@ export interface TypeGuardConfig {
    * Class name prefix
    * @example "User"
    */
-  readonly className: string;
+  readonly className: string
 
   /**
    * Error type suffixes to generate guards for
    * @example ["NotFoundError", "ValidationError", "ConflictError"]
    */
-  readonly errorTypes: ReadonlyArray<string>;
+  readonly errorTypes: ReadonlyArray<string>
 }
 
 /**
@@ -235,11 +235,11 @@ export interface TypeGuardConfig {
  * ```
  */
 export function createTypeGuardFunctions(config: TypeGuardConfig) {
-  const { className, errorTypes } = config;
+  const { className, errorTypes } = config
 
   return errorTypes
     .map((errorType) => {
-      const fullTypeName = `${className}${errorType}`;
+      const fullTypeName = `${className}${errorType}`
 
       return `export function is${fullTypeName}(
   error: unknown
@@ -250,9 +250,9 @@ export function createTypeGuardFunctions(config: TypeGuardConfig) {
     "_tag" in error &&
     error._tag === "${fullTypeName}"
   );
-}`;
+}`
     })
-    .join('\n\n');
+    .join("\n\n")
 }
 
 /**
@@ -263,30 +263,30 @@ export interface ErrorUnionTypeConfig {
    * Union type name
    * @example "UserRepositoryError" or "UserServiceError"
    */
-  readonly typeName: string;
+  readonly typeName: string
 
   /**
    * Base error class name
    * @example "UserError"
    */
-  readonly baseError: string;
+  readonly baseError: string
 
   /**
    * Additional error types in the union
    * @example ["UserNotFoundError", "UserValidationError"]
    */
-  readonly errorTypes: ReadonlyArray<string>;
+  readonly errorTypes: ReadonlyArray<string>
 
   /**
    * Whether to export the type
    * @default true
    */
-  readonly exported?: boolean;
+  readonly exported?: boolean
 
   /**
    * Optional JSDoc comment
    */
-  readonly jsdoc?: string;
+  readonly jsdoc?: string
 }
 
 /**
@@ -323,16 +323,16 @@ export interface ErrorUnionTypeConfig {
  * ```
  */
 export function createErrorUnionType(config: ErrorUnionTypeConfig) {
-  const { baseError, errorTypes, exported = true, jsdoc, typeName } = config;
+  const { baseError, errorTypes, exported = true, jsdoc, typeName } = config
 
-  const exportKeyword = exported ? 'export ' : '';
-  const jsdocComment = jsdoc ? `/**\n * ${jsdoc}\n */\n` : '';
+  const exportKeyword = exported ? "export " : ""
+  const jsdocComment = jsdoc ? `/**\n * ${jsdoc}\n */\n` : ""
 
-  const errorUnion = errorTypes.map((e) => `  | ${e}`).join('\n');
+  const errorUnion = errorTypes.map((e) => `  | ${e}`).join("\n")
 
   return `${jsdocComment}${exportKeyword}type ${typeName} =
   | ${baseError}
-${errorUnion};`;
+${errorUnion};`
 }
 
 /**
@@ -347,22 +347,22 @@ export function createNotFoundError(className: string) {
     className: `${className}NotFoundError`,
     tagName: `${className}NotFoundError`,
     fields: [
-      { name: 'message', type: 'string' },
-      { name: 'id', type: 'string' },
+      { name: "message", type: "string" },
+      { name: "id", type: "string" }
     ],
     staticMethods: [
       {
-        name: 'create',
-        params: [{ name: 'id', type: 'string' }],
+        name: "create",
+        params: [{ name: "id", type: "string" }],
         returnType: `${className}NotFoundError`,
         body: `return new ${className}NotFoundError({
   message: \`${className} not found: \${id}\`,
   id,
-});`,
-      },
+});`
+      }
     ],
-    jsdoc: `Error thrown when a ${className} entity is not found`,
-  });
+    jsdoc: `Error thrown when a ${className} entity is not found`
+  })
 }
 
 /**
@@ -373,24 +373,24 @@ export function createValidationError(className: string) {
     className: `${className}ValidationError`,
     tagName: `${className}ValidationError`,
     fields: [
-      { name: 'message', type: 'string' },
-      { name: 'field', type: 'string', optional: true },
-      { name: 'constraint', type: 'string', optional: true },
-      { name: 'value', type: 'unknown', optional: true },
+      { name: "message", type: "string" },
+      { name: "field", type: "string", optional: true },
+      { name: "constraint", type: "string", optional: true },
+      { name: "value", type: "unknown", optional: true }
     ],
     staticMethods: [
       {
-        name: 'create',
+        name: "create",
         params: [
           {
-            name: 'params',
+            name: "params",
             type: `{
     message: string;
     field?: string;
     constraint?: string;
     value?: unknown;
-  }`,
-          },
+  }`
+          }
         ],
         returnType: `${className}ValidationError`,
         body: `return new ${className}ValidationError({
@@ -398,11 +398,11 @@ export function createValidationError(className: string) {
   ...(params.field !== undefined && { field: params.field }),
   ...(params.constraint !== undefined && { constraint: params.constraint }),
   ...(params.value !== undefined && { value: params.value }),
-});`,
-      },
+});`
+      }
     ],
-    jsdoc: `Error thrown when ${className} validation fails`,
-  });
+    jsdoc: `Error thrown when ${className} validation fails`
+  })
 }
 
 /**
@@ -413,24 +413,24 @@ export function createConflictError(className: string) {
     className: `${className}ConflictError`,
     tagName: `${className}ConflictError`,
     fields: [
-      { name: 'message', type: 'string' },
-      { name: 'conflictingId', type: 'string', optional: true },
+      { name: "message", type: "string" },
+      { name: "conflictingId", type: "string", optional: true }
     ],
     staticMethods: [
       {
-        name: 'create',
-        params: [{ name: 'conflictingId', type: 'string', optional: true }],
+        name: "create",
+        params: [{ name: "conflictingId", type: "string", optional: true }],
         returnType: `${className}ConflictError`,
         body: `return new ${className}ConflictError({
   message: conflictingId
     ? \`Resource already exists: \${conflictingId}\`
     : "Resource already exists",
   ...(conflictingId !== undefined && { conflictingId }),
-});`,
-      },
+});`
+      }
     ],
-    jsdoc: `Error thrown when a ${className} resource already exists`,
-  });
+    jsdoc: `Error thrown when a ${className} resource already exists`
+  })
 }
 
 /**
@@ -441,27 +441,27 @@ export function createConnectionError(className: string) {
     className: `${className}ConnectionError`,
     tagName: `${className}ConnectionError`,
     fields: [
-      { name: 'message', type: 'string' },
-      { name: 'target', type: 'string' },
-      { name: 'cause', type: 'unknown' },
+      { name: "message", type: "string" },
+      { name: "target", type: "string" },
+      { name: "cause", type: "unknown" }
     ],
     staticMethods: [
       {
-        name: 'create',
+        name: "create",
         params: [
-          { name: 'target', type: 'string' },
-          { name: 'cause', type: 'unknown' },
+          { name: "target", type: "string" },
+          { name: "cause", type: "unknown" }
         ],
         returnType: `${className}ConnectionError`,
         body: `return new ${className}ConnectionError({
   message: \`Failed to connect to \${target}\`,
   target,
   cause,
-});`,
-      },
+});`
+      }
     ],
-    jsdoc: `Error thrown when connection to external service fails`,
-  });
+    jsdoc: `Error thrown when connection to external service fails`
+  })
 }
 
 /**
@@ -472,27 +472,27 @@ export function createTimeoutError(className: string) {
     className: `${className}TimeoutError`,
     tagName: `${className}TimeoutError`,
     fields: [
-      { name: 'message', type: 'string' },
-      { name: 'operation', type: 'string' },
-      { name: 'timeoutMs', type: 'number' },
+      { name: "message", type: "string" },
+      { name: "operation", type: "string" },
+      { name: "timeoutMs", type: "number" }
     ],
     staticMethods: [
       {
-        name: 'create',
+        name: "create",
         params: [
-          { name: 'operation', type: 'string' },
-          { name: 'timeoutMs', type: 'number' },
+          { name: "operation", type: "string" },
+          { name: "timeoutMs", type: "number" }
         ],
         returnType: `${className}TimeoutError`,
         body: `return new ${className}TimeoutError({
   message: \`Operation "\${operation}" timed out after \${timeoutMs}ms\`,
   operation,
   timeoutMs,
-});`,
-      },
+});`
+      }
     ],
-    jsdoc: `Error thrown when an operation times out`,
-  });
+    jsdoc: `Error thrown when an operation times out`
+  })
 }
 
 /**
@@ -503,25 +503,25 @@ export function createConfigError(className: string) {
     className: `${className}ConfigError`,
     tagName: `${className}ConfigError`,
     fields: [
-      { name: 'message', type: 'string' },
-      { name: 'configKey', type: 'string', optional: true },
+      { name: "message", type: "string" },
+      { name: "configKey", type: "string", optional: true }
     ],
     staticMethods: [
       {
-        name: 'create',
+        name: "create",
         params: [
-          { name: 'message', type: 'string' },
-          { name: 'configKey', type: 'string', optional: true },
+          { name: "message", type: "string" },
+          { name: "configKey", type: "string", optional: true }
         ],
         returnType: `${className}ConfigError`,
         body: `return new ${className}ConfigError({
   message,
   ...(configKey !== undefined && { configKey }),
-});`,
-      },
+});`
+      }
     ],
-    jsdoc: `Error thrown when configuration is invalid or missing`,
-  });
+    jsdoc: `Error thrown when configuration is invalid or missing`
+  })
 }
 
 /**
@@ -532,23 +532,23 @@ export function createInternalError(className: string) {
     className: `${className}InternalError`,
     tagName: `${className}InternalError`,
     fields: [
-      { name: 'message', type: 'string' },
-      { name: 'cause', type: 'unknown', optional: true },
+      { name: "message", type: "string" },
+      { name: "cause", type: "unknown", optional: true }
     ],
     staticMethods: [
       {
-        name: 'create',
+        name: "create",
         params: [
-          { name: 'message', type: 'string' },
-          { name: 'cause', type: 'unknown', optional: true },
+          { name: "message", type: "string" },
+          { name: "cause", type: "unknown", optional: true }
         ],
         returnType: `${className}InternalError`,
         body: `return new ${className}InternalError({
   message,
   ...(cause !== undefined && { cause }),
-});`,
-      },
+});`
+      }
     ],
-    jsdoc: `Error thrown when an unexpected internal error occurs`,
-  });
+    jsdoc: `Error thrown when an unexpected internal error occurs`
+  })
 }

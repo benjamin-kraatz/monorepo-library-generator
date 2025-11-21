@@ -6,8 +6,8 @@
  * @module monorepo-library-generator/data-access/validation-template
  */
 
-import { TypeScriptBuilder } from '../../../utils/code-generation/typescript-builder';
-import type { DataAccessTemplateOptions } from '../../../utils/shared/types';
+import { TypeScriptBuilder } from "../../../utils/code-generation/typescript-builder"
+import type { DataAccessTemplateOptions } from "../../../utils/shared/types"
 
 /**
  * Generate validation.ts file for data-access library
@@ -20,8 +20,8 @@ import type { DataAccessTemplateOptions } from '../../../utils/shared/types';
  * - Type guards
  */
 export function generateValidationFile(options: DataAccessTemplateOptions) {
-  const builder = new TypeScriptBuilder();
-  const { className, fileName, propertyName: _propertyName } = options;
+  const builder = new TypeScriptBuilder()
+  const { className, fileName, propertyName: _propertyName } = options
 
   // Add file header
   builder.addFileHeader({
@@ -37,27 +37,27 @@ TODO: Customize this file:
 5. Add coercion/transformation logic if needed
 
 @see https://zod.dev for Zod schema validation`,
-    module: `@custom-repo/data-access-${fileName}/server`,
-  });
-  builder.addBlankLine();
+    module: `@custom-repo/data-access-${fileName}/server`
+  })
+  builder.addBlankLine()
 
   // Add imports
   builder.addImports([
     {
-      from: './types.js',
+      from: "./types.js",
       imports: [
         `${className}Filter`,
         `${className}CreateInput`,
-        `${className}UpdateInput`,
+        `${className}UpdateInput`
       ],
-      isTypeOnly: true,
-    },
-  ]);
-  builder.addBlankLine();
+      isTypeOnly: true
+    }
+  ])
+  builder.addBlankLine()
 
   // Validation Helpers
-  builder.addSectionComment('Validation Helpers');
-  builder.addBlankLine();
+  builder.addSectionComment("Validation Helpers")
+  builder.addBlankLine()
 
   // Validate Create Input
   builder.addRaw(`/**
@@ -96,8 +96,8 @@ export function validate${className}CreateInput(
 ): ${className}CreateInput {
   // TODO: Implement schema validation with your preferred library (Zod, Effect Schema, etc.)
   throw new Error("Validation not implemented. Please implement schema validation.");
-}`);
-  builder.addBlankLine();
+}`)
+  builder.addBlankLine()
 
   // Validate Update Input
   builder.addRaw(`/**
@@ -133,8 +133,8 @@ export function validate${className}UpdateInput(
 ): ${className}UpdateInput {
   // TODO: Implement schema validation with your preferred library (Zod, Effect Schema, etc.)
   throw new Error("Validation not implemented. Please implement schema validation.");
-}`);
-  builder.addBlankLine();
+}`)
+  builder.addBlankLine()
 
   // Validate Filters
   builder.addRaw(`/**
@@ -172,8 +172,8 @@ export function validate${className}Filter(
 ): ${className}Filter {
   // TODO: Implement schema validation with your preferred library (Zod, Effect Schema, etc.)
   throw new Error("Validation not implemented. Please implement schema validation.");
-}`);
-  builder.addBlankLine();
+}`)
+  builder.addBlankLine()
 
   // Validate ID
   builder.addRaw(`/**
@@ -200,8 +200,8 @@ export function validate${className}Id(id: unknown) {
     throw new Error('Invalid ${className} ID: must be non-empty string');
   }
   return id;
-}`);
-  builder.addBlankLine();
+}`)
+  builder.addBlankLine()
 
   // Validate Pagination
   builder.addRaw(`/**
@@ -238,12 +238,12 @@ export function validatePagination(
   if (limitNum > 1000) throw new Error('limit must be <= 1000'); // TODO: Adjust max limit
 
   return { skip: skipNum, limit: limitNum };
-}`);
-  builder.addBlankLine();
+}`)
+  builder.addBlankLine()
 
   // Validation Utilities
-  builder.addSectionComment('Validation Utilities');
-  builder.addBlankLine();
+  builder.addSectionComment("Validation Utilities")
+  builder.addBlankLine()
 
   // is${className} type guard
   builder.addRaw(`/**
@@ -270,8 +270,8 @@ export function is${className}(obj: unknown): obj is any {
     'createdAt' in obj &&
     'updatedAt' in obj
   );
-}`);
-  builder.addBlankLine();
+}`)
+  builder.addBlankLine()
 
   // isValid${className}CreateInput type guard
   builder.addRaw(`/**
@@ -292,8 +292,8 @@ export function is${className}(obj: unknown): obj is any {
 export function isValid${className}CreateInput(obj: unknown): obj is ${className}CreateInput {
   // TODO: Implement creation input validation
   return typeof obj === 'object' && obj !== null;
-}`);
-  builder.addBlankLine();
+}`)
+  builder.addBlankLine()
 
   // isValid${className}UpdateInput type guard
   builder.addRaw(`/**
@@ -315,7 +315,7 @@ export function isValid${className}UpdateInput(obj: unknown): obj is ${className
   // TODO: Implement update input validation
   return typeof obj === 'object' && (obj === null || Object.keys(obj).length > 0);
 }
-`);
+`)
 
-  return builder.toString();
+  return builder.toString()
 }

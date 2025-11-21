@@ -22,7 +22,7 @@ export class ValidationError extends Data.TaggedError("ValidationError")<{
     return new ValidationError({
       message,
       ...(diagnostics !== undefined && { diagnostics }),
-      ...(path !== undefined && { path }),
+      ...(path !== undefined && { path })
     })
   }
 
@@ -39,7 +39,7 @@ export class ValidationError extends Data.TaggedError("ValidationError")<{
     return new ValidationError({
       message: "TypeScript compilation errors detected",
       diagnostics: messages,
-      ...(path !== undefined && { path }),
+      ...(path !== undefined && { path })
     })
   }
 }
@@ -343,7 +343,7 @@ export class FileTypeValidators {
   static validateErrorsFile(content: string, filePath?: string): Effect.Effect<void, ValidationError> {
     return Effect.gen(function*() {
       yield* CodeValidators.validateTypeScript(content, {
-        ...(filePath !== undefined && { filePath }),
+        ...(filePath !== undefined && { filePath })
       })
 
       yield* CodeValidators.validatePattern(
@@ -366,7 +366,7 @@ export class FileTypeValidators {
   static validateEntitiesFile(content: string, filePath?: string): Effect.Effect<void, ValidationError> {
     return Effect.gen(function*() {
       yield* CodeValidators.validateTypeScript(content, {
-        ...(filePath !== undefined && { filePath }),
+        ...(filePath !== undefined && { filePath })
       })
 
       yield* CodeValidators.validatePattern(
@@ -383,7 +383,7 @@ export class FileTypeValidators {
   static validatePortsFile(content: string, filePath?: string): Effect.Effect<void, ValidationError> {
     return Effect.gen(function*() {
       yield* CodeValidators.validateTypeScript(content, {
-        ...(filePath !== undefined && { filePath }),
+        ...(filePath !== undefined && { filePath })
       })
 
       yield* CodeValidators.validatePattern(
@@ -400,7 +400,7 @@ export class FileTypeValidators {
   static validateServiceFile(content: string, filePath?: string): Effect.Effect<void, ValidationError> {
     return Effect.gen(function*() {
       yield* CodeValidators.validateTypeScript(content, {
-        ...(filePath !== undefined && { filePath }),
+        ...(filePath !== undefined && { filePath })
       })
 
       yield* CodeValidators.validatePattern(

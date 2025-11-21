@@ -2310,6 +2310,16 @@
     "type": "static"
   },
   {
+    "source": "npm:babel-plugin-add-import-extension",
+    "target": "npm:@babel/core",
+    "type": "static"
+  },
+  {
+    "source": "npm:babel-plugin-add-import-extension",
+    "target": "npm:@babel/helper-plugin-utils",
+    "type": "static"
+  },
+  {
     "source": "npm:babel-plugin-annotate-pure-calls",
     "target": "npm:@babel/core",
     "type": "static"
@@ -3026,132 +3036,257 @@
   },
   {
     "source": "npm:esbuild",
-    "target": "npm:@esbuild/aix-ppc64",
+    "target": "npm:@esbuild/aix-ppc64@0.24.2",
     "type": "static"
   },
   {
     "source": "npm:esbuild",
-    "target": "npm:@esbuild/android-arm",
+    "target": "npm:@esbuild/android-arm@0.24.2",
     "type": "static"
   },
   {
     "source": "npm:esbuild",
-    "target": "npm:@esbuild/android-arm64",
+    "target": "npm:@esbuild/android-arm64@0.24.2",
     "type": "static"
   },
   {
     "source": "npm:esbuild",
-    "target": "npm:@esbuild/android-x64",
+    "target": "npm:@esbuild/android-x64@0.24.2",
     "type": "static"
   },
   {
     "source": "npm:esbuild",
-    "target": "npm:@esbuild/darwin-arm64",
+    "target": "npm:@esbuild/darwin-arm64@0.24.2",
     "type": "static"
   },
   {
     "source": "npm:esbuild",
-    "target": "npm:@esbuild/darwin-x64",
+    "target": "npm:@esbuild/darwin-x64@0.24.2",
     "type": "static"
   },
   {
     "source": "npm:esbuild",
-    "target": "npm:@esbuild/freebsd-arm64",
+    "target": "npm:@esbuild/freebsd-arm64@0.24.2",
     "type": "static"
   },
   {
     "source": "npm:esbuild",
-    "target": "npm:@esbuild/freebsd-x64",
+    "target": "npm:@esbuild/freebsd-x64@0.24.2",
     "type": "static"
   },
   {
     "source": "npm:esbuild",
-    "target": "npm:@esbuild/linux-arm",
+    "target": "npm:@esbuild/linux-arm@0.24.2",
     "type": "static"
   },
   {
     "source": "npm:esbuild",
-    "target": "npm:@esbuild/linux-arm64",
+    "target": "npm:@esbuild/linux-arm64@0.24.2",
     "type": "static"
   },
   {
     "source": "npm:esbuild",
-    "target": "npm:@esbuild/linux-ia32",
+    "target": "npm:@esbuild/linux-ia32@0.24.2",
     "type": "static"
   },
   {
     "source": "npm:esbuild",
-    "target": "npm:@esbuild/linux-loong64",
+    "target": "npm:@esbuild/linux-loong64@0.24.2",
     "type": "static"
   },
   {
     "source": "npm:esbuild",
-    "target": "npm:@esbuild/linux-mips64el",
+    "target": "npm:@esbuild/linux-mips64el@0.24.2",
     "type": "static"
   },
   {
     "source": "npm:esbuild",
-    "target": "npm:@esbuild/linux-ppc64",
+    "target": "npm:@esbuild/linux-ppc64@0.24.2",
     "type": "static"
   },
   {
     "source": "npm:esbuild",
-    "target": "npm:@esbuild/linux-riscv64",
+    "target": "npm:@esbuild/linux-riscv64@0.24.2",
     "type": "static"
   },
   {
     "source": "npm:esbuild",
-    "target": "npm:@esbuild/linux-s390x",
+    "target": "npm:@esbuild/linux-s390x@0.24.2",
     "type": "static"
   },
   {
     "source": "npm:esbuild",
-    "target": "npm:@esbuild/linux-x64",
+    "target": "npm:@esbuild/linux-x64@0.24.2",
     "type": "static"
   },
   {
     "source": "npm:esbuild",
-    "target": "npm:@esbuild/netbsd-arm64",
+    "target": "npm:@esbuild/netbsd-arm64@0.24.2",
     "type": "static"
   },
   {
     "source": "npm:esbuild",
-    "target": "npm:@esbuild/netbsd-x64",
+    "target": "npm:@esbuild/netbsd-x64@0.24.2",
     "type": "static"
   },
   {
     "source": "npm:esbuild",
-    "target": "npm:@esbuild/openbsd-arm64",
+    "target": "npm:@esbuild/openbsd-arm64@0.24.2",
     "type": "static"
   },
   {
     "source": "npm:esbuild",
-    "target": "npm:@esbuild/openbsd-x64",
+    "target": "npm:@esbuild/openbsd-x64@0.24.2",
     "type": "static"
   },
   {
     "source": "npm:esbuild",
+    "target": "npm:@esbuild/sunos-x64@0.24.2",
+    "type": "static"
+  },
+  {
+    "source": "npm:esbuild",
+    "target": "npm:@esbuild/win32-arm64@0.24.2",
+    "type": "static"
+  },
+  {
+    "source": "npm:esbuild",
+    "target": "npm:@esbuild/win32-ia32@0.24.2",
+    "type": "static"
+  },
+  {
+    "source": "npm:esbuild",
+    "target": "npm:@esbuild/win32-x64@0.24.2",
+    "type": "static"
+  },
+  {
+    "source": "npm:esbuild@0.25.12",
+    "target": "npm:@esbuild/aix-ppc64@0.25.12",
+    "type": "static"
+  },
+  {
+    "source": "npm:esbuild@0.25.12",
+    "target": "npm:@esbuild/android-arm@0.25.12",
+    "type": "static"
+  },
+  {
+    "source": "npm:esbuild@0.25.12",
+    "target": "npm:@esbuild/android-arm64@0.25.12",
+    "type": "static"
+  },
+  {
+    "source": "npm:esbuild@0.25.12",
+    "target": "npm:@esbuild/android-x64@0.25.12",
+    "type": "static"
+  },
+  {
+    "source": "npm:esbuild@0.25.12",
+    "target": "npm:@esbuild/darwin-arm64@0.25.12",
+    "type": "static"
+  },
+  {
+    "source": "npm:esbuild@0.25.12",
+    "target": "npm:@esbuild/darwin-x64@0.25.12",
+    "type": "static"
+  },
+  {
+    "source": "npm:esbuild@0.25.12",
+    "target": "npm:@esbuild/freebsd-arm64@0.25.12",
+    "type": "static"
+  },
+  {
+    "source": "npm:esbuild@0.25.12",
+    "target": "npm:@esbuild/freebsd-x64@0.25.12",
+    "type": "static"
+  },
+  {
+    "source": "npm:esbuild@0.25.12",
+    "target": "npm:@esbuild/linux-arm@0.25.12",
+    "type": "static"
+  },
+  {
+    "source": "npm:esbuild@0.25.12",
+    "target": "npm:@esbuild/linux-arm64@0.25.12",
+    "type": "static"
+  },
+  {
+    "source": "npm:esbuild@0.25.12",
+    "target": "npm:@esbuild/linux-ia32@0.25.12",
+    "type": "static"
+  },
+  {
+    "source": "npm:esbuild@0.25.12",
+    "target": "npm:@esbuild/linux-loong64@0.25.12",
+    "type": "static"
+  },
+  {
+    "source": "npm:esbuild@0.25.12",
+    "target": "npm:@esbuild/linux-mips64el@0.25.12",
+    "type": "static"
+  },
+  {
+    "source": "npm:esbuild@0.25.12",
+    "target": "npm:@esbuild/linux-ppc64@0.25.12",
+    "type": "static"
+  },
+  {
+    "source": "npm:esbuild@0.25.12",
+    "target": "npm:@esbuild/linux-riscv64@0.25.12",
+    "type": "static"
+  },
+  {
+    "source": "npm:esbuild@0.25.12",
+    "target": "npm:@esbuild/linux-s390x@0.25.12",
+    "type": "static"
+  },
+  {
+    "source": "npm:esbuild@0.25.12",
+    "target": "npm:@esbuild/linux-x64@0.25.12",
+    "type": "static"
+  },
+  {
+    "source": "npm:esbuild@0.25.12",
+    "target": "npm:@esbuild/netbsd-arm64@0.25.12",
+    "type": "static"
+  },
+  {
+    "source": "npm:esbuild@0.25.12",
+    "target": "npm:@esbuild/netbsd-x64@0.25.12",
+    "type": "static"
+  },
+  {
+    "source": "npm:esbuild@0.25.12",
+    "target": "npm:@esbuild/openbsd-arm64@0.25.12",
+    "type": "static"
+  },
+  {
+    "source": "npm:esbuild@0.25.12",
+    "target": "npm:@esbuild/openbsd-x64@0.25.12",
+    "type": "static"
+  },
+  {
+    "source": "npm:esbuild@0.25.12",
     "target": "npm:@esbuild/openharmony-arm64",
     "type": "static"
   },
   {
-    "source": "npm:esbuild",
-    "target": "npm:@esbuild/sunos-x64",
+    "source": "npm:esbuild@0.25.12",
+    "target": "npm:@esbuild/sunos-x64@0.25.12",
     "type": "static"
   },
   {
-    "source": "npm:esbuild",
-    "target": "npm:@esbuild/win32-arm64",
+    "source": "npm:esbuild@0.25.12",
+    "target": "npm:@esbuild/win32-arm64@0.25.12",
     "type": "static"
   },
   {
-    "source": "npm:esbuild",
-    "target": "npm:@esbuild/win32-ia32",
+    "source": "npm:esbuild@0.25.12",
+    "target": "npm:@esbuild/win32-ia32@0.25.12",
     "type": "static"
   },
   {
-    "source": "npm:esbuild",
-    "target": "npm:@esbuild/win32-x64",
+    "source": "npm:esbuild@0.25.12",
+    "target": "npm:@esbuild/win32-x64@0.25.12",
     "type": "static"
   },
   {
@@ -6121,7 +6256,7 @@
   },
   {
     "source": "npm:tsx",
-    "target": "npm:esbuild",
+    "target": "npm:esbuild@0.25.12",
     "type": "static"
   },
   {
@@ -6426,7 +6561,7 @@
   },
   {
     "source": "npm:vite",
-    "target": "npm:esbuild",
+    "target": "npm:esbuild@0.25.12",
     "type": "static"
   },
   {

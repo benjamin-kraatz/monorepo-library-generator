@@ -6,8 +6,8 @@
  * @module monorepo-library-generator/data-access/repository-spec-template
  */
 
-import { TypeScriptBuilder } from '../../../utils/code-generation/typescript-builder';
-import type { DataAccessTemplateOptions } from '../../../utils/shared/types';
+import { TypeScriptBuilder } from "../../../utils/code-generation/typescript-builder"
+import type { DataAccessTemplateOptions } from "../../../utils/shared/types"
 
 /**
  * Generate repository.spec.ts file for data-access library
@@ -18,8 +18,8 @@ import type { DataAccessTemplateOptions } from '../../../utils/shared/types';
  * - Test structure with it.scoped
  */
 export function generateRepositorySpecFile(options: DataAccessTemplateOptions) {
-  const builder = new TypeScriptBuilder();
-  const { className } = options;
+  const builder = new TypeScriptBuilder()
+  const { className } = options
 
   // Add file header with testing guidelines
   builder.addFileHeader({
@@ -45,17 +45,17 @@ What to Test:
 2. Error transformation (database errors → repository errors)
 3. Cache integration (hits, misses, invalidation if applicable)
 4. Transaction rollback behavior (if applicable)`,
-    module: '@custom-repo/data-access',
-  });
+    module: "@custom-repo/data-access"
+  })
 
   // Add imports
   builder.addImports([
-    { from: 'effect', imports: ['Effect', 'Option', 'Layer'] },
-    { from: 'vitest', imports: ['describe'] },
-    { from: '@effect/vitest', imports: ['it', 'expect'] },
-    { from: '@custom-repo/provider-kysely', imports: ['KyselyService'] },
-  ]);
-  builder.addBlankLine();
+    { from: "effect", imports: ["Effect", "Option", "Layer"] },
+    { from: "vitest", imports: ["describe"] },
+    { from: "@effect/vitest", imports: ["it", "expect"] },
+    { from: "@custom-repo/provider-kysely", imports: ["KyselyService"] }
+  ])
+  builder.addBlankLine()
 
   // Add describe block with TODO examples
   builder.addRaw(`describe("${className} Repository", () => {
@@ -127,7 +127,7 @@ What to Test:
     expect(true).toBe(true);
   });
 });
-`);
+`)
 
-  return builder.toString();
+  return builder.toString()
 }

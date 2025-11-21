@@ -6,8 +6,8 @@
  * @module monorepo-library-generator/feature/service-template
  */
 
-import { TypeScriptBuilder } from '../../../utils/code-generation/typescript-builder';
-import type { FeatureTemplateOptions } from '../../../utils/shared/types';
+import { TypeScriptBuilder } from "../../../utils/code-generation/typescript-builder"
+import type { FeatureTemplateOptions } from "../../../utils/shared/types"
 
 /**
  * Generate server/service.ts file for feature library
@@ -15,8 +15,8 @@ import type { FeatureTemplateOptions } from '../../../utils/shared/types';
  * Creates business logic service with Effect Context.Tag pattern.
  */
 export function generateServiceFile(options: FeatureTemplateOptions) {
-  const builder = new TypeScriptBuilder();
-  const { className, fileName, name } = options;
+  const builder = new TypeScriptBuilder()
+  const { className, fileName, name } = options
 
   // Add file header with extensive documentation
   builder.addFileHeader({
@@ -30,15 +30,15 @@ DEPENDENCY INJECTION PATTERN:
 3. Use dependencies in returned service methods
 4. Compose layers at application level
 
-TODO: Uncomment and customize these imports based on your needs:`,
-  });
+TODO: Uncomment and customize these imports based on your needs:`
+  })
 
   // Add imports
   builder.addImports([
-    { from: 'effect', imports: ['Context', 'Effect', 'Layer', 'Schedule'] },
-    { from: '../shared/errors', imports: [`${className}Error`] },
-  ]);
-  builder.addBlankLine();
+    { from: "effect", imports: ["Context", "Effect", "Layer", "Schedule"] },
+    { from: "../shared/errors", imports: [`${className}Error`] }
+  ])
+  builder.addBlankLine()
 
   // Add example dependency imports section
   builder.addSectionComment(`Example Dependency Imports (Uncomment what you need)
@@ -58,8 +58,8 @@ TODO: Uncomment and customize these imports based on your needs:`,
 
 // Other Feature Services:
 // import { AuthService } from "@custom-repo/feature-auth/server";
-// import { NotificationService } from "@custom-repo/feature-notification/server";`);
-  builder.addBlankLine();
+// import { NotificationService } from "@custom-repo/feature-notification/server";`)
+  builder.addBlankLine()
 
   // Add Context.Tag class definition
   builder.addRaw(`export class ${className}Service extends Context.Tag("${className}Service")<
@@ -67,8 +67,8 @@ TODO: Uncomment and customize these imports based on your needs:`,
   {
     readonly exampleOperation: () => Effect.Effect<void, ${className}Error>;
   }
->() {`);
-  builder.addBlankLine();
+>() {`)
+  builder.addBlankLine()
 
   // Add Live layer
   builder.addRaw(`  static readonly Live = Layer.effect(
@@ -208,8 +208,8 @@ TODO: Uncomment and customize these imports based on your needs:`,
           }),
       };
     })
-  );`);
-  builder.addBlankLine();
+  );`)
+  builder.addBlankLine()
 
   // Add Test layer
   builder.addRaw(`  // ==========================================================================
@@ -222,11 +222,11 @@ TODO: Uncomment and customize these imports based on your needs:`,
   static readonly Test = Layer.succeed(this, {
     exampleOperation: () => Effect.void,
   });
-}`);
-  builder.addBlankLine();
+}`)
+  builder.addBlankLine()
 
   // Add comprehensive error handling reference
-  builder.addSectionComment('Error Transformation Reference');
+  builder.addSectionComment("Error Transformation Reference")
   builder.addRaw(`//
 // COMPREHENSIVE ERROR HANDLING PATTERNS:
 //
@@ -338,11 +338,11 @@ TODO: Uncomment and customize these imports based on your needs:`,
 //     message: "Both primary and backup sources failed",
 //     cause: err
 //   }))
-// );`);
-  builder.addBlankLine();
+// );`)
+  builder.addBlankLine()
 
   // Add layer composition examples
-  builder.addSectionComment('Layer Composition Examples');
+  builder.addSectionComment("Layer Composition Examples")
   builder.addRaw(`//
 // IMPORTANT: These examples show how to provide dependencies to this service.
 // Actual composition should be done at the application level.
@@ -373,8 +373,8 @@ TODO: Uncomment and customize these imports based on your needs:`,
 //     Effect.provide(LoggingServiceLive),
 //     Effect.provide(UserRepositoryLive)
 //   )
-// );`);
-  builder.addBlankLine();
+// );`)
+  builder.addBlankLine()
 
-  return builder.toString();
+  return builder.toString()
 }

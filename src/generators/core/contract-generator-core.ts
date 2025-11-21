@@ -7,19 +7,19 @@
  * @module monorepo-library-generator/generators/core/contract-generator-core
  */
 
-import { Effect } from 'effect';
-import { names } from '@nx/devkit';
-import type { FileSystemAdapter, FileSystemErrors } from '../../utils/filesystem-adapter';
-import { generateErrorsFile } from '../contract/templates/errors.template';
-import { generateEntitiesFile } from '../contract/templates/entities.template';
-import { generatePortsFile } from '../contract/templates/ports.template';
-import { generateEventsFile } from '../contract/templates/events.template';
-import { generateCommandsFile } from '../contract/templates/commands.template';
-import { generateQueriesFile } from '../contract/templates/queries.template';
-import { generateProjectionsFile } from '../contract/templates/projections.template';
-import { generateRpcFile } from '../contract/templates/rpc.template';
-import { generateIndexFile } from '../contract/templates/index.template';
-import type { ContractTemplateOptions } from '../../utils/shared/types';
+import { names } from "@nx/devkit"
+import { Effect } from "effect"
+import type { FileSystemAdapter, FileSystemErrors } from "../../utils/filesystem-adapter"
+import type { ContractTemplateOptions } from "../../utils/shared/types"
+import { generateCommandsFile } from "../contract/templates/commands.template"
+import { generateEntitiesFile } from "../contract/templates/entities.template"
+import { generateErrorsFile } from "../contract/templates/errors.template"
+import { generateEventsFile } from "../contract/templates/events.template"
+import { generateIndexFile } from "../contract/templates/index.template"
+import { generatePortsFile } from "../contract/templates/ports.template"
+import { generateProjectionsFile } from "../contract/templates/projections.template"
+import { generateQueriesFile } from "../contract/templates/queries.template"
+import { generateRpcFile } from "../contract/templates/rpc.template"
 
 /**
  * Contract Generator Options
@@ -27,13 +27,13 @@ import type { ContractTemplateOptions } from '../../utils/shared/types';
  * Unified options interface for both Nx and CLI entry points
  */
 export interface ContractGeneratorCoreOptions {
-  readonly name: string;
-  readonly description?: string;
-  readonly tags?: string;
-  readonly includeCQRS?: boolean;
-  readonly includeRPC?: boolean;
-  readonly workspaceRoot?: string; // Optional, adapter provides default if not specified
-  readonly directory?: string; // Optional parent directory (e.g., "shared")
+  readonly name: string
+  readonly description?: string
+  readonly tags?: string
+  readonly includeCQRS?: boolean
+  readonly includeRPC?: boolean
+  readonly workspaceRoot?: string // Optional, adapter provides default if not specified
+  readonly directory?: string // Optional parent directory (e.g., "shared")
 }
 
 /**
@@ -42,11 +42,11 @@ export interface ContractGeneratorCoreOptions {
  * Metadata about the generated library
  */
 export interface GeneratorResult {
-  readonly projectName: string;
-  readonly projectRoot: string;
-  readonly packageName: string;
-  readonly sourceRoot: string;
-  readonly filesGenerated: readonly string[];
+  readonly projectName: string
+  readonly projectRoot: string
+  readonly packageName: string
+  readonly sourceRoot: string
+  readonly filesGenerated: ReadonlyArray<string>
 }
 
 /**
@@ -63,29 +63,29 @@ export function generateContractCore(
   adapter: FileSystemAdapter,
   options: ContractGeneratorCoreOptions
 ): Effect.Effect<GeneratorResult, FileSystemErrors, unknown> {
-  return Effect.gen(function* () {
+  return Effect.gen(function*() {
     // 1. Get workspace root
-    const workspaceRoot = options.workspaceRoot ?? adapter.getWorkspaceRoot();
+    const workspaceRoot = options.workspaceRoot ?? adapter.getWorkspaceRoot()
 
     // 2. Generate naming variants
-    const nameVariants = names(options.name);
-    const projectName = `contract-${nameVariants.fileName}`;
-    const packageName = `@custom-repo/${projectName}`;
+    const nameVariants = names(options.name)
+    const projectName = `contract-${nameVariants.fileName}`
+    const packageName = `@custom-repo/${projectName}`
 
     // 3. Determine project location
     const projectRoot = options.directory
       ? `${options.directory}/${projectName}`
-      : `libs/contract/${nameVariants.fileName}`;
+      : `libs/contract/${nameVariants.fileName}`
 
-    const sourceRoot = `${projectRoot}/src`;
-    const offsetFromRoot = calculateOffsetFromRoot(projectRoot);
+    const sourceRoot = `${projectRoot}/src`
+    const offsetFromRoot = calculateOffsetFromRoot(projectRoot)
 
     // 4. Parse tags
     const parsedTags = parseTags(options.tags, [
-      'type:contract',
+      "type:contract",
       `domain:${nameVariants.fileName}`,
-      'platform:universal',
-    ]);
+      "platform:universal"
+    ])
 
     // 5. Generate infrastructure files (package.json, tsconfig, etc.)
     yield* generateInfrastructureFiles(adapter, {
@@ -94,8 +94,8 @@ export function generateContractCore(
       projectName,
       packageName,
       description: options.description ?? `Contract library for ${nameVariants.className}`,
-      offsetFromRoot,
-    });
+      offsetFromRoot
+    })
 
     // 6. Prepare template options for domain files
     const templateOptions: ContractTemplateOptions = {
@@ -107,7 +107,7 @@ export function generateContractCore(
       constantName: nameVariants.constantName,
 
       // Library metadata
-      libraryType: 'contract',
+      libraryType: "contract",
       packageName,
       projectName,
       projectRoot,
@@ -118,11 +118,11 @@ export function generateContractCore(
 
       // Feature flags
       includeCQRS: options.includeCQRS ?? false,
-      includeRPC: options.includeRPC ?? false,
-    };
+      includeRPC: options.includeRPC ?? false
+    }
 
     // 7. Generate domain files
-    const filesGenerated = yield* generateDomainFiles(adapter, sourceRoot, templateOptions);
+    const filesGenerated = yield* generateDomainFiles(adapter, sourceRoot, templateOptions)
 
     // 8. Return result
     return {
@@ -130,9 +130,9 @@ export function generateContractCore(
       projectRoot,
       packageName,
       sourceRoot,
-      filesGenerated,
-    };
-  });
+      filesGenerated
+    }
+  })
 }
 
 /**
@@ -141,57 +141,57 @@ export function generateContractCore(
 function generateInfrastructureFiles(
   adapter: FileSystemAdapter,
   options: {
-    workspaceRoot: string;
-    projectRoot: string;
-    projectName: string;
-    packageName: string;
-    description: string;
-    offsetFromRoot: string;
+    workspaceRoot: string
+    projectRoot: string
+    projectName: string
+    packageName: string
+    description: string
+    offsetFromRoot: string
   }
 ): Effect.Effect<void, FileSystemErrors, unknown> {
-  return Effect.gen(function* () {
-    const { workspaceRoot, projectRoot, projectName, packageName, description, offsetFromRoot } = options;
+  return Effect.gen(function*() {
+    const { description, offsetFromRoot, packageName, projectName, projectRoot, workspaceRoot } = options
 
     // 1. Create project directory
-    yield* adapter.makeDirectory(`${workspaceRoot}/${projectRoot}`);
+    yield* adapter.makeDirectory(`${workspaceRoot}/${projectRoot}`)
 
     // 2. Generate package.json
     const packageJson = {
       name: packageName,
-      version: '0.0.1',
-      type: 'module' as const,
+      version: "0.0.1",
+      type: "module" as const,
       description,
       exports: {
-        '.': {
-          import: './src/index.ts',
-          types: './src/index.ts',
-        },
+        ".": {
+          import: "./src/index.ts",
+          types: "./src/index.ts"
+        }
       },
       peerDependencies: {
-        effect: '*',
-      },
-    };
+        effect: "*"
+      }
+    }
 
     yield* adapter.writeFile(
       `${workspaceRoot}/${projectRoot}/package.json`,
       JSON.stringify(packageJson, null, 2)
-    );
+    )
 
     // 3. Generate tsconfig.json
     const tsConfig = {
       extends: `${offsetFromRoot}tsconfig.base.json`,
       compilerOptions: {
-        outDir: './dist',
-        rootDir: './src',
+        outDir: "./dist",
+        rootDir: "./src"
       },
-      include: ['src/**/*.ts'],
-      exclude: ['node_modules', 'dist', '**/*.spec.ts'],
-    };
+      include: ["src/**/*.ts"],
+      exclude: ["node_modules", "dist", "**/*.spec.ts"]
+    }
 
     yield* adapter.writeFile(
       `${workspaceRoot}/${projectRoot}/tsconfig.json`,
       JSON.stringify(tsConfig, null, 2)
-    );
+    )
 
     // 4. Generate README.md
     const readme = `# ${packageName}
@@ -224,13 +224,13 @@ pnpm exec nx build ${projectName}
 # Test
 pnpm exec nx test ${projectName}
 \`\`\`
-`;
+`
 
-    yield* adapter.writeFile(`${workspaceRoot}/${projectRoot}/README.md`, readme);
+    yield* adapter.writeFile(`${workspaceRoot}/${projectRoot}/README.md`, readme)
 
     // 5. Create src directory
-    yield* adapter.makeDirectory(`${workspaceRoot}/${projectRoot}/src`);
-  });
+    yield* adapter.makeDirectory(`${workspaceRoot}/${projectRoot}/src`)
+  })
 }
 
 /**
@@ -240,11 +240,11 @@ function generateDomainFiles(
   adapter: FileSystemAdapter,
   sourceRoot: string,
   templateOptions: ContractTemplateOptions
-): Effect.Effect<readonly string[], FileSystemErrors, unknown> {
-  return Effect.gen(function* () {
-    const workspaceRoot = adapter.getWorkspaceRoot();
-    const sourceLibPath = `${workspaceRoot}/${sourceRoot}/lib`;
-    const files: string[] = [];
+): Effect.Effect<ReadonlyArray<string>, FileSystemErrors, unknown> {
+  return Effect.gen(function*() {
+    const workspaceRoot = adapter.getWorkspaceRoot()
+    const sourceLibPath = `${workspaceRoot}/${sourceRoot}/lib`
+    const files: Array<string> = []
 
     // Generate CLAUDE.md
     const claudeDoc = `# ${templateOptions.packageName}
@@ -261,7 +261,11 @@ This is a contract library defining domain types and interfaces.
 - **lib/errors.ts**: Domain-specific error types (Data.TaggedError)
 - **lib/events.ts**: Domain events
 - **lib/ports.ts**: Repository/service interfaces (Context.Tag pattern)
-${templateOptions.includeCQRS ? `- **lib/commands.ts**: CQRS command schemas\n- **lib/queries.ts**: CQRS query schemas\n- **lib/projections.ts**: Read-model projections` : ''}${templateOptions.includeRPC ? `\n- **lib/rpc.ts**: RPC endpoint definitions` : ''}
+${
+      templateOptions.includeCQRS
+        ? `- **lib/commands.ts**: CQRS command schemas\n- **lib/queries.ts**: CQRS query schemas\n- **lib/projections.ts**: Read-model projections`
+        : ""
+    }${templateOptions.includeRPC ? `\n- **lib/rpc.ts**: RPC endpoint definitions` : ""}
 
 ### Customization Guide
 
@@ -291,81 +295,81 @@ Effect.gen(function* () {
   // ...
 });
 \`\`\`
-`;
+`
 
-    yield* adapter.writeFile(`${workspaceRoot}/${templateOptions.projectRoot}/CLAUDE.md`, claudeDoc);
+    yield* adapter.writeFile(`${workspaceRoot}/${templateOptions.projectRoot}/CLAUDE.md`, claudeDoc)
 
     // Create lib directory
-    yield* adapter.makeDirectory(sourceLibPath);
+    yield* adapter.makeDirectory(sourceLibPath)
 
     // Generate core files (always)
     const coreFiles = [
-      { path: 'errors.ts', generator: generateErrorsFile },
-      { path: 'entities.ts', generator: generateEntitiesFile },
-      { path: 'ports.ts', generator: generatePortsFile },
-      { path: 'events.ts', generator: generateEventsFile },
-    ];
+      { path: "errors.ts", generator: generateErrorsFile },
+      { path: "entities.ts", generator: generateEntitiesFile },
+      { path: "ports.ts", generator: generatePortsFile },
+      { path: "events.ts", generator: generateEventsFile }
+    ]
 
-    for (const { path, generator } of coreFiles) {
-      const filePath = `${sourceLibPath}/${path}`;
-      const content = generator(templateOptions);
-      yield* adapter.writeFile(filePath, content);
-      files.push(filePath);
+    for (const { generator, path } of coreFiles) {
+      const filePath = `${sourceLibPath}/${path}`
+      const content = generator(templateOptions)
+      yield* adapter.writeFile(filePath, content)
+      files.push(filePath)
     }
 
     // Generate CQRS files (conditional)
     if (templateOptions.includeCQRS) {
       const cqrsFiles = [
-        { path: 'commands.ts', generator: generateCommandsFile },
-        { path: 'queries.ts', generator: generateQueriesFile },
-        { path: 'projections.ts', generator: generateProjectionsFile },
-      ];
+        { path: "commands.ts", generator: generateCommandsFile },
+        { path: "queries.ts", generator: generateQueriesFile },
+        { path: "projections.ts", generator: generateProjectionsFile }
+      ]
 
-      for (const { path, generator } of cqrsFiles) {
-        const filePath = `${sourceLibPath}/${path}`;
-        const content = generator(templateOptions);
-        yield* adapter.writeFile(filePath, content);
-        files.push(filePath);
+      for (const { generator, path } of cqrsFiles) {
+        const filePath = `${sourceLibPath}/${path}`
+        const content = generator(templateOptions)
+        yield* adapter.writeFile(filePath, content)
+        files.push(filePath)
       }
     }
 
     // Generate RPC file (conditional)
     if (templateOptions.includeRPC) {
-      const rpcPath = `${sourceLibPath}/rpc.ts`;
-      const content = generateRpcFile(templateOptions);
-      yield* adapter.writeFile(rpcPath, content);
-      files.push(rpcPath);
+      const rpcPath = `${sourceLibPath}/rpc.ts`
+      const content = generateRpcFile(templateOptions)
+      yield* adapter.writeFile(rpcPath, content)
+      files.push(rpcPath)
     }
 
     // Generate index file (barrel exports)
-    const indexPath = `${workspaceRoot}/${sourceRoot}/index.ts`;
-    const indexContent = generateIndexFile(templateOptions);
-    yield* adapter.writeFile(indexPath, indexContent);
-    files.push(indexPath);
+    const indexPath = `${workspaceRoot}/${sourceRoot}/index.ts`
+    const indexContent = generateIndexFile(templateOptions)
+    yield* adapter.writeFile(indexPath, indexContent)
+    files.push(indexPath)
 
-    return files;
-  });
+    return files
+  })
 }
 
 /**
  * Calculate relative path from project to workspace root
  */
 function calculateOffsetFromRoot(projectRoot: string): string {
-  const depth = projectRoot.split('/').length;
-  return '../'.repeat(depth);
+  const depth = projectRoot.split("/").length
+  return "../".repeat(depth)
 }
 
 /**
  * Parse tags from comma-separated string with defaults
  */
-function parseTags(tags: string | undefined, defaults: string[]): string[] {
-  if (!tags) return defaults;
+function parseTags(tags: string | undefined, defaults: Array<string>): Array<string> {
+  if (!tags) return defaults
 
   const parsed = tags
-    .split(',')
+    .split(",")
     .map((t) => t.trim())
-    .filter(Boolean);
+    .filter(Boolean)
 
   // Merge with defaults, removing duplicates
-  return Array.from(new Set([...defaults, ...parsed]));
+  return Array.from(new Set([...defaults, ...parsed]))
 }

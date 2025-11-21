@@ -7,80 +7,64 @@
  * Uses centralized library generation utilities for consistency.
  */
 
-import {
-  Tree,
-  formatFiles,
-  installPackagesTask,
-  names,
-  offsetFromRoot,
-} from '@nx/devkit';
-import type {
-  ProviderGeneratorSchema,
-  NormalizedProviderOptions,
-} from './schema';
-import {
-  parseTags,
-  validateLibraryDoesNotExist,
-} from '../../utils/generator-utils';
-import {
-  generateLibraryFiles,
-  type LibraryGeneratorOptions,
-} from '../../utils/library-generator-utils';
-import { generateErrorsFile } from './templates/errors.template';
-import { generateTypesFile } from './templates/types.template';
-import { generateValidationFile } from './templates/validation.template';
-import { generateServiceFile } from './templates/service.template';
-import { generateLayersFile } from './templates/layers.template';
-import { generateServiceSpecFile } from './templates/service-spec.template';
-import type { ProviderTemplateOptions } from '../../utils/shared/types';
+import type { Tree } from "@nx/devkit"
+import { formatFiles, installPackagesTask, names, offsetFromRoot } from "@nx/devkit"
+import { parseTags, validateLibraryDoesNotExist } from "../../utils/generator-utils"
+import { generateLibraryFiles, type LibraryGeneratorOptions } from "../../utils/library-generator-utils"
+import type { ProviderTemplateOptions } from "../../utils/shared/types"
+import type { NormalizedProviderOptions, ProviderGeneratorSchema } from "./schema"
+import { generateErrorsFile } from "./templates/errors.template"
+import { generateLayersFile } from "./templates/layers.template"
+import { generateServiceSpecFile } from "./templates/service-spec.template"
+import { generateServiceFile } from "./templates/service.template"
+import { generateTypesFile } from "./templates/types.template"
+import { generateValidationFile } from "./templates/validation.template"
 
 /**
  * Normalize and validate generator options
  */
 function normalizeOptions(
   tree: Tree,
-  options: ProviderGeneratorSchema,
+  options: ProviderGeneratorSchema
 ): NormalizedProviderOptions {
   // Validate required options
-  if (!options.name || options.name.trim() === '') {
-    throw new Error('Provider name is required');
+  if (!options.name || options.name.trim() === "") {
+    throw new Error("Provider name is required")
   }
-  if (!options.externalService || options.externalService.trim() === '') {
-    throw new Error('External service name is required');
+  if (!options.externalService || options.externalService.trim() === "") {
+    throw new Error("External service name is required")
   }
 
-  const projectName = `provider-${names(options.name).fileName}`;
-  const directory = options.directory || 'libs/provider';
-  const projectRoot = `${directory}/${names(options.name).fileName}`;
+  const projectName = `provider-${names(options.name).fileName}`
+  const directory = options.directory || "libs/provider"
+  const projectRoot = `${directory}/${names(options.name).fileName}`
 
   // Validate library doesn't already exist
-  validateLibraryDoesNotExist(tree, projectRoot, projectName);
+  validateLibraryDoesNotExist(tree, projectRoot, projectName)
 
-  const nameVariations = names(options.name);
-  const projectClassName = `${nameVariations.className}Service`; // Changed from Provider to Service
-  const projectConstantName = `${nameVariations.constantName}_SERVICE`;
+  const nameVariations = names(options.name)
+  const projectClassName = `${nameVariations.className}Service` // Changed from Provider to Service
+  const projectConstantName = `${nameVariations.constantName}_SERVICE`
 
   // Platform determination
-  const platform = options.platform || 'node';
+  const platform = options.platform || "node"
   // Only set includeClientServer when explicitly provided or when platform requires it
   // For universal platform, always generate both client and server
   // For other platforms, use explicit option or false (let platform defaults apply)
-  const includeClientServer =
-    platform === 'universal' ? true : (options.includeClientServer ?? false);
+  const includeClientServer = platform === "universal" ? true : (options.includeClientServer ?? false)
 
   // Generate human-readable description
-  const description =
-    options.description ||
-    `${nameVariations.className} provider for ${options.externalService}`;
+  const description = options.description ||
+    `${nameVariations.className} provider for ${options.externalService}`
 
   // Create standardized tags following {type}-{scope}-{platform}-{service} pattern
   const defaultTags = [
-    'type:provider',
-    'scope:provider', // Provider scope for external service adapters
+    "type:provider",
+    "scope:provider", // Provider scope for external service adapters
     `platform:${platform}`,
-    `service:${names(options.externalService).fileName}`,
-  ];
-  const parsedTags = parseTags(options.tags, defaultTags);
+    `service:${names(options.externalService).fileName}`
+  ]
+  const parsedTags = parseTags(options.tags, defaultTags)
 
   return {
     name: options.name,
@@ -96,8 +80,8 @@ function normalizeOptions(
     projectClassName,
     projectConstantName,
     parsedTags,
-    offsetFromRoot: offsetFromRoot(projectRoot),
-  };
+    offsetFromRoot: offsetFromRoot(projectRoot)
+  }
 }
 
 /**
@@ -106,15 +90,15 @@ function normalizeOptions(
  * All infrastructure files are now generated by library-generator-utils
  */
 function addDomainFiles(tree: Tree, options: NormalizedProviderOptions) {
-  const nameVariations = names(options.name);
+  const nameVariations = names(options.name)
 
   // Map PlatformType to Platform for template options
   const platformMapping = {
-    node: 'server' as const,
-    browser: 'client' as const,
-    edge: 'edge' as const,
-    universal: 'universal' as const,
-  };
+    node: "server" as const,
+    browser: "client" as const,
+    edge: "edge" as const,
+    universal: "universal" as const
+  }
 
   const templateOptions: ProviderTemplateOptions = {
     // Naming variants
@@ -125,7 +109,7 @@ function addDomainFiles(tree: Tree, options: NormalizedProviderOptions) {
     constantName: nameVariations.constantName,
 
     // Library metadata
-    libraryType: 'provider',
+    libraryType: "provider",
     packageName: `@custom-repo/${options.projectName}`,
     projectName: options.projectName,
     projectRoot: options.projectRoot,
@@ -136,27 +120,27 @@ function addDomainFiles(tree: Tree, options: NormalizedProviderOptions) {
 
     // Provider-specific
     externalService: options.externalService,
-    platforms: [platformMapping[options.platform]],
-  };
+    platforms: [platformMapping[options.platform]]
+  }
 
-  const sourceLibPath = `${templateOptions.sourceRoot}/lib`;
+  const sourceLibPath = `${templateOptions.sourceRoot}/lib`
 
   // Generate all provider-specific files using code-based templates
-  tree.write(`${sourceLibPath}/errors.ts`, generateErrorsFile(templateOptions));
-  tree.write(`${sourceLibPath}/types.ts`, generateTypesFile(templateOptions));
+  tree.write(`${sourceLibPath}/errors.ts`, generateErrorsFile(templateOptions))
+  tree.write(`${sourceLibPath}/types.ts`, generateTypesFile(templateOptions))
   tree.write(
     `${sourceLibPath}/validation.ts`,
-    generateValidationFile(templateOptions),
-  );
+    generateValidationFile(templateOptions)
+  )
   tree.write(
     `${sourceLibPath}/service.ts`,
-    generateServiceFile(templateOptions),
-  );
-  tree.write(`${sourceLibPath}/layers.ts`, generateLayersFile(templateOptions));
+    generateServiceFile(templateOptions)
+  )
+  tree.write(`${sourceLibPath}/layers.ts`, generateLayersFile(templateOptions))
   tree.write(
     `${sourceLibPath}/service.spec.ts`,
-    generateServiceSpecFile(templateOptions),
-  );
+    generateServiceSpecFile(templateOptions)
+  )
 }
 
 /**
@@ -167,9 +151,9 @@ function addDomainFiles(tree: Tree, options: NormalizedProviderOptions) {
  */
 export default async function providerGenerator(
   tree: Tree,
-  options: ProviderGeneratorSchema,
+  options: ProviderGeneratorSchema
 ) {
-  const normalizedOptions = normalizeOptions(tree, options);
+  const normalizedOptions = normalizeOptions(tree, options)
 
   // Generate ALL library files using centralized utility
   const libraryOptions: LibraryGeneratorOptions = {
@@ -177,27 +161,27 @@ export default async function providerGenerator(
     projectName: normalizedOptions.projectName,
     projectRoot: normalizedOptions.projectRoot,
     offsetFromRoot: normalizedOptions.offsetFromRoot,
-    libraryType: 'provider',
+    libraryType: "provider",
     platform: normalizedOptions.platform,
     description: normalizedOptions.description,
     tags: normalizedOptions.parsedTags,
     includeClientServer: normalizedOptions.includeClientServer,
-    includeEdgeExports: normalizedOptions.platform === 'edge',
+    includeEdgeExports: normalizedOptions.platform === "edge",
     templateData: {
       externalService: normalizedOptions.externalService,
       projectClassName: normalizedOptions.projectClassName,
-      projectConstantName: normalizedOptions.projectConstantName,
-    },
-  };
+      projectConstantName: normalizedOptions.projectConstantName
+    }
+  }
 
-  await generateLibraryFiles(tree, libraryOptions);
+  await generateLibraryFiles(tree, libraryOptions)
 
   // Generate domain-specific files (service.ts, errors.ts, layers.ts)
-  addDomainFiles(tree, normalizedOptions);
+  addDomainFiles(tree, normalizedOptions)
 
   // Format files and install packages
-  await formatFiles(tree);
+  await formatFiles(tree)
   return () => {
-    installPackagesTask(tree);
-  };
+    installPackagesTask(tree)
+  }
 }

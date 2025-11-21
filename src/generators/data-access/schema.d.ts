@@ -23,7 +23,7 @@ export interface DataAccessGeneratorSchema {
    * // Creates @custom-repo/data-access-product
    * ```
    */
-  readonly name: string;
+  readonly name: string
 
   /**
    * Directory where the library will be created
@@ -32,7 +32,7 @@ export interface DataAccessGeneratorSchema {
    *
    * @default "libs/data-access"
    */
-  readonly directory?: string;
+  readonly directory?: string
 
   /**
    * Description of the data-access library
@@ -42,5 +42,5 @@ export interface DataAccessGeneratorSchema {
    * @example
    * "Repository-based data access for product domain"
    */
-  readonly description?: string;
+  readonly description?: string
 }

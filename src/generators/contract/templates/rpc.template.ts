@@ -7,8 +7,8 @@
  * @module monorepo-library-generator/contract/rpc-template
  */
 
-import { TypeScriptBuilder } from '../../../utils/code-generation/typescript-builder';
-import type { ContractTemplateOptions } from '../../../utils/shared/types';
+import { TypeScriptBuilder } from "../../../utils/code-generation/typescript-builder"
+import type { ContractTemplateOptions } from "../../../utils/shared/types"
 
 /**
  * Generate rpc.ts file for contract library
@@ -19,64 +19,64 @@ import type { ContractTemplateOptions } from '../../../utils/shared/types';
  * - Type exports for all schemas
  */
 export function generateRpcFile(options: ContractTemplateOptions) {
-  const builder = new TypeScriptBuilder();
-  const { className, fileName, propertyName } = options;
-  const domainName = propertyName;
+  const builder = new TypeScriptBuilder()
+  const { className, fileName, propertyName } = options
+  const domainName = propertyName
 
   // Add file header
-  builder.addRaw(createFileHeader(className, domainName, fileName));
-  builder.addBlankLine();
+  builder.addRaw(createFileHeader(className, domainName, fileName))
+  builder.addBlankLine()
 
   // Add imports
-  builder.addImports([{ from: 'effect', imports: ['Schema'] }]);
+  builder.addImports([{ from: "effect", imports: ["Schema"] }])
 
   builder.addImports([
-    { from: './entities', imports: [`${className}Id`], isTypeOnly: true },
-  ]);
+    { from: "./entities", imports: [`${className}Id`], isTypeOnly: true }
+  ])
 
-  builder.addBlankLine();
+  builder.addBlankLine()
 
   // ============================================================================
   // SECTION 1: Request/Response Schemas
   // ============================================================================
 
   builder.addSectionComment(
-    'Request/Response Schemas (Serializable over network)',
-  );
-  builder.addBlankLine();
+    "Request/Response Schemas (Serializable over network)"
+  )
+  builder.addBlankLine()
 
   // Get schemas
-  builder.addRaw(createGetSchemas(className, propertyName));
-  builder.addBlankLine();
+  builder.addRaw(createGetSchemas(className, propertyName))
+  builder.addBlankLine()
 
   // List schemas
-  builder.addRaw(createListSchemas(className));
-  builder.addBlankLine();
+  builder.addRaw(createListSchemas(className))
+  builder.addBlankLine()
 
   // Create schemas
-  builder.addRaw(createCreateSchemas(className));
-  builder.addBlankLine();
+  builder.addRaw(createCreateSchemas(className))
+  builder.addBlankLine()
 
   // Update schemas
-  builder.addRaw(createUpdateSchemas(className, propertyName));
-  builder.addBlankLine();
+  builder.addRaw(createUpdateSchemas(className, propertyName))
+  builder.addBlankLine()
 
   // Delete schemas
-  builder.addRaw(createDeleteSchemas(className, propertyName));
-  builder.addBlankLine();
+  builder.addRaw(createDeleteSchemas(className, propertyName))
+  builder.addBlankLine()
 
   // ============================================================================
   // SECTION 2: RPC Errors (Schema.TaggedError for serialization)
   // ============================================================================
 
   builder.addSectionComment(
-    'RPC Errors (Schema.TaggedError for serialization)',
-  );
-  builder.addBlankLine();
+    "RPC Errors (Schema.TaggedError for serialization)"
+  )
+  builder.addBlankLine()
 
-  builder.addRaw(createRpcErrors(className, propertyName));
+  builder.addRaw(createRpcErrors(className, propertyName))
 
-  return builder.toString();
+  return builder.toString()
 }
 
 /**
@@ -85,7 +85,7 @@ export function generateRpcFile(options: ContractTemplateOptions) {
 function createFileHeader(
   className: string,
   domainName: string,
-  fileName: string,
+  fileName: string
 ) {
   return `/**
  * ${className} RPC Schemas
@@ -100,7 +100,7 @@ function createFileHeader(
  * 4. Document error codes and recovery strategies
  *
  * @module @custom-repo/contract-${fileName}/rpc
- */`;
+ */`
 }
 
 /**
@@ -128,7 +128,7 @@ export const Get${className}Response = Schema.Struct({
   timestamp: Schema.DateTimeUtc,
 });
 
-export type Get${className}Response = Schema.Schema.Type<typeof Get${className}Response>;`;
+export type Get${className}Response = Schema.Schema.Type<typeof Get${className}Response>;`
 }
 
 /**
@@ -177,7 +177,7 @@ export const List${className}sResponse = Schema.Struct({
   timestamp: Schema.DateTimeUtc,
 });
 
-export type List${className}sResponse = Schema.Schema.Type<typeof List${className}sResponse>;`;
+export type List${className}sResponse = Schema.Schema.Type<typeof List${className}sResponse>;`
 }
 
 /**
@@ -207,7 +207,7 @@ export const Create${className}Response = Schema.Struct({
   timestamp: Schema.DateTimeUtc,
 });
 
-export type Create${className}Response = Schema.Schema.Type<typeof Create${className}Response>;`;
+export type Create${className}Response = Schema.Schema.Type<typeof Create${className}Response>;`
 }
 
 /**
@@ -243,7 +243,7 @@ export const Update${className}Response = Schema.Struct({
   timestamp: Schema.DateTimeUtc,
 });
 
-export type Update${className}Response = Schema.Schema.Type<typeof Update${className}Response>;`;
+export type Update${className}Response = Schema.Schema.Type<typeof Update${className}Response>;`
 }
 
 /**
@@ -274,7 +274,7 @@ export const Delete${className}Response = Schema.Struct({
   timestamp: Schema.DateTimeUtc,
 });
 
-export type Delete${className}Response = Schema.Schema.Type<typeof Delete${className}Response>;`;
+export type Delete${className}Response = Schema.Schema.Type<typeof Delete${className}Response>;`
 }
 
 /**
@@ -324,5 +324,5 @@ export type ${className}RpcError =
   | ${className}NotFoundRpcError
   | ${className}ValidationRpcError;
 
-// TODO: Add more RPC-specific errors as needed`;
+// TODO: Add more RPC-specific errors as needed`
 }

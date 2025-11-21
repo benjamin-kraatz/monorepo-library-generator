@@ -6,8 +6,8 @@
  * @module monorepo-library-generator/data-access/layers-template
  */
 
-import { TypeScriptBuilder } from '../../../utils/code-generation/typescript-builder';
-import type { DataAccessTemplateOptions } from '../../../utils/shared/types';
+import { TypeScriptBuilder } from "../../../utils/code-generation/typescript-builder"
+import type { DataAccessTemplateOptions } from "../../../utils/shared/types"
 
 /**
  * Generate server/layers.ts file for data-access library
@@ -19,9 +19,9 @@ import type { DataAccessTemplateOptions } from '../../../utils/shared/types';
  * - Auto layer (environment-based selection)
  */
 export function generateLayersFile(options: DataAccessTemplateOptions) {
-  const builder = new TypeScriptBuilder();
-  const { className, fileName, propertyName } = options;
-  const domainName = propertyName;
+  const builder = new TypeScriptBuilder()
+  const { className, fileName, propertyName } = options
+  const domainName = propertyName
 
   // Add file header
   builder.addFileHeader({
@@ -37,20 +37,20 @@ TODO: Customize this file:
 5. Add error handling wrapping if needed
 
 @see https://effect.website/docs/guides/context-management for layer composition`,
-    module: `@custom-repo/data-access-${fileName}/server`,
-  });
-  builder.addBlankLine();
+    module: `@custom-repo/data-access-${fileName}/server`
+  })
+  builder.addBlankLine()
 
   // Add imports
   builder.addImports([
-    { from: 'effect', imports: ['Layer'] },
-    { from: '../repository.js', imports: [`${className}Repository`] },
-  ]);
-  builder.addBlankLine();
+    { from: "effect", imports: ["Layer"] },
+    { from: "../repository.js", imports: [`${className}Repository`] }
+  ])
+  builder.addBlankLine()
 
   // Environment-Specific Layers
-  builder.addSectionComment('Environment-Specific Layers');
-  builder.addBlankLine();
+  builder.addSectionComment("Environment-Specific Layers")
+  builder.addBlankLine()
 
   // Live Layer
   builder.addRaw(`/**
@@ -73,8 +73,8 @@ export const ${className}DataAccessLive = Layer.mergeAll(
   ${className}Repository.Live,
   // TODO: Add infrastructure dependencies
   // Example: DatabaseLayer, CacheLayer, LoggingLayer
-);`);
-  builder.addBlankLine();
+);`)
+  builder.addBlankLine()
 
   // Test Layer
   builder.addRaw(`/**
@@ -100,8 +100,8 @@ export const ${className}DataAccessLive = Layer.mergeAll(
 export const ${className}DataAccessTest = Layer.mergeAll(
   ${className}Repository.Test,
   // TODO: Add test-specific layers if needed
-);`);
-  builder.addBlankLine();
+);`)
+  builder.addBlankLine()
 
   // Dev Layer
   builder.addRaw(`/**
@@ -119,8 +119,8 @@ export const ${className}DataAccessDev = Layer.mergeAll(
   ${className}Repository.Dev,
   // TODO: Add development-specific layers
   // Example: DetailedLoggingLayer, PerformanceMonitoringLayer
-);`);
-  builder.addBlankLine();
+);`)
+  builder.addBlankLine()
 
   // Auto Layer
   builder.addRaw(`/**
@@ -148,8 +148,8 @@ export const ${className}DataAccessAuto = (() => {
     default:
       return ${className}DataAccessLive;
   }
-})();`);
-  builder.addBlankLine();
+})();`)
+  builder.addBlankLine()
 
   // Add TODO comment for additional layer compositions
   builder.addRaw(`// TODO: Export specific composition for common scenarios
@@ -163,7 +163,7 @@ export const ${className}DataAccessAuto = (() => {
 //   ${className}DataAccessLive,
 //   DistributedTracingLayer,
 // );
-`);
+`)
 
-  return builder.toString();
+  return builder.toString()
 }

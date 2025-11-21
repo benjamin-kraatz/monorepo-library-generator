@@ -5,92 +5,93 @@
  * Uses Nx Tree API via TreeAdapter.
  */
 
-import { Tree, formatFiles, addProjectConfiguration } from '@nx/devkit';
-import { Effect } from 'effect';
-import type { DataAccessGeneratorSchema } from './schema.d';
-import { createTreeAdapter } from '../../utils/tree-adapter';
-import { generateDataAccessCore, type GeneratorResult } from '../core/data-access-generator-core';
+import type { Tree } from "@nx/devkit"
+import { addProjectConfiguration, formatFiles } from "@nx/devkit"
+import { Effect } from "effect"
+import { createTreeAdapter } from "../../utils/tree-adapter"
+import { generateDataAccessCore, type GeneratorResult } from "../core/data-access-generator-core"
+import type { DataAccessGeneratorSchema } from "./schema.d"
 
 /**
  * Data access generator for Nx workspaces
  */
 export default async function dataAccessGenerator(
   tree: Tree,
-  schema: DataAccessGeneratorSchema,
+  schema: DataAccessGeneratorSchema
 ) {
-  const adapter = createTreeAdapter(tree);
+  const adapter = createTreeAdapter(tree)
 
   const coreOptions: Parameters<typeof generateDataAccessCore>[1] = {
     name: schema.name,
     ...(schema.description && { description: schema.description }),
     ...(schema.directory && { directory: schema.directory }),
-    workspaceRoot: tree.root,
-  };
+    workspaceRoot: tree.root
+  }
 
   const result: GeneratorResult = await Effect.runPromise(
     generateDataAccessCore(adapter, coreOptions) as Effect.Effect<GeneratorResult, never>
-  );
+  )
 
   // Generate Nx-specific tsconfig files
   const tsconfigLib = {
-    extends: './tsconfig.json',
+    extends: "./tsconfig.json",
     compilerOptions: {
-      outDir: '../../dist/out-tsc',
+      outDir: "../../dist/out-tsc",
       declaration: true,
-      types: ['node'],
+      types: ["node"]
     },
-    include: ['src/**/*.ts'],
-    exclude: ['jest.config.ts', 'src/**/*.spec.ts', 'src/**/*.test.ts'],
-  };
+    include: ["src/**/*.ts"],
+    exclude: ["jest.config.ts", "src/**/*.spec.ts", "src/**/*.test.ts"]
+  }
 
   tree.write(
     `${result.projectRoot}/tsconfig.lib.json`,
     JSON.stringify(tsconfigLib, null, 2)
-  );
+  )
 
   const tsconfigSpec = {
-    extends: './tsconfig.json',
+    extends: "./tsconfig.json",
     compilerOptions: {
-      outDir: '../../dist/out-tsc',
-      types: ['vitest/globals', 'node'],
+      outDir: "../../dist/out-tsc",
+      types: ["vitest/globals", "node"]
     },
-    include: ['vite.config.ts', 'src/**/*.test.ts', 'src/**/*.spec.ts'],
-  };
+    include: ["vite.config.ts", "src/**/*.test.ts", "src/**/*.spec.ts"]
+  }
 
   tree.write(
     `${result.projectRoot}/tsconfig.spec.json`,
     JSON.stringify(tsconfigSpec, null, 2)
-  );
+  )
 
   // Register project with Nx
   addProjectConfiguration(tree, result.projectName, {
     root: result.projectRoot,
-    projectType: 'library',
+    projectType: "library",
     sourceRoot: result.sourceRoot,
     targets: {
       build: {
-        executor: '@nx/js:tsc',
-        outputs: ['{options.outputPath}'],
+        executor: "@nx/js:tsc",
+        outputs: ["{options.outputPath}"],
         options: {
           outputPath: `dist/${result.projectRoot}`,
           tsConfig: `${result.projectRoot}/tsconfig.json`,
           packageJson: `${result.projectRoot}/package.json`,
-          main: `${result.projectRoot}/src/index.ts`,
-        },
+          main: `${result.projectRoot}/src/index.ts`
+        }
       },
       test: {
-        executor: '@nx/vite:test',
-        outputs: ['{options.reportsDirectory}'],
+        executor: "@nx/vite:test",
+        outputs: ["{options.reportsDirectory}"],
         options: {
           passWithNoTests: true,
-          reportsDirectory: `../../coverage/${result.projectRoot}`,
-        },
-      },
+          reportsDirectory: `../../coverage/${result.projectRoot}`
+        }
+      }
     },
-    tags: coreOptions.tags?.split(',').map(t => t.trim()).filter(Boolean) || [],
-  });
+    tags: coreOptions.tags?.split(",").map((t) => t.trim()).filter(Boolean) || []
+  })
 
-  await formatFiles(tree);
+  await formatFiles(tree)
 
   return () => {
     console.log(`
@@ -103,6 +104,6 @@ Next steps:
 1. Customize repository implementation
 2. Build: pnpm exec nx build ${result.projectName} --batch
 3. Test: pnpm exec nx test ${result.projectName}
-    `);
-  };
+    `)
+  }
 }

@@ -1,5 +1,5 @@
 import type { Tree } from "@nx/devkit"
-import type { LibraryType, PlatformType } from "./build-config-utils.js"
+import type { LibraryType, PlatformType } from "./build-config-utils"
 
 /**
  * Create standardized tags for library types

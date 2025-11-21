@@ -62,10 +62,25 @@ export default [
       "prefer-destructuring": "off",
       "sort-imports": "off",
 
-      "no-restricted-syntax": ["error", {
-        selector: "CallExpression[callee.property.name='push'] > SpreadElement.arguments",
-        message: "Do not use spread arguments in Array.push"
-      }],
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "CallExpression[callee.property.name='push'] > SpreadElement.arguments",
+          message: "Do not use spread arguments in Array.push"
+        },
+        {
+          selector: "ImportDeclaration[source.value=/\\.(m|c)?js$/]",
+          message: "Do not use .js, .mjs, or .cjs extensions in imports. This is a TypeScript-only monorepo - use extensionless imports."
+        },
+        {
+          selector: "ExportNamedDeclaration[source.value=/\\.(m|c)?js$/]",
+          message: "Do not use .js, .mjs, or .cjs extensions in exports. This is a TypeScript-only monorepo - use extensionless imports."
+        },
+        {
+          selector: "ExportAllDeclaration[source.value=/\\.(m|c)?js$/]",
+          message: "Do not use .js, .mjs, or .cjs extensions in exports. This is a TypeScript-only monorepo - use extensionless imports."
+        }
+      ],
 
       "no-unused-vars": "off",
       "prefer-rest-params": "off",

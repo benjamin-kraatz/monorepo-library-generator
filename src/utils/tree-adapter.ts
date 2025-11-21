@@ -8,15 +8,10 @@
  * @module monorepo-library-generator/tree-adapter
  */
 
-import type { Tree } from '@nx/devkit';
-import { Effect } from 'effect';
-import type { FileSystemAdapter } from './filesystem-adapter';
-import {
-  DirectoryCreationError,
-  FileReadError,
-  FileSystemError,
-  FileWriteError,
-} from './filesystem-adapter';
+import type { Tree } from "@nx/devkit"
+import { Effect } from "effect"
+import type { FileSystemAdapter } from "./filesystem-adapter"
+import { DirectoryCreationError, FileReadError, FileSystemError, FileWriteError } from "./filesystem-adapter"
 
 /**
  * Tree Adapter Implementation
@@ -26,7 +21,7 @@ import {
 export class TreeAdapter implements FileSystemAdapter {
   constructor(
     private readonly tree: Tree,
-    private readonly mode: 'nx' | 'effect' = 'nx',
+    private readonly mode: "nx" | "effect" = "nx"
   ) {}
 
   /**
@@ -36,22 +31,22 @@ export class TreeAdapter implements FileSystemAdapter {
    */
   writeFile(
     path: string,
-    content: string,
+    content: string
   ): Effect.Effect<void, FileWriteError | DirectoryCreationError> {
     return Effect.try({
       try: () => {
         // Tree API expects paths relative to workspace root
         // Strip workspace root prefix if present
-        const relativePath = this.toRelativePath(path);
-        this.tree.write(relativePath, content);
+        const relativePath = this.toRelativePath(path)
+        this.tree.write(relativePath, content)
       },
       catch: (error) =>
         new FileWriteError({
           path,
           content,
-          cause: error,
-        }),
-    });
+          cause: error
+        })
+    })
   }
 
   /**
@@ -62,20 +57,20 @@ export class TreeAdapter implements FileSystemAdapter {
   readFile(path: string): Effect.Effect<string, FileReadError> {
     return Effect.try({
       try: () => {
-        const relativePath = this.toRelativePath(path);
-        const content = this.tree.read(relativePath);
+        const relativePath = this.toRelativePath(path)
+        const content = this.tree.read(relativePath)
         if (content === null) {
-          throw new Error(`File not found: ${path}`);
+          throw new Error(`File not found: ${path}`)
         }
         // Convert Buffer to string
-        return content.toString('utf-8');
+        return content.toString("utf-8")
       },
       catch: (error) =>
         new FileReadError({
           path,
-          cause: error,
-        }),
-    });
+          cause: error
+        })
+    })
   }
 
   /**
@@ -84,16 +79,16 @@ export class TreeAdapter implements FileSystemAdapter {
   exists(path: string): Effect.Effect<boolean, FileSystemError> {
     return Effect.try({
       try: () => {
-        const relativePath = this.toRelativePath(path);
-        return this.tree.exists(relativePath);
+        const relativePath = this.toRelativePath(path)
+        return this.tree.exists(relativePath)
       },
       catch: (error) =>
         new FileSystemError({
           message: `Failed to check existence of: ${path}`,
           path,
-          cause: error,
-        }),
-    });
+          cause: error
+        })
+    })
   }
 
   /**
@@ -112,30 +107,30 @@ export class TreeAdapter implements FileSystemAdapter {
       catch: (error) =>
         new DirectoryCreationError({
           path,
-          cause: error,
-        }),
-    });
+          cause: error
+        })
+    })
   }
 
   /**
    * List directory contents using Tree API
    */
   listDirectory(
-    path: string,
-  ): Effect.Effect<readonly string[], FileSystemError> {
+    path: string
+  ): Effect.Effect<ReadonlyArray<string>, FileSystemError> {
     return Effect.try({
       try: () => {
-        const relativePath = this.toRelativePath(path);
-        const children = this.tree.children(relativePath);
-        return children as readonly string[];
+        const relativePath = this.toRelativePath(path)
+        const children = this.tree.children(relativePath)
+        return children as ReadonlyArray<string>
       },
       catch: (error) =>
         new FileSystemError({
           message: `Failed to list directory: ${path}`,
           path,
-          cause: error,
-        }),
-    });
+          cause: error
+        })
+    })
   }
 
   /**
@@ -143,34 +138,34 @@ export class TreeAdapter implements FileSystemAdapter {
    */
   remove(
     path: string,
-    _options?: { recursive?: boolean },
+    _options?: { recursive?: boolean }
   ): Effect.Effect<void, FileSystemError> {
     return Effect.try({
       try: () => {
-        const relativePath = this.toRelativePath(path);
-        this.tree.delete(relativePath);
+        const relativePath = this.toRelativePath(path)
+        this.tree.delete(relativePath)
       },
       catch: (error) =>
         new FileSystemError({
           message: `Failed to delete: ${path}`,
           path,
-          cause: error,
-        }),
-    });
+          cause: error
+        })
+    })
   }
 
   /**
    * Get workspace root from Tree
    */
   getWorkspaceRoot(): string {
-    return this.tree.root;
+    return this.tree.root
   }
 
   /**
    * Get mode (always 'nx' for TreeAdapter)
    */
-  getMode(): 'nx' | 'effect' {
-    return this.mode;
+  getMode(): "nx" | "effect" {
+    return this.mode
   }
 
   /**
@@ -180,14 +175,14 @@ export class TreeAdapter implements FileSystemAdapter {
    * If path starts with workspace root, strip it.
    */
   private toRelativePath(path: string): string {
-    const workspaceRoot = this.tree.root;
-    if (path.startsWith(workspaceRoot + '/')) {
-      return path.slice(workspaceRoot.length + 1);
+    const workspaceRoot = this.tree.root
+    if (path.startsWith(workspaceRoot + "/")) {
+      return path.slice(workspaceRoot.length + 1)
     }
     if (path.startsWith(workspaceRoot)) {
-      return path.slice(workspaceRoot.length);
+      return path.slice(workspaceRoot.length)
     }
-    return path;
+    return path
   }
 }
 
@@ -198,5 +193,5 @@ export class TreeAdapter implements FileSystemAdapter {
  * @returns TreeAdapter instance
  */
 export function createTreeAdapter(tree: Tree): TreeAdapter {
-  return new TreeAdapter(tree);
+  return new TreeAdapter(tree)
 }

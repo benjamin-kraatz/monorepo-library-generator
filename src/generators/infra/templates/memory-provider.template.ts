@@ -6,28 +6,29 @@
  * @module monorepo-library-generator/infra-templates
  */
 
-import { TypeScriptBuilder } from '../../../utils/code-generation/typescript-builder';
-import type { InfraTemplateOptions } from '../../../utils/shared/types';
+import { TypeScriptBuilder } from "../../../utils/code-generation/typescript-builder"
+import type { InfraTemplateOptions } from "../../../utils/shared/types"
 
 /**
  * Generate memory provider file for infrastructure service
  */
 export function generateMemoryProviderFile(options: InfraTemplateOptions) {
-  const builder = new TypeScriptBuilder();
-  const { className, fileName } = options;
+  const builder = new TypeScriptBuilder()
+  const { className, fileName } = options
 
   // File header
   builder.addFileHeader({
     title: `Memory Provider for ${className}`,
-    description: `In-memory provider implementation for testing and development.\nProvides a simple data store without external dependencies.\n\nTODO: Customize this file for your service:\n1. Implement in-memory data structures for your domain\n2. Add helper methods for testing\n3. Consider state management (Map, Set, custom class)\n4. Add reset() method for test isolation`,
-    module: `@custom-repo/infra-${fileName}/providers`,
-  });
+    description:
+      `In-memory provider implementation for testing and development.\nProvides a simple data store without external dependencies.\n\nTODO: Customize this file for your service:\n1. Implement in-memory data structures for your domain\n2. Add helper methods for testing\n3. Consider state management (Map, Set, custom class)\n4. Add reset() method for test isolation`,
+    module: `@custom-repo/infra-${fileName}/providers`
+  })
 
   // Imports
-  builder.addImports([{ from: 'effect', imports: ['Context', 'Layer'] }]);
+  builder.addImports([{ from: "effect", imports: ["Context", "Layer"] }])
 
   // Section: Memory Provider Tag
-  builder.addSectionComment('Memory Provider Tag');
+  builder.addSectionComment("Memory Provider Tag")
 
   builder.addRaw(`/**
  * Memory Provider Context Tag
@@ -47,11 +48,11 @@ export class Memory${className}Provider extends Context.Tag(
     readonly store: Map<string, unknown>;
     readonly reset: () => void;
   }
->() {}`);
-  builder.addBlankLine();
+>() {}`)
+  builder.addBlankLine()
 
   // Section: Memory Provider Implementation
-  builder.addSectionComment('Memory Provider Implementation');
+  builder.addSectionComment("Memory Provider Implementation")
 
   builder.addFunction({
     name: `createMemory${className}Provider`,
@@ -66,11 +67,11 @@ return {
   },
 };`,
     exported: false,
-    jsdoc: `Create memory provider\n\nTODO: Implement actual memory provider logic`,
-  });
+    jsdoc: `Create memory provider\n\nTODO: Implement actual memory provider logic`
+  })
 
   // Section: Memory Provider Layer
-  builder.addSectionComment('Memory Provider Layer');
+  builder.addSectionComment("Memory Provider Layer")
 
   builder.addConst(
     `Memory${className}ProviderLive`,
@@ -80,8 +81,8 @@ return {
 )`,
     undefined,
     true,
-    `Memory Provider Layer\n\nUse this layer for testing and development.\nAll data is stored in-memory and lost when the process exits.`,
-  );
+    `Memory Provider Layer\n\nUse this layer for testing and development.\nAll data is stored in-memory and lost when the process exits.`
+  )
 
   // TODO comment
   builder.addRaw(`// TODO: Add provider factory if needed
@@ -93,7 +94,7 @@ return {
 //   never
 // > {
 //   return Layer.succeed(Memory${className}Provider, createMemory${className}Provider());
-// }`);
+// }`)
 
-  return builder.toString();
+  return builder.toString()
 }

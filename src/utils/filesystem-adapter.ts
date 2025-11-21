@@ -10,41 +10,48 @@
  * @module monorepo-library-generator/filesystem-adapter
  */
 
-import type { Effect } from 'effect';
-import { Data } from 'effect';
+import type { Effect } from "effect"
+import { Data } from "effect"
+
+/**
+ * File System Service Tag
+ *
+ * Context.Tag for dependency injection of FileSystemAdapter
+ */
+import { Context } from "effect"
 
 /**
  * File System Errors
  *
  * Tagged errors following Effect patterns
  */
-export class FileSystemError extends Data.TaggedError('FileSystemError')<{
-  readonly message: string;
-  readonly path?: string;
-  readonly cause?: unknown;
+export class FileSystemError extends Data.TaggedError("FileSystemError")<{
+  readonly message: string
+  readonly path?: string
+  readonly cause?: unknown
 }> {}
 
-export class FileNotFoundError extends Data.TaggedError('FileNotFoundError')<{
-  readonly path: string;
-  readonly cause?: unknown;
+export class FileNotFoundError extends Data.TaggedError("FileNotFoundError")<{
+  readonly path: string
+  readonly cause?: unknown
 }> {}
 
 export class DirectoryCreationError extends Data.TaggedError(
-  'DirectoryCreationError',
+  "DirectoryCreationError"
 )<{
-  readonly path: string;
-  readonly cause?: unknown;
+  readonly path: string
+  readonly cause?: unknown
 }> {}
 
-export class FileWriteError extends Data.TaggedError('FileWriteError')<{
-  readonly path: string;
-  readonly content?: string;
-  readonly cause?: unknown;
+export class FileWriteError extends Data.TaggedError("FileWriteError")<{
+  readonly path: string
+  readonly content?: string
+  readonly cause?: unknown
 }> {}
 
-export class FileReadError extends Data.TaggedError('FileReadError')<{
-  readonly path: string;
-  readonly cause?: unknown;
+export class FileReadError extends Data.TaggedError("FileReadError")<{
+  readonly path: string
+  readonly cause?: unknown
 }> {}
 
 /**
@@ -55,7 +62,7 @@ export type FileSystemErrors =
   | FileNotFoundError
   | DirectoryCreationError
   | FileWriteError
-  | FileReadError;
+  | FileReadError
 
 /**
  * File System Adapter Interface
@@ -75,8 +82,8 @@ export interface FileSystemAdapter {
    */
   writeFile(
     path: string,
-    content: string,
-  ): Effect.Effect<void, FileWriteError | DirectoryCreationError, unknown>;
+    content: string
+  ): Effect.Effect<void, FileWriteError | DirectoryCreationError, unknown>
 
   /**
    * Read a file from the specified path
@@ -84,7 +91,7 @@ export interface FileSystemAdapter {
    * @param path - Absolute or relative file path
    * @returns Effect that succeeds with file content or fails with FileReadError
    */
-  readFile(path: string): Effect.Effect<string, FileReadError, unknown>;
+  readFile(path: string): Effect.Effect<string, FileReadError, unknown>
 
   /**
    * Check if a file or directory exists
@@ -92,7 +99,7 @@ export interface FileSystemAdapter {
    * @param path - Absolute or relative path
    * @returns Effect that succeeds with boolean (true if exists)
    */
-  exists(path: string): Effect.Effect<boolean, FileSystemError, unknown>;
+  exists(path: string): Effect.Effect<boolean, FileSystemError, unknown>
 
   /**
    * Create a directory (including parent directories)
@@ -100,7 +107,7 @@ export interface FileSystemAdapter {
    * @param path - Absolute or relative directory path
    * @returns Effect that succeeds with void or fails with DirectoryCreationError
    */
-  makeDirectory(path: string): Effect.Effect<void, DirectoryCreationError, unknown>;
+  makeDirectory(path: string): Effect.Effect<void, DirectoryCreationError, unknown>
 
   /**
    * List contents of a directory
@@ -109,8 +116,8 @@ export interface FileSystemAdapter {
    * @returns Effect that succeeds with array of file/directory names
    */
   listDirectory(
-    path: string,
-  ): Effect.Effect<readonly string[], FileSystemError, unknown>;
+    path: string
+  ): Effect.Effect<ReadonlyArray<string>, FileSystemError, unknown>
 
   /**
    * Delete a file or directory
@@ -121,32 +128,25 @@ export interface FileSystemAdapter {
    */
   remove(
     path: string,
-    options?: { recursive?: boolean },
-  ): Effect.Effect<void, FileSystemError, unknown>;
+    options?: { recursive?: boolean }
+  ): Effect.Effect<void, FileSystemError, unknown>
 
   /**
    * Get the root directory of the workspace
    *
    * @returns Workspace root path
    */
-  getWorkspaceRoot(): string;
+  getWorkspaceRoot(): string
 
   /**
    * Check if running in Nx mode or Effect mode
    *
    * @returns 'nx' or 'effect'
    */
-  getMode(): 'nx' | 'effect';
+  getMode(): "nx" | "effect"
 }
 
-/**
- * File System Service Tag
- *
- * Context.Tag for dependency injection of FileSystemAdapter
- */
-import { Context } from 'effect';
-
-export class FileSystemService extends Context.Tag('FileSystemService')<
+export class FileSystemService extends Context.Tag("FileSystemService")<
   FileSystemService,
   FileSystemAdapter
 >() {}

@@ -7,20 +7,20 @@
  * @module monorepo-library-generator/cli/generators/contract
  */
 
-import { Effect, Console } from 'effect';
-import { FileSystem, Path } from '@effect/platform';
-import { createEffectFsAdapter } from '../../utils/effect-fs-adapter';
-import { generateContractCore, type GeneratorResult } from '../../generators/core/contract-generator-core';
+import { FileSystem, Path } from "@effect/platform"
+import { Console, Effect } from "effect"
+import { generateContractCore, type GeneratorResult } from "../../generators/core/contract-generator-core"
+import { createEffectFsAdapter } from "../../utils/effect-fs-adapter"
 
 /**
  * Contract Generator Options
  */
 export interface ContractGeneratorOptions {
-  readonly name: string;
-  readonly description?: string;
-  readonly tags?: string;
-  readonly includeCQRS?: boolean;
-  readonly includeRPC?: boolean;
+  readonly name: string
+  readonly description?: string
+  readonly tags?: string
+  readonly includeCQRS?: boolean
+  readonly includeRPC?: boolean
 }
 
 /**
@@ -33,29 +33,29 @@ export interface ContractGeneratorOptions {
  * @returns Effect that succeeds with GeneratorResult or fails with platform errors
  */
 export function generateContract(options: ContractGeneratorOptions) {
-  return Effect.gen(function* () {
+  return Effect.gen(function*() {
     // 1. Get workspace root
-    const workspaceRoot = yield* Effect.sync(() => process.cwd());
+    const workspaceRoot = yield* Effect.sync(() => process.cwd())
 
     // 2. Create Effect FileSystem adapter (requires FileSystem and Path services)
-    const adapter = yield* createEffectFsAdapter(workspaceRoot);
+    const adapter = yield* createEffectFsAdapter(workspaceRoot)
 
     // 3. Run core generator
-    yield* Console.log(`Creating contract library: ${options.name}...`);
+    yield* Console.log(`Creating contract library: ${options.name}...`)
 
     const result: GeneratorResult = yield* (
       generateContractCore(adapter, options) as Effect.Effect<GeneratorResult>
-    );
+    )
 
     // 4. CLI-specific output
-    yield* Console.log('✨ Contract library created successfully!');
-    yield* Console.log(`  Location: ${result.projectRoot}`);
-    yield* Console.log(`  Package: ${result.packageName}`);
-    yield* Console.log(`\nNext steps:`);
-    yield* Console.log(`  1. cd ${result.projectRoot}`);
-    yield* Console.log(`  2. pnpm install`);
-    yield* Console.log(`  3. pnpm build`);
+    yield* Console.log("✨ Contract library created successfully!")
+    yield* Console.log(`  Location: ${result.projectRoot}`)
+    yield* Console.log(`  Package: ${result.packageName}`)
+    yield* Console.log(`\nNext steps:`)
+    yield* Console.log(`  1. cd ${result.projectRoot}`)
+    yield* Console.log(`  2. pnpm install`)
+    yield* Console.log(`  3. pnpm build`)
 
-    return result;
-  });
+    return result
+  })
 }

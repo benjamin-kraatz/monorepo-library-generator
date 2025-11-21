@@ -7,15 +7,15 @@
  * @module monorepo-library-generator/infra-templates
  */
 
-export { generateErrorsFile } from './errors.template';
-export { generateInterfaceFile } from './interface.template';
-export { generateConfigFile } from './config.template';
-export { generateMemoryProviderFile } from './memory-provider.template';
-export { generateServerLayersFile } from './server-layers.template';
-export { generateClientLayersFile } from './client-layers.template';
-export { generateEdgeLayersFile } from './edge-layers.template';
-export { generateUseHookFile } from './use-hook.template';
-export { generateIndexFile } from './index.template';
-export { generateServerFile } from './server.template';
-export { generateClientFile } from './client.template';
-export { generateEdgeFile } from './edge.template';
+export { generateClientLayersFile } from "./client-layers.template"
+export { generateClientFile } from "./client.template"
+export { generateConfigFile } from "./config.template"
+export { generateEdgeLayersFile } from "./edge-layers.template"
+export { generateEdgeFile } from "./edge.template"
+export { generateErrorsFile } from "./errors.template"
+export { generateIndexFile } from "./index.template"
+export { generateInterfaceFile } from "./interface.template"
+export { generateMemoryProviderFile } from "./memory-provider.template"
+export { generateServerLayersFile } from "./server-layers.template"
+export { generateServerFile } from "./server.template"
+export { generateUseHookFile } from "./use-hook.template"

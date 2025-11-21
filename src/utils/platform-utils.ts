@@ -7,7 +7,7 @@
  * @module monorepo-library-generator/platform-utils
  */
 
-import type { LibraryType } from "./shared/types.js"
+import type { LibraryType } from "./shared/types"
 
 /**
  * Platform type for library

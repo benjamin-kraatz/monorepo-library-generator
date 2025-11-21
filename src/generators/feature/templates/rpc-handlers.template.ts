@@ -6,8 +6,8 @@
  * @module monorepo-library-generator/feature/rpc-handlers-template
  */
 
-import { TypeScriptBuilder } from '../../../utils/code-generation/typescript-builder';
-import type { FeatureTemplateOptions } from '../../../utils/shared/types';
+import { TypeScriptBuilder } from "../../../utils/code-generation/typescript-builder"
+import type { FeatureTemplateOptions } from "../../../utils/shared/types"
 
 /**
  * Generate rpc/handlers.ts file for feature library
@@ -15,23 +15,23 @@ import type { FeatureTemplateOptions } from '../../../utils/shared/types';
  * Creates RPC handler implementations separate from RPC group definitions.
  */
 export function generateRpcHandlersFile(options: FeatureTemplateOptions) {
-  const builder = new TypeScriptBuilder();
-  const { className } = options;
+  const builder = new TypeScriptBuilder()
+  const { className } = options
 
   // Add file header
   builder.addFileHeader({
     title: `${className} RPC Handlers`,
     description: `Separate handler definitions from RPC group.
-Handlers have access to middleware context (e.g., CurrentUser).`,
-  });
+Handlers have access to middleware context (e.g., CurrentUser).`
+  })
 
   // Add imports
   builder.addImports([
-    { from: 'effect', imports: ['Effect'] },
-    { from: './rpc', imports: ['ExampleRequest'], isTypeOnly: true },
-    { from: '../server/service', imports: [`${className}Service`] },
-  ]);
-  builder.addBlankLine();
+    { from: "effect", imports: ["Effect"] },
+    { from: "./rpc", imports: ["ExampleRequest"], isTypeOnly: true },
+    { from: "../server/service", imports: [`${className}Service`] }
+  ])
+  builder.addBlankLine()
 
   // Add handlers
   builder.addRaw(`/**
@@ -59,8 +59,8 @@ export const ${className}Handlers = {
     }),
 
   // TODO: Implement additional handlers
-};`);
-  builder.addBlankLine();
+};`)
+  builder.addBlankLine()
 
-  return builder.toString();
+  return builder.toString()
 }

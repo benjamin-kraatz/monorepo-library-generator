@@ -5,25 +5,25 @@
  * platform-specific optimizations using @nx/esbuild:esbuild executor.
  */
 
-import type { TargetConfiguration } from '@nx/devkit';
-import { determinePlatformExports, type PlatformType } from './platform-utils';
+import type { TargetConfiguration } from "@nx/devkit"
+import { determinePlatformExports, type PlatformType } from "./platform-utils"
 
-export type { PlatformType };
+export type { PlatformType }
 export type LibraryType =
-  | 'contract'
-  | 'data-access'
-  | 'feature'
-  | 'provider'
-  | 'infra'
-  | 'util';
+  | "contract"
+  | "data-access"
+  | "feature"
+  | "provider"
+  | "infra"
+  | "util"
 
 export interface BuildConfigOptions {
-  projectRoot: string;
-  platform: PlatformType;
-  libraryType: LibraryType;
-  includeClientServer?: boolean;
-  additionalEntryPoints?: Array<string>;
-  buildMode?: 'nx' | 'effect';
+  projectRoot: string
+  platform: PlatformType
+  libraryType: LibraryType
+  includeClientServer?: boolean
+  additionalEntryPoints?: Array<string>
+  buildMode?: "nx" | "effect"
 }
 
 /**
@@ -35,60 +35,59 @@ function getAdditionalEntryPoints(options: BuildConfigOptions) {
     includeClientServer,
     libraryType,
     platform,
-    projectRoot,
-  } = options;
+    projectRoot
+  } = options
 
-  const entryPoints = [...additionalEntryPoints];
+  const entryPoints = [...additionalEntryPoints]
 
   // Use shared platform utilities for consistent logic
-  const { shouldGenerateClient, shouldGenerateServer } =
-    determinePlatformExports({
-      libraryType,
-      platform,
-      ...(includeClientServer !== undefined && { includeClientServer }),
-    });
+  const { shouldGenerateClient, shouldGenerateServer } = determinePlatformExports({
+    libraryType,
+    platform,
+    ...(includeClientServer !== undefined && { includeClientServer })
+  })
 
   if (shouldGenerateServer) {
-    entryPoints.push(`${projectRoot}/src/server.ts`);
+    entryPoints.push(`${projectRoot}/src/server.ts`)
   }
 
   if (shouldGenerateClient) {
-    entryPoints.push(`${projectRoot}/src/client.ts`);
+    entryPoints.push(`${projectRoot}/src/client.ts`)
   }
 
   // Library-type specific entry points
   switch (libraryType) {
-    case 'data-access':
+    case "data-access":
       // Data-access libraries have NO platform splits per dataaccess.md documentation
       // All exports in index.ts only - no server.ts/client.ts/edge.ts
       // The logic above at lines 112-119 already handles the exception correctly
-      break;
-    case 'provider':
+      break
+    case "provider":
       // Provider libs may have separate client/server implementations
-      break;
-    case 'infra':
+      break
+    case "infra":
       // Infrastructure is typically server-only
       if (!entryPoints.includes(`${projectRoot}/src/server.ts`)) {
-        entryPoints.push(`${projectRoot}/src/server.ts`);
+        entryPoints.push(`${projectRoot}/src/server.ts`)
       }
-      break;
-    case 'feature':
+      break
+    case "feature":
       // Features may have client exports for UI components
-      break;
+      break
   }
 
-  return entryPoints;
+  return entryPoints
 }
 
 /**
  * Create unified build target configuration using TypeScript compiler
  */
 export function createUnifiedBuildTarget(options: BuildConfigOptions) {
-  const additionalEntryPoints = getAdditionalEntryPoints(options);
+  const additionalEntryPoints = getAdditionalEntryPoints(options)
 
   return {
-    executor: '@nx/js:tsc',
-    outputs: ['{options.outputPath}'],
+    executor: "@nx/js:tsc",
+    outputs: ["{options.outputPath}"],
     options: {
       outputPath: `dist/${options.projectRoot}`,
       main: `${options.projectRoot}/src/index.ts`,
@@ -102,9 +101,9 @@ export function createUnifiedBuildTarget(options: BuildConfigOptions) {
       batch: true, // Enable TypeScript project references mode
       declaration: true, // Generate .d.ts files (required for composite mode)
       declarationMap: true, // Generate .d.ts.map for IDE navigation
-      clean: false, // Preserve .tsbuildinfo for TypeScript incremental compilation
-    },
-  };
+      clean: false // Preserve .tsbuildinfo for TypeScript incremental compilation
+    }
+  }
 }
 
 /**
@@ -113,13 +112,13 @@ export function createUnifiedBuildTarget(options: BuildConfigOptions) {
  */
 export function createTestTarget(projectRoot: string) {
   return {
-    executor: '@nx/vite:test',
-    outputs: ['{workspaceRoot}/coverage/{projectRoot}'],
+    executor: "@nx/vite:test",
+    outputs: ["{workspaceRoot}/coverage/{projectRoot}"],
     options: {
       config: `${projectRoot}/vitest.config.ts`,
-      passWithNoTests: true,
-    },
-  };
+      passWithNoTests: true
+    }
+  }
 }
 
 /**
@@ -127,12 +126,12 @@ export function createTestTarget(projectRoot: string) {
  */
 export function createLintTarget(projectRoot: string) {
   return {
-    executor: '@nx/eslint:lint',
-    outputs: ['{options.outputFile}'],
+    executor: "@nx/eslint:lint",
+    outputs: ["{options.outputFile}"],
     options: {
-      lintFilePatterns: [`${projectRoot}/**/*.ts`],
-    },
-  };
+      lintFilePatterns: [`${projectRoot}/**/*.ts`]
+    }
+  }
 }
 
 /**
@@ -140,11 +139,11 @@ export function createLintTarget(projectRoot: string) {
  */
 export function createTypecheckTarget(projectRoot: string) {
   return {
-    executor: 'nx:run-commands',
+    executor: "nx:run-commands",
     options: {
-      command: `tsc --noEmit -p ${projectRoot}/tsconfig.lib.json`,
-    },
-  };
+      command: `tsc --noEmit -p ${projectRoot}/tsconfig.lib.json`
+    }
+  }
 }
 
 /**
@@ -154,12 +153,12 @@ export function createStandardTargets(options: BuildConfigOptions) {
   const targets: Record<string, TargetConfiguration> = {
     build: createUnifiedBuildTarget(options),
     lint: createLintTarget(options.projectRoot),
-    typecheck: createTypecheckTarget(options.projectRoot),
-  };
+    typecheck: createTypecheckTarget(options.projectRoot)
+  }
 
-  targets.test = createTestTarget(options.projectRoot);
+  targets.test = createTestTarget(options.projectRoot)
 
-  return targets;
+  return targets
 }
 
 /**
@@ -173,18 +172,16 @@ export function createStandardTargets(options: BuildConfigOptions) {
  */
 export function createEffectScripts(options: BuildConfigOptions) {
   return {
-    codegen: 'build-utils prepare-v2',
-    build:
-      'pnpm build-esm && pnpm build-annotate && pnpm build-cjs && build-utils pack-v2',
-    'build-esm': `tsc -b tsconfig.lib.json`,
-    'build-cjs':
-      'babel build/esm --plugins @babel/transform-export-namespace-from --plugins @babel/transform-modules-commonjs --out-dir build/cjs --source-maps',
-    'build-annotate':
-      'babel build/esm --plugins annotate-pure-calls --out-dir build/esm --source-maps',
-    check: 'tsc -b tsconfig.json',
-    test: 'vitest',
-    'test:ci': 'vitest run',
-    lint: 'eslint "**/{src,test}/**/*.{ts,mjs}"',
-    'lint-fix': 'pnpm lint --fix',
-  };
+    codegen: "build-utils prepare-v2",
+    build: "pnpm build-esm && pnpm build-annotate && pnpm build-cjs && build-utils pack-v2",
+    "build-esm": `tsc -b tsconfig.lib.json`,
+    "build-cjs":
+      "babel build/esm --plugins @babel/transform-export-namespace-from --plugins @babel/transform-modules-commonjs --out-dir build/cjs --source-maps",
+    "build-annotate": "babel build/esm --plugins annotate-pure-calls --out-dir build/esm --source-maps",
+    check: "tsc -b tsconfig.json",
+    test: "vitest",
+    "test:ci": "vitest run",
+    lint: "eslint \"**/{src,test}/**/*.{ts,mjs}\"",
+    "lint-fix": "pnpm lint --fix"
+  }
 }
