@@ -11,6 +11,7 @@ import { names } from "@nx/devkit"
 import { Effect } from "effect"
 import type { FileSystemAdapter, FileSystemErrors } from "../../utils/filesystem-adapter"
 import type { DataAccessTemplateOptions } from "../../utils/shared/types"
+import { detectWorkspaceConfig } from "../../utils/workspace-detection"
 import { generateErrorsFile } from "../data-access/templates/errors.template"
 import { generateIndexFile } from "../data-access/templates/index.template"
 import { generateLayersSpecFile } from "../data-access/templates/layers-spec.template"
@@ -43,18 +44,19 @@ export function generateDataAccessCore(
   options: DataAccessGeneratorCoreOptions
 ): Effect.Effect<GeneratorResult, FileSystemErrors, unknown> {
   return Effect.gen(function*() {
-    // 1. Get workspace root
-    const workspaceRoot = options.workspaceRoot ?? adapter.getWorkspaceRoot()
+    // 1. Detect workspace configuration
+    const workspaceConfig = yield* detectWorkspaceConfig(adapter)
+    const workspaceRoot = options.workspaceRoot ?? workspaceConfig.workspaceRoot
 
     // 2. Generate naming variants
     const nameVariants = names(options.name)
     const projectName = `data-access-${nameVariants.fileName}`
-    const packageName = `@custom-repo/${projectName}`
+    const packageName = `${workspaceConfig.scope}/${projectName}`
 
     // 3. Determine project location
     const projectRoot = options.directory
       ? `${options.directory}/${projectName}`
-      : `libs/data-access/${nameVariants.fileName}`
+      : `${workspaceConfig.librariesRoot}/data-access/${nameVariants.fileName}`
 
     const sourceRoot = `${projectRoot}/src`
     const offsetFromRoot = calculateOffsetFromRoot(projectRoot)
@@ -92,7 +94,7 @@ export function generateDataAccessCore(
       description: options.description ?? `Data access library for ${nameVariants.className}`,
       tags: parsedTags,
       includeCache: false,
-      contractLibrary: `@custom-repo/contract-${nameVariants.fileName}`
+      contractLibrary: `${workspaceConfig.scope}/contract-${nameVariants.fileName}`
     }
 
     // 7. Generate domain files

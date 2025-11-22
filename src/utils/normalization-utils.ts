@@ -55,14 +55,14 @@ export interface NormalizedBaseOptions {
 /**
  * Get default directory for library type
  */
-function getDefaultDirectory(libraryType: LibraryType) {
+function getDefaultDirectory(libraryType: LibraryType, librariesRoot: string) {
   const directories: Record<LibraryType, string> = {
-    contract: "libs/contract",
-    "data-access": "libs/data-access",
-    feature: "libs/feature",
-    provider: "libs/provider",
-    infra: "libs/infra",
-    util: "libs/util"
+    contract: `${librariesRoot}/contract`,
+    "data-access": `${librariesRoot}/data-access`,
+    feature: `${librariesRoot}/feature`,
+    provider: `${librariesRoot}/provider`,
+    infra: `${librariesRoot}/infra`,
+    util: `${librariesRoot}/util`
   }
   return directories[libraryType]
 }
@@ -130,14 +130,15 @@ function buildTags(
  */
 export function normalizeBaseOptions(
   tree: Tree,
-  input: NormalizeOptionsInput
+  input: NormalizeOptionsInput,
+  workspaceConfig: { scope: string; librariesRoot: string }
 ): NormalizedBaseOptions {
   // Use Nx names utility to get all naming variants
   const nameVariants = names(input.name)
   const fileName = nameVariants.fileName // kebab-case
 
   // Get directory (use default if not provided)
-  const directory = input.directory || getDefaultDirectory(input.libraryType)
+  const directory = input.directory || getDefaultDirectory(input.libraryType, workspaceConfig.librariesRoot)
 
   // Compute paths
   const projectRoot = joinPathFragments(directory, fileName)
@@ -146,7 +147,7 @@ export function normalizeBaseOptions(
 
   // Compute project identifiers
   const projectName = `${input.libraryType}-${fileName}`
-  const packageName = `@custom-repo/${projectName}`
+  const packageName = `${workspaceConfig.scope}/${projectName}`
 
   // Compute domain name (Title Case from fileName)
   const domainName = input.description || createDomainName(fileName)

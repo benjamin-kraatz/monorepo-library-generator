@@ -60,7 +60,7 @@
       },
       {
         "file": "CHANGELOG.md",
-        "hash": "9334103387507149429"
+        "hash": "8169089347178659618"
       },
       {
         "file": "CONTRIBUTING.md",
@@ -124,7 +124,7 @@
       },
       {
         "file": "package.json",
-        "hash": "9244677418464103930"
+        "hash": "11897482249479758204"
       },
       {
         "file": "patches/@changesets__get-github-info@0.6.0.patch",
@@ -155,8 +155,20 @@
         "hash": "589924214352719029"
       },
       {
+        "file": "src/cli/generators/feature.ts",
+        "hash": "4232282166888899456"
+      },
+      {
+        "file": "src/cli/generators/infra.ts",
+        "hash": "14356402697287176067"
+      },
+      {
+        "file": "src/cli/generators/provider.ts",
+        "hash": "17124334091957185318"
+      },
+      {
         "file": "src/cli/index.ts",
-        "hash": "16773668867557757986"
+        "hash": "10636318135466974926"
       },
       {
         "file": "src/generators.json",
@@ -224,11 +236,23 @@
       },
       {
         "file": "src/generators/core/contract-generator-core.ts",
-        "hash": "12868121909537383889"
+        "hash": "6063804194858654946"
       },
       {
         "file": "src/generators/core/data-access-generator-core.ts",
-        "hash": "18207975258659185240"
+        "hash": "9663328215238625865"
+      },
+      {
+        "file": "src/generators/core/feature-generator-core.ts",
+        "hash": "15544898051104407178"
+      },
+      {
+        "file": "src/generators/core/infra-generator-core.ts",
+        "hash": "13752717708160184474"
+      },
+      {
+        "file": "src/generators/core/provider-generator-core.ts",
+        "hash": "1163424094004774059"
       },
       {
         "file": "src/generators/data-access/README.md",
@@ -300,7 +324,7 @@
       },
       {
         "file": "src/generators/feature/feature.ts",
-        "hash": "3113962253188319929"
+        "hash": "12271736564611354784"
       },
       {
         "file": "src/generators/feature/schema.d.ts",
@@ -380,11 +404,11 @@
       },
       {
         "file": "src/generators/infra/infra.ts",
-        "hash": "13813368510088472507"
+        "hash": "15151620437877201108"
       },
       {
         "file": "src/generators/infra/schema.d.ts",
-        "hash": "1173718874190953581"
+        "hash": "68703788307788638"
       },
       {
         "file": "src/generators/infra/schema.json",
@@ -452,7 +476,7 @@
       },
       {
         "file": "src/generators/provider/provider.ts",
-        "hash": "12114302470572611088"
+        "hash": "2962837558700249284"
       },
       {
         "file": "src/generators/provider/schema.json",
@@ -460,7 +484,7 @@
       },
       {
         "file": "src/generators/provider/schema.ts",
-        "hash": "12768384722671705823"
+        "hash": "18118950050701449832"
       },
       {
         "file": "src/generators/provider/templates/errors.template.ts",
@@ -560,11 +584,11 @@
       },
       {
         "file": "src/utils/normalization-utils.ts",
-        "hash": "6904957031511118742"
+        "hash": "8545916265334636445"
       },
       {
         "file": "src/utils/platform-utils.ts",
-        "hash": "7315130300981131233"
+        "hash": "5402916184121651621"
       },
       {
         "file": "src/utils/shared/base-config.ts",
@@ -588,7 +612,7 @@
       },
       {
         "file": "src/utils/workspace-detection.ts",
-        "hash": "13078538317067079048"
+        "hash": "730157465489322991"
       },
       {
         "file": "tsconfig.base.json",

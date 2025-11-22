@@ -13,6 +13,7 @@ import { Effect } from "effect"
 import { generateLibraryFiles, type LibraryGeneratorOptions } from "../../utils/library-generator-utils"
 import { normalizeBaseOptions } from "../../utils/normalization-utils"
 import { createTreeAdapter } from "../../utils/tree-adapter"
+import { detectWorkspaceConfig, type WorkspaceConfig } from "../../utils/workspace-detection"
 import { generateProviderCore, type GeneratorResult } from "../core/provider-generator-core"
 import type { NormalizedProviderOptions, ProviderGeneratorSchema } from "./schema"
 
@@ -35,13 +36,21 @@ function normalizeOptions(
   const platform = options.platform || "node"
   const includeClientServer = platform === "universal" ? true : (options.includeClientServer ?? false)
 
+  // Detect workspace configuration
+  const adapter = createTreeAdapter(tree)
+  const workspaceConfig = Effect.runSync(
+    detectWorkspaceConfig(adapter).pipe(
+      Effect.orDie
+    ) as Effect.Effect<WorkspaceConfig, never, never>
+  )
+
   // Use shared normalization (without additional tags, we'll build tags manually)
   const baseOptions = normalizeBaseOptions(tree, {
     name: options.name,
     ...(options.directory !== undefined && { directory: options.directory }),
     description: options.description ?? `${names(options.name).className} provider for ${options.externalService}`,
     libraryType: "provider"
-  })
+  }, workspaceConfig)
 
   // Provider-specific naming: use "Service" suffix instead of "Provider"
   const projectClassName = `${baseOptions.className}Service`

@@ -9,6 +9,8 @@
  */
 
 import type { Tree } from "@nx/devkit"
+import { Effect } from "effect"
+import type { FileSystemAdapter, FileSystemErrors } from "./filesystem-adapter"
 import type { GeneratorContext } from "./shared/types"
 
 /**
@@ -145,4 +147,215 @@ export function shouldGenerateEffectScripts(
   context: GeneratorContext
 ): boolean {
   return context.isEffectNative
+}
+
+// ============================================================================
+// New Workspace Configuration Detection (v1.2.3+)
+// ============================================================================
+
+/**
+ * Workspace configuration detected from package.json and structure
+ *
+ * This interface represents the workspace-level configuration that affects
+ * how libraries are generated, including package scope and directory structure.
+ */
+export interface WorkspaceConfig {
+  /**
+   * Package scope for generated libraries (e.g., "@myorg")
+   * Extracted from root package.json name field
+   */
+  readonly scope: string
+
+  /**
+   * Root directory for generated libraries (e.g., "libs" or "packages")
+   * Detected from nx.json workspaceLayout.libsDir or inferred from structure
+   */
+  readonly librariesRoot: string
+
+  /**
+   * Workspace type detected from file structure
+   */
+  readonly workspaceType: "nx" | "effect" | "hybrid" | "unknown"
+
+  /**
+   * Package manager detected from lockfiles
+   */
+  readonly packageManager: "npm" | "yarn" | "pnpm"
+
+  /**
+   * Build mode (nx or effect build-utils)
+   */
+  readonly buildMode: "nx" | "effect"
+
+  /**
+   * Workspace root path
+   */
+  readonly workspaceRoot: string
+}
+
+/**
+ * Extract package scope from package.json name
+ *
+ * @param packageName - Package name from package.json (e.g., "@myorg/monorepo")
+ * @returns Extracted scope (e.g., "@myorg")
+ * @throws Error if packageName is missing or empty
+ *
+ * @example
+ * extractScope("@myorg/monorepo") // "@myorg"
+ * extractScope("my-monorepo") // "@my-monorepo"
+ */
+function extractScope(packageName: string | undefined): string {
+  // Require package.json name field
+  if (!packageName || packageName.trim() === "") {
+    throw new Error(
+      "package.json must have a 'name' field. " +
+      "Set it to your workspace name (e.g., '@myorg/monorepo' or 'my-workspace')"
+    )
+  }
+
+  // If already scoped (starts with @), extract the scope part
+  if (packageName.startsWith("@")) {
+    const scope = packageName.split("/")[0]
+    if (!scope) {
+      throw new Error(`Invalid scoped package name: ${packageName}`)
+    }
+    return scope
+  }
+
+  // No scope - use package name as scope (add @ prefix)
+  return `@${packageName}`
+}
+
+/**
+ * Detect libraries root directory from nx.json or workspace structure
+ *
+ * Detection strategy:
+ * 1. Check nx.json for workspaceLayout.libsDir
+ * 2. Check for packages/ directory (Effect monorepos)
+ * 3. Check for libs/ directory (Nx default)
+ * 4. Default to "libs"
+ *
+ * @param adapter - File system adapter
+ * @param workspaceRoot - Workspace root path
+ * @param hasNxJson - Whether nx.json exists
+ * @returns Effect that resolves to libraries root directory
+ */
+function detectLibrariesRoot(
+  adapter: FileSystemAdapter,
+  workspaceRoot: string,
+  hasNxJson: boolean
+): Effect.Effect<string, FileSystemErrors, unknown> {
+  return Effect.gen(function*() {
+    // 1. Check nx.json for workspaceLayout.libsDir
+    if (hasNxJson) {
+      const nxJsonContent = yield* adapter.readFile(`${workspaceRoot}/nx.json`).pipe(
+        Effect.catchAll(() => Effect.succeed("{}"))
+      )
+
+      try {
+        const nxJson = JSON.parse(nxJsonContent) as {
+          workspaceLayout?: {
+            libsDir?: string
+          }
+        }
+
+        if (nxJson.workspaceLayout?.libsDir) {
+          return nxJson.workspaceLayout.libsDir
+        }
+      } catch {
+        // Invalid JSON, continue with detection
+      }
+    }
+
+    // 2. Check for packages/ directory (Effect monorepos)
+    const hasPackages = yield* adapter.exists(`${workspaceRoot}/packages`)
+    if (hasPackages) {
+      return "packages"
+    }
+
+    // 3. Check for libs/ directory (Nx default)
+    const hasLibs = yield* adapter.exists(`${workspaceRoot}/libs`)
+    if (hasLibs) {
+      return "libs"
+    }
+
+    // 4. Default to "libs"
+    return "libs"
+  })
+}
+
+/**
+ * Detect workspace configuration from package.json and structure
+ *
+ * This function works with FileSystemAdapter, making it compatible with both
+ * Nx Tree API and Effect FileSystem. It reads the root package.json to extract
+ * the package scope and detects workspace type and libraries root.
+ *
+ * Configuration detection:
+ * 1. Auto-detects scope from package.json name field
+ * 2. Detects libraries root from nx.json or workspace structure
+ * 3. Throws error if name field is missing
+ *
+ * @param adapter - File system adapter (Tree or Effect FS)
+ * @returns Effect that succeeds with WorkspaceConfig or fails with file system errors
+ *
+ * @example
+ * // In CLI wrapper
+ * const config = yield* detectWorkspaceConfig(effectAdapter)
+ *
+ * // In Nx wrapper
+ * const config = yield* detectWorkspaceConfig(treeAdapter)
+ */
+export function detectWorkspaceConfig(
+  adapter: FileSystemAdapter
+): Effect.Effect<WorkspaceConfig, FileSystemErrors, unknown> {
+  return Effect.gen(function*() {
+    const workspaceRoot = adapter.getWorkspaceRoot()
+
+    // Read root package.json
+    const packageJsonContent = yield* adapter.readFile(`${workspaceRoot}/package.json`).pipe(
+      Effect.catchAll(() => Effect.succeed("{}"))
+    )
+
+    const packageJson = JSON.parse(packageJsonContent) as {
+      name?: string
+      devDependencies?: Record<string, string>
+      scripts?: Record<string, string>
+    }
+
+    // Detect workspace type
+    const hasNxJson = yield* adapter.exists(`${workspaceRoot}/nx.json`)
+    const hasPnpmWorkspace = yield* adapter.exists(`${workspaceRoot}/pnpm-workspace.yaml`)
+    const hasEffectBuildUtils = packageJson.devDependencies?.["@effect/build-utils"] !== undefined
+
+    let workspaceType: "nx" | "effect" | "hybrid" | "unknown"
+    if (hasNxJson && hasEffectBuildUtils) {
+      workspaceType = "hybrid"
+    } else if (hasNxJson) {
+      workspaceType = "nx"
+    } else if (hasPnpmWorkspace && hasEffectBuildUtils) {
+      workspaceType = "effect"
+    } else {
+      workspaceType = "unknown"
+    }
+
+    // Detect package manager
+    const hasPnpmLock = yield* adapter.exists(`${workspaceRoot}/pnpm-lock.yaml`)
+    const hasYarnLock = yield* adapter.exists(`${workspaceRoot}/yarn.lock`)
+    const packageManager = hasPnpmLock ? "pnpm" : hasYarnLock ? "yarn" : "npm"
+
+    // Auto-detect configuration from package.json and workspace structure
+    const scope = extractScope(packageJson.name)
+    const librariesRoot = yield* detectLibrariesRoot(adapter, workspaceRoot, hasNxJson)
+    const buildMode = hasNxJson ? "nx" : "effect"
+
+    return {
+      scope,
+      librariesRoot,
+      workspaceType,
+      packageManager,
+      buildMode,
+      workspaceRoot
+    }
+  })
 }

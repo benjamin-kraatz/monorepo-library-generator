@@ -11,6 +11,7 @@ import { names } from "@nx/devkit"
 import { Effect } from "effect"
 import type { FileSystemAdapter, FileSystemErrors } from "../../utils/filesystem-adapter"
 import type { ContractTemplateOptions } from "../../utils/shared/types"
+import { detectWorkspaceConfig } from "../../utils/workspace-detection"
 import { generateCommandsFile } from "../contract/templates/commands.template"
 import { generateEntitiesFile } from "../contract/templates/entities.template"
 import { generateErrorsFile } from "../contract/templates/errors.template"
@@ -64,18 +65,19 @@ export function generateContractCore(
   options: ContractGeneratorCoreOptions
 ): Effect.Effect<GeneratorResult, FileSystemErrors, unknown> {
   return Effect.gen(function*() {
-    // 1. Get workspace root
-    const workspaceRoot = options.workspaceRoot ?? adapter.getWorkspaceRoot()
+    // 1. Detect workspace configuration
+    const workspaceConfig = yield* detectWorkspaceConfig(adapter)
+    const workspaceRoot = options.workspaceRoot ?? workspaceConfig.workspaceRoot
 
     // 2. Generate naming variants
     const nameVariants = names(options.name)
     const projectName = `contract-${nameVariants.fileName}`
-    const packageName = `@custom-repo/${projectName}`
+    const packageName = `${workspaceConfig.scope}/${projectName}`
 
     // 3. Determine project location
     const projectRoot = options.directory
       ? `${options.directory}/${projectName}`
-      : `libs/contract/${nameVariants.fileName}`
+      : `${workspaceConfig.librariesRoot}/contract/${nameVariants.fileName}`
 
     const sourceRoot = `${projectRoot}/src`
     const offsetFromRoot = calculateOffsetFromRoot(projectRoot)

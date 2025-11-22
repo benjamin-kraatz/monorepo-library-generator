@@ -13,6 +13,7 @@ import { generateLibraryFiles } from "../../utils/library-generator-utils"
 import { normalizeBaseOptions, type NormalizedBaseOptions } from "../../utils/normalization-utils"
 import { computePlatformConfiguration } from "../../utils/platform-utils"
 import { createTreeAdapter } from "../../utils/tree-adapter"
+import { detectWorkspaceConfig, type WorkspaceConfig } from "../../utils/workspace-detection"
 import { generateFeatureCore, type GeneratorResult } from "../core/feature-generator-core"
 import type { FeatureGeneratorSchema } from "./schema"
 
@@ -157,6 +158,14 @@ function normalizeOptions(
   tree: Tree,
   schema: FeatureGeneratorSchema
 ): NormalizedFeatureOptions {
+  // Detect workspace configuration
+  const adapter = createTreeAdapter(tree)
+  const workspaceConfig = Effect.runSync(
+    detectWorkspaceConfig(adapter).pipe(
+      Effect.orDie
+    ) as Effect.Effect<WorkspaceConfig, never, never>
+  )
+
   // Use shared normalization utility for common fields
   return normalizeBaseOptions(tree, {
     name: schema.name,
@@ -164,5 +173,5 @@ function normalizeOptions(
     ...(schema.description !== undefined && { description: schema.description }),
     libraryType: "feature",
     additionalTags: ["platform:universal"] // Features default to universal
-  })
+  }, workspaceConfig)
 }
