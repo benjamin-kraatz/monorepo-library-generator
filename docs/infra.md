@@ -5,9 +5,9 @@
 > - [Architecture Overview](./ARCHITECTURE_OVERVIEW.md) - Library inventory and integration patterns
 > - [Nx Standards](./NX_STANDARDS.md) - Naming conventions (`infra-{concern}` pattern)
 > - [Effect Patterns Guide](./EFFECT_PATTERNS.md) - Layer composition and resource management
-> - [Feature Libraries](./feature.md) - Consumers of infrastructure services
-> - [Provider Libraries](./provider.md) - External services that infra orchestrates
-> - [Data-Access Libraries](./dataaccess.md) - Database layer that uses infra services
+> - [Feature Libraries](./FEATURE.md) - Consumers of infrastructure services
+> - [Provider Libraries](./PROVIDER.md) - External services that infra orchestrates
+> - [Data-Access Libraries](./DATA-ACCESS.md) - Database layer that uses infra services
 
 ## Table of Contents
 
@@ -2290,9 +2290,9 @@ export const setupProductEventHandlers = Effect.gen(function* () {
 ```
 
 **See Also:**
-- [Feature CQRS Pattern](./feature.md#cqrs-architecture-pattern) - Command/query handlers
-- [Contract CQRS Patterns](./contract.md#cqrs-contract-patterns-commands-queries-projections) - Event schemas
-- [Data-Access Projections](./dataaccess.md#projection-repository-pattern-cqrs-read-models) - Cache invalidation integration
+- [Feature CQRS Pattern](./FEATURE.md#cqrs-architecture-pattern) - Command/query handlers
+- [Contract CQRS Patterns](./CONTRACT.md#cqrs-contract-patterns-commands-queries-projections) - Event schemas
+- [Data-Access Projections](./DATA-ACCESS.md#projection-repository-pattern-cqrs-read-models) - Cache invalidation integration
 
 **Generator Must NOT Create:**
 - ❌ Direct Redis/AMQP client imports (use provider libraries)
@@ -2309,7 +2309,7 @@ export const setupProductEventHandlers = Effect.gen(function* () {
 
 **Core Principle:** Infrastructure defines middleware **tags** (interface), applications provide **implementations** (Layer.succeed)
 
-**Related Documentation:** [Feature RPC Pattern](./feature.md#rpc-pattern-effect-effectrpc-official-pattern), [Contract Libraries](./contract.md#contracts-for-effect-services-and-rpc)
+**Related Documentation:** [Feature RPC Pattern](./FEATURE.md#rpc-pattern-effect-effectrpc-official-pattern), [Contract Libraries](./CONTRACT.md#contracts-for-effect-services-and-rpc)
 
 **Three-Layer Architecture:**
 
@@ -3301,7 +3301,7 @@ const ConfigLive = Layer.effect(
 
 - **Providers:** `/prisma/schema/providers.md` - External service adapters
 - **Contracts:** `/prisma/schema/contracts.md` - Domain interfaces and ports
-- **Data-Access:** `/prisma/schema/dataaccess.md` - Repository implementations
+- **Data-Access:** `/prisma/schema/DATA-ACCESS.md` - Repository implementations
 - **Architecture:** `/libs/ARCHITECTURE.md` - Overall architecture patterns
 - **CLAUDE.md:** `/CLAUDE.md` - Development workflow and commands
 

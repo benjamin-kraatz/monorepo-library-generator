@@ -4,9 +4,9 @@
 > - [Architecture Overview](./ARCHITECTURE_OVERVIEW.md) - Library inventory and integration patterns
 > - [Nx Standards](./NX_STANDARDS.md) - Naming conventions (`data-access-{domain}` pattern)
 > - [Effect Patterns Guide](./EFFECT_PATTERNS.md) - Repository service patterns and Layer composition
-> - [Contract Libraries](./contract.md) - Repository interfaces you implement (contract fulfillment)
-> - [Feature Libraries](./feature.md) - Services that consume your repository implementations
-> - [Infrastructure Libraries](./infra.md) - Database and storage services you depend on
+> - [Contract Libraries](./CONTRACT.md) - Repository interfaces you implement (contract fulfillment)
+> - [Feature Libraries](./FEATURE.md) - Services that consume your repository implementations
+> - [Infrastructure Libraries](./INFRA.md) - Database and storage services you depend on
 
 ## Overview
 
@@ -251,10 +251,10 @@ yield* projectionRepository.invalidateProjectionCache(productId);
 - Write operations are frequent (cache churn)
 
 **See Also:**
-- [Contract Projection Schemas](./contract.md#projection-schemas-read-models) - Projection TypeScript types
-- [Feature CQRS Handlers](./feature.md#cqrs-architecture-pattern) - Command/query implementation
-- [Infrastructure Cache](./infra.md#infra-cache) - Caching strategies
-- [Infrastructure Messaging](./infra.md#messagingservice-integration-with-cqrs) - Event-driven updates
+- [Contract Projection Schemas](./CONTRACT.md#projection-schemas-read-models) - Projection TypeScript types
+- [Feature CQRS Handlers](./FEATURE.md#cqrs-architecture-pattern) - Command/query implementation
+- [Infrastructure Cache](./INFRA.md#infra-cache) - Caching strategies
+- [Infrastructure Messaging](./INFRA.md#messagingservice-integration-with-cqrs) - Event-driven updates
 
 ## Directory Structure
 
@@ -1547,7 +1547,7 @@ const multiStepOperation = (data: Input) =>
 
 **Related Documentation:**
 - [EFFECT_PATTERNS.md - Runtime Preservation](./EFFECT_PATTERNS.md#️-critical-runtime-preservation-for-callbacks) - Complete guide with all patterns
-- [infra.md - DatabaseService](./infra.md) - DatabaseService implementation details
+- [INFRA.md - DatabaseService](./INFRA.md) - DatabaseService implementation details
 
 **Source:** [Effect Transactions](https://effect.website/docs/guides/transactions) - Safe transactional operations with Effect.
 

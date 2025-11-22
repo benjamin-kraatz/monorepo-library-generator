@@ -5,10 +5,10 @@
 > - [Architecture Overview](./ARCHITECTURE_OVERVIEW.md) - Library inventory and integration patterns
 > - [Nx Standards](./NX_STANDARDS.md) - Naming conventions (`contract-{domain}` pattern)
 > - [Effect Patterns Guide](./EFFECT_PATTERNS.md) - Context.Tag and Layer patterns
-> - [Data-Access Libraries](./dataaccess.md) - How to implement contract repository interfaces
-> - [Feature Libraries](./feature.md) - How features use contracts for services and RPC
-> - [Infrastructure RPC](./infra.md#infrastructure-rpc) - Shared RPC middleware tags
-> - [Provider Libraries](./provider.md) - External service adapters (not repositories)
+> - [Data-Access Libraries](./DATA-ACCESS.md) - How to implement contract repository interfaces
+> - [Feature Libraries](./FEATURE.md) - How features use contracts for services and RPC
+> - [Infrastructure RPC](./INFRA.md#infrastructure-rpc) - Shared RPC middleware tags
+> - [Provider Libraries](./PROVIDER.md) - External service adapters (not repositories)
 
 ## Overview
 
@@ -351,7 +351,7 @@ export type ProductError =
 > - ❌ RPC handlers (defined inline in **feature** libraries)
 > - ❌ Middleware implementations (provided by **application** layer)
 >
-> See [Feature RPC Pattern](./feature.md#rpc-pattern-effect-effectrpc-official-pattern) for router/handler implementation.
+> See [Feature RPC Pattern](./FEATURE.md#rpc-pattern-effect-effectrpc-official-pattern) for router/handler implementation.
 
 Contracts define RPC request/response schemas using Effect Schema for type-safe communication:
 
@@ -963,9 +963,9 @@ export * from "./lib/rpc";
 
 For complete CQRS implementation, see:
 
-- **Feature Layer**: `feature.md` - Implement command/query handlers, event orchestration, and atom state management for UI reactions
-- **Data-Access Layer**: `dataaccess.md` - Implement projection repositories using cache-aside pattern with Kysely JOINs on existing tables
-- **Infrastructure Layer**: `infra.md` - MessagingService event publishing/subscription using Stream.runForEach for event-driven cache invalidation
+- **Feature Layer**: `FEATURE.md` - Implement command/query handlers, event orchestration, and atom state management for UI reactions
+- **Data-Access Layer**: `DATA-ACCESS.md` - Implement projection repositories using cache-aside pattern with Kysely JOINs on existing tables
+- **Infrastructure Layer**: `INFRA.md` - MessagingService event publishing/subscription using Stream.runForEach for event-driven cache invalidation
 
 ## Service Interface Pattern
 
@@ -1931,4 +1931,4 @@ export class MessagingService extends Context.Tag("MessagingService")<
 
 ## Implementation Reference
 
-The implementation of these contracts happens in data-access libraries. See `dataaccess.md` for detailed implementation patterns showing how to fulfill these contracts with actual database operations.
+The implementation of these contracts happens in data-access libraries. See `DATA-ACCESS.md` for detailed implementation patterns showing how to fulfill these contracts with actual database operations.

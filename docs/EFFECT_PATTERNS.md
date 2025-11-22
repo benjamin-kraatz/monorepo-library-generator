@@ -3,11 +3,12 @@
 > **📚 Related Documentation:**
 > - [Architecture Overview](./ARCHITECTURE_OVERVIEW.md) - Library inventory and integration patterns
 > - [Nx Standards](./NX_STANDARDS.md) - Naming conventions and workspace organization
-> - [Contract Libraries](./contract.md) - Domain interfaces using Effect patterns
-> - [Data-Access Libraries](./dataaccess.md) - Repository implementations with Effect
-> - [Feature Libraries](./feature.md) - Business logic orchestration with Effect
-> - [Infrastructure Libraries](./infra.md) - Cross-cutting concerns with Effect
-> - [Provider Libraries](./provider.md) - External service adapters with Effect
+> - [Export Patterns](./EXPORT_PATTERNS.md) - Platform-aware exports and barrel patterns
+> - [Contract Libraries](./CONTRACT.md) - Domain interfaces using Effect patterns
+> - [Data-Access Libraries](./DATA-ACCESS.md) - Repository implementations with Effect
+> - [Feature Libraries](./FEATURE.md) - Business logic orchestration with Effect
+> - [Infrastructure Libraries](./INFRA.md) - Cross-cutting concerns with Effect
+> - [Provider Libraries](./PROVIDER.md) - External service adapters with Effect
 
 ## Quick Reference
 

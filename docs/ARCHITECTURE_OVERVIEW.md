@@ -3,11 +3,12 @@
 > **📚 Related Documentation:**
 > - [Effect Patterns Guide](./EFFECT_PATTERNS.md) - Effect.ts patterns and best practices
 > - [Nx Standards](./NX_STANDARDS.md) - Naming conventions and workspace organization
-> - [Contract Libraries](./contract.md) - Domain interfaces and ports
-> - [Data-Access Libraries](./dataaccess.md) - Repository implementations
-> - [Feature Libraries](./feature.md) - Business logic and services
-> - [Infrastructure Libraries](./infra.md) - Cross-cutting concerns
-> - [Provider Libraries](./provider.md) - External service adapters
+> - [Export Patterns Guide](./EXPORT_PATTERNS.md) - Platform-aware exports and barrel patterns
+> - [Contract Libraries](./CONTRACT.md) - Domain interfaces and ports
+> - [Data-Access Libraries](./DATA-ACCESS.md) - Repository implementations
+> - [Feature Libraries](./FEATURE.md) - Business logic and services
+> - [Infrastructure Libraries](./INFRA.md) - Cross-cutting concerns
+> - [Provider Libraries](./PROVIDER.md) - External service adapters
 
 ## Quick Reference
 
@@ -352,7 +353,7 @@ export class StripeService extends Context.Tag("StripeService")<
     };
   }
 >() {
-  static readonly Live = Layer.effect(
+  static readonly Live = Layer.scoped(
     this,
     Effect.gen(function* () {
       const config = yield* StripeConfig;
@@ -360,6 +361,14 @@ export class StripeService extends Context.Tag("StripeService")<
 
       // Initialize SDK
       const stripe = new Stripe(config.apiKey, { apiVersion: "2024-11-20.acacia" });
+
+      // Register cleanup function for resource management
+      yield* Effect.addFinalizer(() =>
+        Effect.gen(function* () {
+          yield* logger.info("Cleaning up Stripe client resources");
+          // Add any SDK-specific cleanup here if available
+        })
+      );
 
       return {
         paymentIntents: {
@@ -442,6 +451,115 @@ const AppLayer = Layer.mergeAll(
   ProductFeatureLayer // Pre-wired
 );
 ```
+
+---
+
+## Platform-Aware Exports
+
+Libraries support platform-specific exports to enable tree-shaking and runtime compatibility:
+
+### Export Pattern
+
+```typescript
+// Main index.ts - Universal exports
+export type * from "./lib/types";
+export * from "./lib/errors";
+export { MyService } from "./lib/service";
+
+// server.ts - Node.js specific
+export * from "./index";
+export * from "./lib/layers/server-layers";
+export { serverOnlyFunction } from "./lib/server-utils";
+
+// client.ts - Browser specific
+export type * from "./lib/types";
+export * from "./lib/errors";
+export { MyService } from "./lib/service";
+export * from "./lib/layers/client-layers";
+
+// edge.ts - Edge runtime specific
+export type * from "./lib/types";
+export * from "./lib/errors";
+export { MyService } from "./lib/service";
+export * from "./lib/layers/edge-layers";
+```
+
+### Usage in Applications
+
+```typescript
+// Node.js application
+import { MyService, MyServiceLive } from "@my-scope/infra-service/server";
+
+// Browser application
+import { MyService, MyServiceLive } from "@my-scope/infra-service/client";
+
+// Edge runtime (Cloudflare Workers, Vercel Edge)
+import { MyService, MyServiceLive } from "@my-scope/infra-service/edge";
+```
+
+### Platform Configuration
+
+When generating libraries, specify the platform:
+
+```bash
+# Node.js only (default)
+npx monorepo-library-generator provider my-service --platform=node
+
+# Browser only
+npx monorepo-library-generator provider my-service --platform=browser
+
+# Edge runtime
+npx monorepo-library-generator provider my-service --platform=edge
+
+# Universal (generates all exports)
+npx monorepo-library-generator provider my-service --platform=universal
+```
+
+---
+
+## Workspace-Agnostic Architecture
+
+The generator supports multiple monorepo tools without vendor lock-in:
+
+### Supported Workspace Tools
+
+- ✅ **Nx** - Full integration with Nx workspace features
+- ✅ **pnpm Workspaces** - Works with pnpm workspace protocol
+- ✅ **Yarn Workspaces** - Compatible with Yarn v1/v2/v3
+- ✅ **Turborepo** - No workspace-specific dependencies
+
+### Dynamic Package Scope Detection
+
+The generator automatically detects your workspace's package scope:
+
+```json
+// package.json
+{
+  "name": "@my-company/root"
+}
+```
+
+All generated libraries will use `@my-company` scope automatically.
+
+### CLI vs Nx Generators
+
+Both interfaces share the same core logic:
+
+```bash
+# Nx generator (if Nx is installed)
+nx g @my-scope/monorepo-library-generator:provider stripe
+
+# Standalone CLI (works anywhere)
+npx monorepo-library-generator provider stripe
+```
+
+### TypeScript Project References
+
+Automatic dependency detection with graceful fallbacks:
+
+- **With Nx**: Uses project graph for automatic references
+- **Without Nx**: Manual configuration or empty references
+- Both support incremental compilation and composite projects
 
 ---
 

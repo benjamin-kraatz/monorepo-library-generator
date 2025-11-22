@@ -8,7 +8,9 @@ This directory contains comprehensive architecture and design documentation for 
 
 - **[ARCHITECTURE_OVERVIEW.md](./ARCHITECTURE_OVERVIEW.md)** - High-level system architecture and design principles
 - **[EFFECT_PATTERNS.md](./EFFECT_PATTERNS.md)** - Effect-TS patterns and best practices used throughout the codebase
+- **[EXPORT_PATTERNS.md](./EXPORT_PATTERNS.md)** - Platform-aware export patterns and barrel files
 - **[NX_STANDARDS.md](./NX_STANDARDS.md)** - Nx workspace conventions and standards
+- **[EXAMPLES.md](./EXAMPLES.md)** - Practical end-to-end examples and usage patterns
 
 ### Generator Documentation
 
@@ -21,17 +23,18 @@ Each generator has detailed documentation covering:
 
 #### Available Generators
 
-- **[contract.md](./contract.md)** - Contract library generator (domain boundaries, types, interfaces)
-- **[data-access.md](./dataaccess.md)** - Data access library generator (repositories, database operations)
-- **[feature.md](./feature.md)** - Feature library generator (business logic, React hooks)
-- **[infra.md](./infra.md)** - Infrastructure library generator (technical services)
-- **[provider.md](./provider.md)** - Provider library generator (external service integrations)
+- **[CONTRACT.md](./CONTRACT.md)** - Contract library generator (domain boundaries, types, interfaces)
+- **[DATA-ACCESS.md](./DATA-ACCESS.md)** - Data access library generator (repositories, database operations)
+- **[FEATURE.md](./FEATURE.md)** - Feature library generator (business logic, React hooks)
+- **[INFRA.md](./INFRA.md)** - Infrastructure library generator (technical services)
+- **[PROVIDER.md](./PROVIDER.md)** - Provider library generator (external service integrations)
 
 ## Quick Start
 
 1. **For Users**: Start with the main [README](../README.md) for installation and basic usage
-2. **For Contributors**: Read [CONTRIBUTING](../CONTRIBUTING.md) for development guidelines
-3. **For Architects**: Review [ARCHITECTURE_OVERVIEW.md](./ARCHITECTURE_OVERVIEW.md) for system design
+2. **For Examples**: See [EXAMPLES.md](./EXAMPLES.md) for practical end-to-end examples
+3. **For Contributors**: Read [CONTRIBUTING](../CONTRIBUTING.md) for development guidelines
+4. **For Architects**: Review [ARCHITECTURE_OVERVIEW.md](./ARCHITECTURE_OVERVIEW.md) for system design
 
 ## Documentation Guidelines
 

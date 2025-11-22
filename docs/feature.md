@@ -5,10 +5,10 @@
 > - [Architecture Overview](./ARCHITECTURE_OVERVIEW.md) - Library inventory and integration patterns
 > - [Nx Standards](./NX_STANDARDS.md) - Naming conventions (`feature-{name}` pattern)
 > - [Effect Patterns Guide](./EFFECT_PATTERNS.md) - Service orchestration and error handling
-> - [Contract Libraries](./contract.md) - Domain interfaces for type-safe dependencies
-> - [Data-Access Libraries](./dataaccess.md) - Repository services you orchestrate
-> - [Infrastructure Libraries](./infra.md) - Cross-cutting concerns (logging, caching, etc.)
-> - [Provider Libraries](./provider.md) - External services (Stripe, OpenAI, etc.)
+> - [Contract Libraries](./CONTRACT.md) - Domain interfaces for type-safe dependencies
+> - [Data-Access Libraries](./DATA-ACCESS.md) - Repository services you orchestrate
+> - [Infrastructure Libraries](./INFRA.md) - Cross-cutting concerns (logging, caching, etc.)
+> - [Provider Libraries](./PROVIDER.md) - External services (Stripe, OpenAI, etc.)
 
 ## Overview
 
@@ -362,16 +362,16 @@ export { setupEventHandlers } from "./lib/server/events/handlers";
 
 For complete CQRS implementation, see:
 
-- **Contracts Layer**: `contract.md` - Define command/query/projection/event schemas with runtime validation
-- **Data-Access Layer**: `dataaccess.md` - Implement projection repositories with cache-aside pattern and Kysely JOINs
-- **Infrastructure Layer**: `infra.md` - Use MessagingService for event publishing/subscription with Stream.runForEach handlers
+- **Contracts Layer**: `CONTRACT.md` - Define command/query/projection/event schemas with runtime validation
+- **Data-Access Layer**: `DATA-ACCESS.md` - Implement projection repositories with cache-aside pattern and Kysely JOINs
+- **Infrastructure Layer**: `INFRA.md` - Use MessagingService for event publishing/subscription with Stream.runForEach handlers
 
 ## RPC Pattern (@effect/rpc 0.69.5 Current API)
 
 > **📚 Related Documentation:**
 >
-> - [Infrastructure RPC](./infra.md#rpc-middleware-tags-infrastructure) - Middleware tags and context (CurrentUser)
-> - [Contract Libraries](./contract.md#contracts-for-effect-services-and-rpc) - RPC schema definitions and entity reuse
+> - [Infrastructure RPC](./INFRA.md#rpc-middleware-tags-infrastructure) - Middleware tags and context (CurrentUser)
+> - [Contract Libraries](./CONTRACT.md#contracts-for-effect-services-and-rpc) - RPC schema definitions and entity reuse
 > - [@effect/rpc Documentation](https://effect.website/docs/effect-rpc) - Official Effect RPC documentation
 
 > **🎯 Feature Library RPC Responsibilities (Effect 3.17.13 + @effect/rpc 0.69.5):**
@@ -389,7 +389,7 @@ For complete CQRS implementation, see:
 > - ❌ Middleware implementations (provided by **application** layer)
 > - ❌ Context tags like `CurrentUser` (defined in **infrastructure** layer)
 >
-> See [Contract RPC Schemas](./contract.md#rpc-schemas-and-types) for schema definitions.
+> See [Contract RPC Schemas](./CONTRACT.md#rpc-schemas-and-types) for schema definitions.
 
 Feature libraries define RPC groups using `RpcGroup.make()` with separate handler definitions. Middleware context (like `CurrentUser`) is provided via Effect Layers at the application level.
 
@@ -423,7 +423,7 @@ export class CurrentUser extends Context.Tag("CurrentUser")<
 >() {}
 ```
 
-See [Infrastructure RPC Documentation](./infra.md#rpc-middleware-tags-infrastructure) for complete patterns.
+See [Infrastructure RPC Documentation](./INFRA.md#rpc-middleware-tags-infrastructure) for complete patterns.
 
 ### Step 2: Define RPC Group and Handlers
 

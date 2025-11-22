@@ -4,9 +4,9 @@
 > - [Architecture Overview](./ARCHITECTURE_OVERVIEW.md) - Library inventory and integration patterns
 > - [Nx Standards](./NX_STANDARDS.md) - Naming conventions (`provider-{service}` pattern)
 > - [Effect Patterns Guide](./EFFECT_PATTERNS.md) - Adapter pattern and error transformation
-> - [Infrastructure Libraries](./infra.md) - Consumers that orchestrate providers
-> - [Feature Libraries](./feature.md) - Business logic that uses providers
-> - [Contract Libraries](./contract.md) - Domain boundaries (NOT implemented by providers)
+> - [Infrastructure Libraries](./INFRA.md) - Consumers that orchestrate providers
+> - [Feature Libraries](./FEATURE.md) - Business logic that uses providers
+> - [Contract Libraries](./CONTRACT.md) - Domain boundaries (NOT implemented by providers)
 
 ## Overview
 

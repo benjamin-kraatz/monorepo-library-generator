@@ -3,11 +3,11 @@
 > **📚 Related Documentation:**
 > - [Architecture Overview](./ARCHITECTURE_OVERVIEW.md) - Library inventory and integration patterns
 > - [Effect Patterns Guide](./EFFECT_PATTERNS.md) - Effect.ts patterns and best practices
-> - [Contract Libraries](./contract.md) - Domain interfaces and ports
-> - [Data-Access Libraries](./dataaccess.md) - Repository implementations
-> - [Feature Libraries](./feature.md) - Business logic and services
-> - [Infrastructure Libraries](./infra.md) - Cross-cutting concerns
-> - [Provider Libraries](./provider.md) - External service adapters
+> - [Contract Libraries](./CONTRACT.md) - Domain interfaces and ports
+> - [Data-Access Libraries](./DATA-ACCESS.md) - Repository implementations
+> - [Feature Libraries](./FEATURE.md) - Business logic and services
+> - [Infrastructure Libraries](./INFRA.md) - Cross-cutting concerns
+> - [Provider Libraries](./PROVIDER.md) - External service adapters
 
 ## Overview
 
