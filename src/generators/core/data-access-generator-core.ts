@@ -7,9 +7,11 @@
  * @module monorepo-library-generator/generators/core/data-access-generator-core
  */
 
-import { names } from "@nx/devkit"
 import { Effect } from "effect"
+import { calculateOffsetFromRoot, parseTags } from "../../utils/core-generator-utils"
 import type { FileSystemAdapter, FileSystemErrors } from "../../utils/filesystem-adapter"
+import { generateInfrastructureFiles } from "../../utils/infrastructure-generator"
+import { createNamingVariants } from "../../utils/naming-utils"
 import type { DataAccessTemplateOptions } from "../../utils/shared/types"
 import { detectWorkspaceConfig } from "../../utils/workspace-detection"
 import { generateErrorsFile } from "../data-access/templates/errors.template"
@@ -49,7 +51,7 @@ export function generateDataAccessCore(
     const workspaceRoot = options.workspaceRoot ?? workspaceConfig.workspaceRoot
 
     // 2. Generate naming variants
-    const nameVariants = names(options.name)
+    const nameVariants = createNamingVariants(options.name)
     const projectName = `data-access-${nameVariants.fileName}`
     const packageName = `${workspaceConfig.scope}/${projectName}`
 
@@ -75,6 +77,7 @@ export function generateDataAccessCore(
       projectName,
       packageName,
       description: options.description ?? `Data access library for ${nameVariants.className}`,
+      libraryType: "data-access",
       offsetFromRoot
     })
 
@@ -107,87 +110,6 @@ export function generateDataAccessCore(
       sourceRoot,
       filesGenerated
     }
-  })
-}
-
-/**
- * Generate infrastructure files
- */
-function generateInfrastructureFiles(
-  adapter: FileSystemAdapter,
-  options: {
-    workspaceRoot: string
-    projectRoot: string
-    projectName: string
-    packageName: string
-    description: string
-    offsetFromRoot: string
-  }
-): Effect.Effect<void, FileSystemErrors, unknown> {
-  return Effect.gen(function*() {
-    const { description, offsetFromRoot, packageName, projectRoot, workspaceRoot } = options
-
-    yield* adapter.makeDirectory(`${workspaceRoot}/${projectRoot}`)
-
-    const packageJson = {
-      name: packageName,
-      version: "0.0.1",
-      type: "module" as const,
-      description,
-      exports: {
-        ".": {
-          import: "./src/index.ts",
-          types: "./src/index.ts"
-        }
-      },
-      peerDependencies: {
-        effect: "*"
-      }
-    }
-
-    yield* adapter.writeFile(
-      `${workspaceRoot}/${projectRoot}/package.json`,
-      JSON.stringify(packageJson, null, 2)
-    )
-
-    const tsConfig = {
-      extends: `${offsetFromRoot}tsconfig.base.json`,
-      compilerOptions: {
-        outDir: "./dist",
-        rootDir: "./src"
-      },
-      include: ["src/**/*.ts"],
-      exclude: ["node_modules", "dist", "**/*.spec.ts"]
-    }
-
-    yield* adapter.writeFile(
-      `${workspaceRoot}/${projectRoot}/tsconfig.json`,
-      JSON.stringify(tsConfig, null, 2)
-    )
-
-    const readme = `# ${packageName}
-
-${description}
-
-## Overview
-
-Repository-oriented data access library with Effect patterns.
-
-## Structure
-
-- **shared/**: Shared types, errors, and validation
-- **lib/**: Repository implementation and queries
-- **server/**: Server-side layers
-
-## Usage
-
-\`\`\`typescript
-import { /* repository */ } from '${packageName}';
-\`\`\`
-`
-
-    yield* adapter.writeFile(`${workspaceRoot}/${projectRoot}/README.md`, readme)
-    yield* adapter.makeDirectory(`${workspaceRoot}/${projectRoot}/src`)
   })
 }
 
@@ -310,15 +232,4 @@ Effect.gen(function* () {
 
     return files
   })
-}
-
-function calculateOffsetFromRoot(projectRoot: string): string {
-  const depth = projectRoot.split("/").length
-  return "../".repeat(depth)
-}
-
-function parseTags(tags: string | undefined, defaults: Array<string>): Array<string> {
-  if (!tags) return defaults
-  const parsed = tags.split(",").map((t) => t.trim()).filter(Boolean)
-  return Array.from(new Set([...defaults, ...parsed]))
 }

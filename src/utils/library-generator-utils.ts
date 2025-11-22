@@ -15,7 +15,8 @@
  */
 
 import type { ProjectConfiguration, Tree } from "@nx/devkit"
-import { addProjectConfiguration, names } from "@nx/devkit"
+import { addProjectConfiguration } from "@nx/devkit"
+import { createNamingVariants } from "./naming-utils"
 import { join } from "path"
 import {
   type BuildConfigOptions,
@@ -24,7 +25,7 @@ import {
   type LibraryType,
   type PlatformType
 } from "./build-config-utils"
-import { determinePlatformExports } from "./platform-utils"
+import { resolvePlatformExports } from "./platform-utils"
 import { addTsConfigFiles, type TsConfigOptions } from "./tsconfig-utils"
 import { detectWorkspace, getBuildMode } from "./workspace-detection"
 
@@ -174,7 +175,7 @@ function shouldGeneratePlatformExports(options: LibraryGeneratorOptions): {
   shouldGenerateClient: boolean
 } {
   // Use shared platform utilities for consistent logic
-  return determinePlatformExports({
+  return resolvePlatformExports({
     libraryType: options.libraryType,
     platform: options.platform,
     ...(options.includeClientServer !== undefined && {
@@ -297,12 +298,48 @@ async function generateTsConfig(
 /**
  * Generate package.json with mode-specific configuration
  */
+/**
+ * Extract package scope from root package.json
+ *
+ * @param tree - Nx Tree API
+ * @returns Package scope (e.g., "@myorg")
+ */
+function extractPackageScopeFromTree(tree: Tree): string {
+  const packageJsonContent = tree.read("package.json", "utf-8")
+  if (!packageJsonContent) {
+    throw new Error("package.json not found in workspace root")
+  }
+
+  const packageJson = JSON.parse(packageJsonContent)
+  const packageName = packageJson.name
+
+  if (!packageName || packageName.trim() === "") {
+    throw new Error(
+      "package.json must have a 'name' field. " +
+      "Set it to your workspace name (e.g., '@myorg/monorepo' or 'my-workspace')"
+    )
+  }
+
+  // If already scoped (starts with @), extract the scope part
+  if (packageName.startsWith("@")) {
+    const scope = packageName.split("/")[0]
+    if (!scope) {
+      throw new Error(`Invalid scoped package name: ${packageName}`)
+    }
+    return scope
+  }
+
+  // No scope - use package name as scope (add @ prefix)
+  return `@${packageName}`
+}
+
 function generatePackageJson(
   tree: Tree,
   options: LibraryGeneratorOptions,
   buildMode: "nx" | "effect"
 ): PackageJsonConfiguration {
-  const scopedName = `@custom-repo/${options.projectName}`
+  const scope = extractPackageScopeFromTree(tree)
+  const scopedName = `${scope}/${options.projectName}`
 
   // Build exports map
   const exports: Record<string, { import?: string; types?: string }> = {
@@ -390,7 +427,7 @@ function generateSourceFiles(
   client?: string
   edge?: string
 } {
-  const nameVars = names(options.name)
+  const nameVars = createNamingVariants(options.name)
 
   // Generate index.ts
   const indexContent = generateIndexTemplate(options, nameVars)
@@ -582,7 +619,7 @@ function generateDocumentation(
   tree: Tree,
   options: LibraryGeneratorOptions
 ): { readme: string; claude: string } {
-  const nameVars = names(options.name)
+  const nameVars = createNamingVariants(options.name)
 
   // Generate README.md
   const readmeContent = generateReadmeTemplate(options, nameVars)

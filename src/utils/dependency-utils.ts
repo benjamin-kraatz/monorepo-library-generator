@@ -8,8 +8,8 @@
  */
 
 import type { Tree } from "@nx/devkit"
-import { names } from "@nx/devkit"
 import * as path from "path"
+import { createNamingVariants } from "./naming-utils"
 import type { LibraryType } from "./shared/types"
 
 /**
@@ -87,7 +87,7 @@ export function computeDependencies(
   const libraryDirectory = getLibraryDirectory(libraryType)
 
   return dependencyNames.map((depName) => {
-    const depFileName = names(depName).fileName
+    const depFileName = createNamingVariants(depName).fileName
     const depProjectRoot = `${libraryDirectory}/${depFileName}`
 
     // Validate that the dependency exists
@@ -133,7 +133,7 @@ export function validateDependencyExists(
   dependencyName: string,
   libraryType: LibraryType
 ): boolean {
-  const depFileName = names(dependencyName).fileName
+  const depFileName = createNamingVariants(dependencyName).fileName
   const libraryDirectory = getLibraryDirectory(libraryType)
   const depProjectRoot = `${libraryDirectory}/${depFileName}`
 

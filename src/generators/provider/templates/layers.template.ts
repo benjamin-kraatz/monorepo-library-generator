@@ -60,33 +60,43 @@ export function generateLayersFile(options: ProviderTemplateOptions) {
   builder.addRaw("/**")
   builder.addRaw(" * Live Layer - Production environment")
   builder.addRaw(" *")
-  builder.addRaw(" * Uses Layer.sync because:")
-  builder.addRaw(" * - Client creation is synchronous")
-  builder.addRaw(" * - No cleanup needed")
-  builder.addRaw(" * - No async initialization")
+  builder.addRaw(" * Uses Layer.scoped for proper resource management:")
+  builder.addRaw(" * - Ensures client cleanup on scope exit")
+  builder.addRaw(" * - Prevents resource leaks (connections, file handles, etc.)")
+  builder.addRaw(" * - Handles graceful shutdown")
   builder.addRaw(" *")
   builder.addRaw(
     " * Configuration: Uses @custom-repo/infra-env for environment variable access"
   )
   builder.addRaw(" *")
   builder.addRaw(
-    " * TODO: If your SDK requires async initialization, use Layer.effect instead"
+    " * TODO: Implement release function if your SDK has cleanup methods (e.g., client.close(), client.disconnect())"
   )
   builder.addRaw(
-    " * TODO: If your SDK needs cleanup (e.g., connection pooling), use Layer.scoped with Effect.acquireRelease"
+    " * TODO: If your SDK has truly no resources to clean up, you can simplify to Layer.sync"
   )
   builder.addRaw(" */")
-  builder.addRaw(`export const ${className}Live = Layer.sync(`)
+  builder.addRaw(`export const ${className}Live = Layer.scoped(`)
   builder.addRaw(`  ${className},`)
-  builder.addRaw("  () => {")
+  builder.addRaw("  Effect.gen(function* () {")
   builder.addRaw(`    const config: ${className}Config = {`)
   builder.addRaw(`      apiKey: env.${projectConstantName}_API_KEY,`)
   builder.addRaw(`      timeout: env.${projectConstantName}_TIMEOUT || 20000,`)
   builder.addRaw("    };")
   builder.addBlankLine()
   builder.addRaw(`    const client = create${className}Client(config);`)
+  builder.addBlankLine()
+  builder.addRaw("    // Register cleanup function")
+  builder.addRaw("    yield* Effect.addFinalizer(() =>")
+  builder.addRaw("      Effect.sync(() => {")
+  builder.addRaw("        // TODO: Add cleanup logic here if your SDK provides it")
+  builder.addRaw("        // Example: client.close(), client.disconnect(), etc.")
+  builder.addRaw("        console.log(`[${className}] Cleaning up client resources`);")
+  builder.addRaw("      }),")
+  builder.addRaw("    );")
+  builder.addBlankLine()
   builder.addRaw(`    return ${className}.make(client, config);`)
-  builder.addRaw("  },")
+  builder.addRaw("  }),")
   builder.addRaw(");")
   builder.addBlankLine()
 
@@ -98,9 +108,9 @@ export function generateLayersFile(options: ProviderTemplateOptions) {
     " * Same as Live but with debug logging or relaxed validation"
   )
   builder.addRaw(" */")
-  builder.addRaw(`export const ${className}Dev = Layer.sync(`)
+  builder.addRaw(`export const ${className}Dev = Layer.scoped(`)
   builder.addRaw(`  ${className},`)
-  builder.addRaw("  () => {")
+  builder.addRaw("  Effect.gen(function* () {")
   builder.addRaw(`    const config: ${className}Config = {`)
   builder.addRaw(
     `      apiKey: env.${projectConstantName}_API_KEY || "dev_key",`
@@ -109,8 +119,17 @@ export function generateLayersFile(options: ProviderTemplateOptions) {
   builder.addRaw("    };")
   builder.addBlankLine()
   builder.addRaw(`    const client = create${className}Client(config);`)
+  builder.addBlankLine()
+  builder.addRaw("    // Register cleanup function")
+  builder.addRaw("    yield* Effect.addFinalizer(() =>")
+  builder.addRaw("      Effect.sync(() => {")
+  builder.addRaw("        console.log(`[${className}] [DEV] Cleaning up client resources`);")
+  builder.addRaw("        // TODO: Add cleanup logic")
+  builder.addRaw("      }),")
+  builder.addRaw("    );")
+  builder.addBlankLine()
   builder.addRaw(`    return ${className}.make(client, config);`)
-  builder.addRaw("  },")
+  builder.addRaw("  }),")
   builder.addRaw(");")
   builder.addBlankLine()
 
@@ -167,10 +186,22 @@ export function generateLayersFile(options: ProviderTemplateOptions) {
       `make${className}Layer - Custom layer factory\n\nUse this to create a layer with custom configuration\n\nExample:\n\`\`\`typescript\nconst customLayer = make${className}Layer({\n  apiKey: "custom_key",\n  timeout: 5000,\n});\n\`\`\``,
     params: [{ name: "config", type: `${className}Config` }],
     returnType: `Layer.Layer<${className}>`,
-    body: `return Layer.sync(${className}, () => {
-  const client = create${className}Client(config);
-  return ${className}.make(client, config);
-});`
+    body: `return Layer.scoped(
+  ${className},
+  Effect.gen(function* () {
+    const client = create${className}Client(config);
+
+    // Register cleanup function
+    yield* Effect.addFinalizer(() =>
+      Effect.sync(() => {
+        console.log(\`[${className}] [CUSTOM] Cleaning up client resources\`);
+        // TODO: Add cleanup logic
+      }),
+    );
+
+    return ${className}.make(client, config);
+  }),
+);`
   })
 
   return builder.toString()

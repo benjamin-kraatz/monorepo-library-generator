@@ -9,11 +9,15 @@
 
 import { Effect } from "effect"
 import type { FileSystemAdapter, FileSystemErrors } from "../../utils/filesystem-adapter"
-import type { PlatformType } from "../../utils/platform-utils"
+import { computePlatformConfiguration, type PlatformType } from "../../utils/platform-utils"
 import type { Platform, ProviderTemplateOptions } from "../../utils/shared/types"
 import {
+  generateClientFile,
+  generateEdgeFile,
   generateErrorsFile,
+  generateIndexFile,
   generateLayersFile,
+  generateServerFile,
   generateServiceFile,
   generateServiceSpecFile,
   generateTypesFile,
@@ -67,6 +71,19 @@ export function generateProviderCore(
   options: ProviderGeneratorCoreOptions
 ): Effect.Effect<GeneratorResult, FileSystemErrors, unknown> {
   return Effect.gen(function*() {
+    // Compute platform configuration
+    const platformConfig = computePlatformConfiguration(
+      {
+        platform: options.platform
+      },
+      {
+        defaultPlatform: "node",
+        libraryType: "provider"
+      }
+    )
+
+    const { includeClientServer, includeEdge } = platformConfig
+
     // Map PlatformType to Platform for template options
     const platformMapping: Record<PlatformType, Platform> = {
       node: "server",
@@ -98,6 +115,10 @@ export function generateProviderCore(
     const filesGenerated: Array<string> = []
     const sourceLibPath = `${options.sourceRoot}/lib`
 
+    // Generate main index.ts (barrel exports)
+    yield* adapter.writeFile(`${options.sourceRoot}/index.ts`, generateIndexFile(templateOptions))
+    filesGenerated.push(`${options.sourceRoot}/index.ts`)
+
     // Generate all provider-specific files
     yield* adapter.writeFile(`${sourceLibPath}/errors.ts`, generateErrorsFile(templateOptions))
     filesGenerated.push(`${sourceLibPath}/errors.ts`)
@@ -116,6 +137,28 @@ export function generateProviderCore(
 
     yield* adapter.writeFile(`${sourceLibPath}/service.spec.ts`, generateServiceSpecFile(templateOptions))
     filesGenerated.push(`${sourceLibPath}/service.spec.ts`)
+
+    // Generate platform-specific export files
+    // Server exports (always generated for Node.js providers)
+    if (options.platform === "node" || options.platform === "universal") {
+      const serverContent = generateServerFile(templateOptions)
+      yield* adapter.writeFile(`${options.sourceRoot}/server.ts`, serverContent)
+      filesGenerated.push(`${options.sourceRoot}/server.ts`)
+    }
+
+    // Client exports (conditional)
+    if (includeClientServer || options.platform === "browser" || options.platform === "universal") {
+      const clientContent = generateClientFile(templateOptions)
+      yield* adapter.writeFile(`${options.sourceRoot}/client.ts`, clientContent)
+      filesGenerated.push(`${options.sourceRoot}/client.ts`)
+    }
+
+    // Edge exports (conditional)
+    if (includeEdge || options.platform === "edge") {
+      const edgeContent = generateEdgeFile(templateOptions)
+      yield* adapter.writeFile(`${options.sourceRoot}/edge.ts`, edgeContent)
+      filesGenerated.push(`${options.sourceRoot}/edge.ts`)
+    }
 
     return {
       projectName: options.projectName,

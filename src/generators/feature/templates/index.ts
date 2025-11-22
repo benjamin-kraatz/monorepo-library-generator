@@ -32,6 +32,9 @@ import { generateHooksFile } from "./hooks.template"
 // Edge layer templates
 import { generateMiddlewareFile } from "./middleware.template"
 
+// Index template
+import { generateIndexFile } from "./index.template"
+
 // Re-export all template functions
 export {
   generateAtomsFile,
@@ -39,6 +42,7 @@ export {
   generateErrorsFile,
   generateHooksFile,
   generateHooksIndexFile,
+  generateIndexFile,
   generateLayersFile,
   generateMiddlewareFile,
   generateRpcErrorsFile,

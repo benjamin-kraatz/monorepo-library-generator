@@ -1,12 +1,14 @@
 import type { Tree } from "@nx/devkit"
-import { generateFiles, names } from "@nx/devkit"
+import { generateFiles } from "@nx/devkit"
 import * as path from "path"
+import type { NamingVariants } from "./shared/types"
+import { createNamingVariants } from "./naming-utils"
 
 /**
  * Base template substitutions that all generators should include
  * Following Nx EJS template best practices
  */
-export interface BaseTemplateSubstitutions extends ReturnType<typeof names> {
+export interface BaseTemplateSubstitutions extends NamingVariants {
   tmpl: "" // Standard Nx pattern for __tmpl__ removal
   name: string
   projectName: string
@@ -44,7 +46,7 @@ export function createBaseSubstitutions(
   offsetFromRoot: string,
   tags: Array<string>
 ) {
-  const nameVariations = names(name)
+  const nameVariations = createNamingVariants(name)
 
   return {
     ...nameVariations,

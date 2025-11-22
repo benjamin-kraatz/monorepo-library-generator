@@ -8,7 +8,8 @@
  */
 
 import type { Tree } from "@nx/devkit"
-import { joinPathFragments, names, offsetFromRoot as computeOffsetFromRoot } from "@nx/devkit"
+import { joinPathFragments, offsetFromRoot as computeOffsetFromRoot } from "@nx/devkit"
+import { createNamingVariants } from "./naming-utils"
 import type { LibraryType } from "./shared/types"
 
 /**
@@ -128,13 +129,13 @@ function buildTags(
  * }
  * ```
  */
-export function normalizeBaseOptions(
+export function standardizeGeneratorOptions(
   tree: Tree,
   input: NormalizeOptionsInput,
   workspaceConfig: { scope: string; librariesRoot: string }
 ): NormalizedBaseOptions {
   // Use Nx names utility to get all naming variants
-  const nameVariants = names(input.name)
+  const nameVariants = createNamingVariants(input.name)
   const fileName = nameVariants.fileName // kebab-case
 
   // Get directory (use default if not provided)

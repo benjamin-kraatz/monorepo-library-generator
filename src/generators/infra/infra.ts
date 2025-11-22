@@ -10,7 +10,7 @@ import { formatFiles } from "@nx/devkit"
 import { Effect } from "effect"
 import { parseTags } from "../../utils/generator-utils"
 import { generateLibraryFiles } from "../../utils/library-generator-utils"
-import { normalizeBaseOptions, type NormalizedBaseOptions } from "../../utils/normalization-utils"
+import { standardizeGeneratorOptions, type NormalizedBaseOptions } from "../../utils/normalization-utils"
 import { computePlatformConfiguration } from "../../utils/platform-utils"
 import { createTreeAdapter } from "../../utils/tree-adapter"
 import { detectWorkspaceConfig, type WorkspaceConfig } from "../../utils/workspace-detection"
@@ -154,7 +154,7 @@ function normalizeOptions(
   )
 
   // Use shared normalization utility for common fields
-  return normalizeBaseOptions(tree, {
+  return standardizeGeneratorOptions(tree, {
     name: schema.name,
     ...(schema.directory !== undefined && { directory: schema.directory }),
     ...(schema.description !== undefined && { description: schema.description }),

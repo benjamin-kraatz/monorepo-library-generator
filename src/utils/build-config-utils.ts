@@ -6,7 +6,7 @@
  */
 
 import type { TargetConfiguration } from "@nx/devkit"
-import { determinePlatformExports, type PlatformType } from "./platform-utils"
+import { resolvePlatformExports, type PlatformType } from "./platform-utils"
 
 export type { PlatformType }
 export type LibraryType =
@@ -41,7 +41,7 @@ function getAdditionalEntryPoints(options: BuildConfigOptions) {
   const entryPoints = [...additionalEntryPoints]
 
   // Use shared platform utilities for consistent logic
-  const { shouldGenerateClient, shouldGenerateServer } = determinePlatformExports({
+  const { shouldGenerateClient, shouldGenerateServer } = resolvePlatformExports({
     libraryType,
     platform,
     ...(includeClientServer !== undefined && { includeClientServer })

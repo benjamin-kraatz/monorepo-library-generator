@@ -7,9 +7,11 @@
  * @module monorepo-library-generator/generators/core/contract-generator-core
  */
 
-import { names } from "@nx/devkit"
 import { Effect } from "effect"
+import { calculateOffsetFromRoot, parseTags } from "../../utils/core-generator-utils"
 import type { FileSystemAdapter, FileSystemErrors } from "../../utils/filesystem-adapter"
+import { generateInfrastructureFiles } from "../../utils/infrastructure-generator"
+import { createNamingVariants } from "../../utils/naming-utils"
 import type { ContractTemplateOptions } from "../../utils/shared/types"
 import { detectWorkspaceConfig } from "../../utils/workspace-detection"
 import { generateCommandsFile } from "../contract/templates/commands.template"
@@ -70,7 +72,7 @@ export function generateContractCore(
     const workspaceRoot = options.workspaceRoot ?? workspaceConfig.workspaceRoot
 
     // 2. Generate naming variants
-    const nameVariants = names(options.name)
+    const nameVariants = createNamingVariants(options.name)
     const projectName = `contract-${nameVariants.fileName}`
     const packageName = `${workspaceConfig.scope}/${projectName}`
 
@@ -96,6 +98,7 @@ export function generateContractCore(
       projectName,
       packageName,
       description: options.description ?? `Contract library for ${nameVariants.className}`,
+      libraryType: "contract",
       offsetFromRoot
     })
 
@@ -134,104 +137,6 @@ export function generateContractCore(
       sourceRoot,
       filesGenerated
     }
-  })
-}
-
-/**
- * Generate infrastructure files (package.json, tsconfig, README, etc.)
- */
-function generateInfrastructureFiles(
-  adapter: FileSystemAdapter,
-  options: {
-    workspaceRoot: string
-    projectRoot: string
-    projectName: string
-    packageName: string
-    description: string
-    offsetFromRoot: string
-  }
-): Effect.Effect<void, FileSystemErrors, unknown> {
-  return Effect.gen(function*() {
-    const { description, offsetFromRoot, packageName, projectName, projectRoot, workspaceRoot } = options
-
-    // 1. Create project directory
-    yield* adapter.makeDirectory(`${workspaceRoot}/${projectRoot}`)
-
-    // 2. Generate package.json
-    const packageJson = {
-      name: packageName,
-      version: "0.0.1",
-      type: "module" as const,
-      description,
-      exports: {
-        ".": {
-          import: "./src/index.ts",
-          types: "./src/index.ts"
-        }
-      },
-      peerDependencies: {
-        effect: "*"
-      }
-    }
-
-    yield* adapter.writeFile(
-      `${workspaceRoot}/${projectRoot}/package.json`,
-      JSON.stringify(packageJson, null, 2)
-    )
-
-    // 3. Generate tsconfig.json
-    const tsConfig = {
-      extends: `${offsetFromRoot}tsconfig.base.json`,
-      compilerOptions: {
-        outDir: "./dist",
-        rootDir: "./src"
-      },
-      include: ["src/**/*.ts"],
-      exclude: ["node_modules", "dist", "**/*.spec.ts"]
-    }
-
-    yield* adapter.writeFile(
-      `${workspaceRoot}/${projectRoot}/tsconfig.json`,
-      JSON.stringify(tsConfig, null, 2)
-    )
-
-    // 4. Generate README.md
-    const readme = `# ${packageName}
-
-${description}
-
-## Overview
-
-This contract library defines the core domain model for ${projectName}.
-
-## Contents
-
-- **Entities**: Domain entities and value objects
-- **Errors**: Domain-specific errors
-- **Events**: Domain events
-- **Ports**: Service interfaces (repository pattern)
-
-## Usage
-
-\`\`\`typescript
-import { /* entities */ } from '${packageName}';
-\`\`\`
-
-## Development
-
-\`\`\`bash
-# Build
-pnpm exec nx build ${projectName}
-
-# Test
-pnpm exec nx test ${projectName}
-\`\`\`
-`
-
-    yield* adapter.writeFile(`${workspaceRoot}/${projectRoot}/README.md`, readme)
-
-    // 5. Create src directory
-    yield* adapter.makeDirectory(`${workspaceRoot}/${projectRoot}/src`)
   })
 }
 
@@ -351,27 +256,4 @@ Effect.gen(function* () {
 
     return files
   })
-}
-
-/**
- * Calculate relative path from project to workspace root
- */
-function calculateOffsetFromRoot(projectRoot: string): string {
-  const depth = projectRoot.split("/").length
-  return "../".repeat(depth)
-}
-
-/**
- * Parse tags from comma-separated string with defaults
- */
-function parseTags(tags: string | undefined, defaults: Array<string>): Array<string> {
-  if (!tags) return defaults
-
-  const parsed = tags
-    .split(",")
-    .map((t) => t.trim())
-    .filter(Boolean)
-
-  // Merge with defaults, removing duplicates
-  return Array.from(new Set([...defaults, ...parsed]))
 }

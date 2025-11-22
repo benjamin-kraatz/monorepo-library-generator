@@ -8,10 +8,11 @@
  */
 
 import type { Tree } from "@nx/devkit"
-import { formatFiles, installPackagesTask, names } from "@nx/devkit"
+import { formatFiles, installPackagesTask } from "@nx/devkit"
 import { Effect } from "effect"
 import { generateLibraryFiles, type LibraryGeneratorOptions } from "../../utils/library-generator-utils"
-import { normalizeBaseOptions } from "../../utils/normalization-utils"
+import { standardizeGeneratorOptions } from "../../utils/normalization-utils"
+import { createNamingVariants } from "../../utils/naming-utils"
 import { createTreeAdapter } from "../../utils/tree-adapter"
 import { detectWorkspaceConfig, type WorkspaceConfig } from "../../utils/workspace-detection"
 import { generateProviderCore, type GeneratorResult } from "../core/provider-generator-core"
@@ -45,10 +46,10 @@ function normalizeOptions(
   )
 
   // Use shared normalization (without additional tags, we'll build tags manually)
-  const baseOptions = normalizeBaseOptions(tree, {
+  const baseOptions = standardizeGeneratorOptions(tree, {
     name: options.name,
     ...(options.directory !== undefined && { directory: options.directory }),
-    description: options.description ?? `${names(options.name).className} provider for ${options.externalService}`,
+    description: options.description ?? `${createNamingVariants(options.name).className} provider for ${options.externalService}`,
     libraryType: "provider"
   }, workspaceConfig)
 
@@ -57,7 +58,7 @@ function normalizeOptions(
   const projectConstantName = `${baseOptions.constantName}_SERVICE`
 
   // Provider-specific tags: always use "scope:provider" instead of "scope:${fileName}"
-  const serviceTag = `service:${names(options.externalService).fileName}`
+  const serviceTag = `service:${createNamingVariants(options.externalService).fileName}`
   const defaultTags = [
     "type:provider",
     "scope:provider", // Providers always use "provider" scope

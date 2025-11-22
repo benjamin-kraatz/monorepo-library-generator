@@ -17,6 +17,7 @@ import {
   generateErrorsFile,
   generateHooksFile,
   generateHooksIndexFile,
+  generateIndexFile,
   generateLayersFile,
   generateMiddlewareFile,
   generateRpcErrorsFile,
@@ -130,6 +131,10 @@ export function generateFeatureCore(
     const rpcPath = `${sourceLibPath}/rpc`
     const clientPath = `${sourceLibPath}/client`
     const edgePath = `${sourceLibPath}/edge`
+
+    // Generate main index.ts (barrel exports)
+    yield* adapter.writeFile(`${options.sourceRoot}/index.ts`, generateIndexFile(templateOptions))
+    filesGenerated.push(`${options.sourceRoot}/index.ts`)
 
     // Always generate shared layer
     yield* adapter.writeFile(`${sharedPath}/errors.ts`, generateErrorsFile(templateOptions))

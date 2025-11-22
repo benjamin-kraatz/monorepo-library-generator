@@ -13,7 +13,7 @@
 import type { Tree } from "@nx/devkit"
 import { createTreeWithEmptyWorkspace } from "@nx/devkit/testing"
 import dataAccessGenerator from "./data-access"
-import type { DataAccessGeneratorSchema } from "./schema.d"
+import type { DataAccessGeneratorSchema } from "./schema"
 
 describe("Data Access Library Generator", () => {
   let tree: Tree

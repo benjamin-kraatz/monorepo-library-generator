@@ -83,7 +83,7 @@ export interface PlatformExports {
  * // => { shouldGenerateServer: false, shouldGenerateClient: false }
  * ```
  */
-export function determinePlatformExports(
+export function resolvePlatformExports(
   options: PlatformExportOptions
 ): PlatformExports {
   // Library types that don't support platform-specific exports
@@ -126,7 +126,7 @@ export function determinePlatformExports(
  * supportsPlatformExports('data-access'); // => false
  * ```
  */
-export function supportsPlatformExports(libraryType: LibraryType): boolean {
+export function hasPlatformExports(libraryType: LibraryType): boolean {
   return libraryType !== "data-access" && libraryType !== "contract"
 }
 
@@ -198,7 +198,7 @@ export function computePlatformConfiguration(
 
   // Determine if client/server exports should be generated
   // Client and server are always generated together as a package
-  const { shouldGenerateClient, shouldGenerateServer } = determinePlatformExports({
+  const { shouldGenerateClient, shouldGenerateServer } = resolvePlatformExports({
     libraryType: defaults.libraryType,
     platform,
     ...(input.includeClientServer !== undefined && { includeClientServer: input.includeClientServer })

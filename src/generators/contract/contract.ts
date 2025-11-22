@@ -6,11 +6,20 @@
  */
 
 import type { Tree } from "@nx/devkit"
-import { addProjectConfiguration, formatFiles } from "@nx/devkit"
+import { formatFiles } from "@nx/devkit"
 import { Effect } from "effect"
+import { parseTags } from "../../utils/generator-utils"
+import { generateLibraryFiles } from "../../utils/library-generator-utils"
+import { standardizeGeneratorOptions, type NormalizedBaseOptions } from "../../utils/normalization-utils"
 import { createTreeAdapter } from "../../utils/tree-adapter"
+import { detectWorkspaceConfig, type WorkspaceConfig } from "../../utils/workspace-detection"
 import { generateContractCore, type GeneratorResult } from "../core/contract-generator-core"
 import type { ContractGeneratorSchema } from "./schema"
+
+/**
+ * Normalized options with computed values
+ */
+type NormalizedContractOptions = NormalizedBaseOptions
 
 /**
  * Contract generator for Nx workspaces
@@ -26,10 +35,39 @@ export default async function contractGenerator(
   tree: Tree,
   schema: ContractGeneratorSchema
 ) {
-  // 1. Create Tree adapter
-  const adapter = createTreeAdapter(tree)
+  // Validate required fields
+  if (!schema.name || schema.name.trim() === "") {
+    throw new Error("Contract name is required and cannot be empty")
+  }
 
-  // 2. Map schema to core options
+  const options = normalizeOptions(tree, schema)
+
+  // Build tags using shared tag utility
+  const defaultTags = [
+    "type:contract",
+    `domain:${options.fileName}`,
+    "platform:universal"
+  ]
+  const tags = parseTags(schema.tags, defaultTags)
+
+  // 1. Generate base library files using centralized utility
+  const libraryOptions = {
+    name: options.name,
+    projectName: options.projectName,
+    projectRoot: options.projectRoot,
+    offsetFromRoot: options.offsetFromRoot,
+    libraryType: "contract" as const,
+    platform: "universal" as const,
+    description: options.description,
+    tags,
+    includeCQRS: schema.includeCQRS ?? false,
+    includeRPC: schema.includeRPC ?? false
+  }
+
+  await generateLibraryFiles(tree, libraryOptions)
+
+  // 2. Generate domain-specific files using shared core
+  const adapter = createTreeAdapter(tree)
   const coreOptions: Parameters<typeof generateContractCore>[1] = {
     name: schema.name,
     ...(schema.description && { description: schema.description }),
@@ -45,86 +83,28 @@ export default async function contractGenerator(
     generateContractCore(adapter, coreOptions) as Effect.Effect<GeneratorResult, never>
   )
 
-  // Generate Nx-specific tsconfig files
-  const tsconfigLib = {
-    extends: "./tsconfig.json",
-    compilerOptions: {
-      outDir: "../../dist/out-tsc",
-      declaration: true,
-      types: ["node"]
-    },
-    include: ["src/**/*.ts"],
-    exclude: ["jest.config.ts", "src/**/*.spec.ts", "src/**/*.test.ts"]
-  }
-
-  tree.write(
-    `${result.projectRoot}/tsconfig.lib.json`,
-    JSON.stringify(tsconfigLib, null, 2)
-  )
-
-  const tsconfigSpec = {
-    extends: "./tsconfig.json",
-    compilerOptions: {
-      outDir: "../../dist/out-tsc",
-      types: ["vitest/globals", "node"]
-    },
-    include: ["vite.config.ts", "src/**/*.test.ts", "src/**/*.spec.ts"]
-  }
-
-  tree.write(
-    `${result.projectRoot}/tsconfig.spec.json`,
-    JSON.stringify(tsconfigSpec, null, 2)
-  )
-
-  // 4. Register project with Nx
-  addProjectConfiguration(tree, result.projectName, {
-    root: result.projectRoot,
-    projectType: "library",
-    sourceRoot: result.sourceRoot,
-    targets: {
-      build: {
-        executor: "@nx/js:tsc",
-        outputs: ["{options.outputPath}"],
-        options: {
-          outputPath: `dist/${result.projectRoot}`,
-          tsConfig: `${result.projectRoot}/tsconfig.json`,
-          packageJson: `${result.projectRoot}/package.json`,
-          main: `${result.projectRoot}/src/index.ts`
-        }
-      },
-      test: {
-        executor: "@nx/vite:test",
-        outputs: ["{options.reportsDirectory}"],
-        options: {
-          passWithNoTests: true,
-          reportsDirectory: `../../coverage/${result.projectRoot}`
-        }
-      }
-    },
-    tags: coreOptions.tags?.split(",").map((t) => t.trim()).filter(Boolean) || []
-  })
-
-  // 5. Nx-specific post-processing
+  // 5. Format files
   await formatFiles(tree)
 
-  // 6. Return Nx callback for console output
+  // 6. Return post-generation instructions
   return () => {
     console.log(`
 ✅ Contract library created: ${result.packageName}
 
 📁 Location: ${result.projectRoot}
 📦 Package: ${result.packageName}
+📂 Files generated: ${result.filesGenerated.length}
 
 🎯 IMPORTANT - Customization Required:
 This library was generated with minimal scaffolding.
 Follow the TODO comments in each file to customize for your domain.
 
-Next steps:
+🎯 Next Steps:
 1. Customize domain files (see TODO comments in each file):
-   - ${result.sourceRoot}/lib/entities.ts   - Add your domain fields
-   - ${result.sourceRoot}/lib/errors.ts     - Add domain-specific errors
-   - ${result.sourceRoot}/lib/events.ts     - Add custom events
-   - ${result.sourceRoot}/lib/ports.ts      - Add repository/service methods
+   - ${result.sourceRoot}/lib/entities.ts - Add your domain fields
+   - ${result.sourceRoot}/lib/errors.ts   - Add domain-specific errors
+   - ${result.sourceRoot}/lib/events.ts   - Add custom events
+   - ${result.sourceRoot}/lib/ports.ts    - Add repository/service methods
 
 2. Build and test:
    - pnpm exec nx build ${result.projectName} --batch
@@ -138,4 +118,28 @@ Next steps:
    - See ${result.projectRoot}/README.md for customization examples
     `)
   }
+}
+
+/**
+ * Normalize options with defaults and computed values
+ */
+function normalizeOptions(
+  tree: Tree,
+  schema: ContractGeneratorSchema
+): NormalizedContractOptions {
+  // Detect workspace configuration
+  const adapter = createTreeAdapter(tree)
+  const workspaceConfig = Effect.runSync(
+    detectWorkspaceConfig(adapter).pipe(
+      Effect.orDie
+    ) as Effect.Effect<WorkspaceConfig, never, never>
+  )
+
+  // Use shared normalization utility for common fields
+  return standardizeGeneratorOptions(tree, {
+    name: schema.name,
+    ...(schema.directory !== undefined && { directory: schema.directory }),
+    ...(schema.description !== undefined && { description: schema.description }),
+    libraryType: "contract"
+  }, workspaceConfig)
 }

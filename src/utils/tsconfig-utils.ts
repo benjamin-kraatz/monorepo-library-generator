@@ -35,13 +35,23 @@ interface DependencyInfo {
 }
 
 /**
- * Compute project references from Nx dependency graph
+ * Compute project references from Nx dependency graph (with fallback for non-NX)
  *
  * This function:
- * 1. Reads the Nx project graph to find all dependencies
- * 2. Filters to only library dependencies (not apps or external deps)
- * 3. Computes relative paths to each dependency's tsconfig.lib.json
- * 4. Validates no circular dependencies exist
+ * 1. Attempts to read the Nx project graph to find all dependencies
+ * 2. Falls back to empty references if Nx is not available
+ * 3. Filters to only library dependencies (not apps or external deps)
+ * 4. Computes relative paths to each dependency's tsconfig.lib.json
+ * 5. Validates no circular dependencies exist (NX only)
+ *
+ * @param tree - Nx Tree API for file system access
+ * @param projectName - Name of the project to compute references for
+ * @returns Project references and dependency information
+ *
+ * @remarks
+ * For non-NX monorepos, project references are not automatically computed.
+ * Developers should manually add references to tsconfig.lib.json if needed
+ * for incremental compilation benefits.
  */
 export async function computeProjectReferences(
   tree: Tree,
@@ -51,6 +61,7 @@ export async function computeProjectReferences(
   dependencies: Array<DependencyInfo>
 }> {
   try {
+    // Try to use Nx project graph
     const graph = await createProjectGraphAsync()
     const project = graph.nodes[projectName]
 
@@ -132,9 +143,23 @@ export async function computeProjectReferences(
 
     return { references, dependencies }
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error)
+
+    // Check if this is an NX not found error (non-NX monorepo)
+    if (errorMessage.includes("Cannot find module") ||
+        errorMessage.includes("createProjectGraphAsync") ||
+        errorMessage.includes("nx.json")) {
+      console.log(
+        `NX not detected for ${projectName}. Skipping automatic project references. ` +
+        `For incremental TypeScript compilation, manually add references to tsconfig.lib.json.`
+      )
+      return { references: [], dependencies: [] }
+    }
+
+    // For other errors, log and return empty
     console.error(
       `Error computing project references for ${projectName}:`,
-      error
+      errorMessage
     )
     return { references: [], dependencies: [] }
   }
@@ -358,11 +383,22 @@ export function getLibraryTypeOptions(libraryType: LibraryType) {
  *
  * This is the main function generators should call to create
  * TypeScript configurations dynamically instead of using templates
+ *
+ * @param tree - Nx Tree API for file system access
+ * @param options - TypeScript configuration options
+ * @returns Project references and dependencies
+ *
+ * @remarks
+ * **NX Workspaces**: Automatically computes project references from the dependency graph
+ * **Non-NX Workspaces**: Falls back to empty references; developers can manually add them
+ *
+ * For incremental TypeScript compilation in non-NX monorepos, manually add
+ * project references to tsconfig.lib.json after generation.
  */
 export async function addTsConfigFiles(tree: Tree, options: TsConfigOptions) {
   const { projectName, projectRoot } = options
 
-  // Compute project references from Nx graph
+  // Compute project references from Nx graph (or empty if non-NX)
   const { dependencies, references } = await computeProjectReferences(
     tree,
     projectName
