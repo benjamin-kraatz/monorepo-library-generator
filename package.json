@@ -19,7 +19,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/samuelho-dev/monorepo-library-generator"
+    "url": "git+https://github.com/samuelho-dev/monorepo-library-generator.git"
   },
   "bugs": {
     "url": "https://github.com/samuelho-dev/monorepo-library-generator/issues"
@@ -27,7 +27,7 @@
   "homepage": "https://github.com/samuelho-dev/monorepo-library-generator#readme",
   "author": "Samuel Ho <samuelho-dev>",
   "bin": {
-    "mlg": "./bin/cli.js"
+    "mlg": "bin/cli.js"
   },
   "generators": "./src/generators.json",
   "publishConfig": {
