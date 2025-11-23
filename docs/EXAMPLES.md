@@ -18,6 +18,35 @@ This guide provides end-to-end examples for using the monorepo library generator
 
 ---
 
+## 🎯 Quick Reference: Standard Layer Pattern
+
+**All generated libraries follow the same 4-layer pattern:**
+
+```typescript
+// Every library provides these four layers:
+import {
+  ProductRepositoryLive,  // Production
+  ProductRepositoryTest,  // Testing (mocks)
+  ProductRepositoryDev,   // Development (with logging)
+  ProductRepositoryAuto   // Auto-selects based on NODE_ENV
+} from '@workspace-scope/data-access-product/server';
+
+// Usage in your application:
+const program = Effect.gen(function* () {
+  const repo = yield* ProductRepository;
+  const product = yield* repo.findById("123");
+}).pipe(
+  Effect.provide(ProductRepositoryAuto) // Automatically selects layer
+);
+```
+
+**Layer Selection:**
+- `NODE_ENV=test` → Uses Test layer (in-memory mocks)
+- `NODE_ENV=development` → Uses Dev layer (with console logging)
+- `NODE_ENV=production` → Uses Live layer (real implementation)
+
+---
+
 ## Building a Complete Feature
 
 This example shows how to build a complete "Product Management" feature from scratch using all library types.

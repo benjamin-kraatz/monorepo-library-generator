@@ -1,6 +1,7 @@
 # Data-Access Library Architecture
 
 > **📚 Related Documentation:**
+>
 > - [Architecture Overview](./ARCHITECTURE_OVERVIEW.md) - Library inventory and integration patterns
 > - [Nx Standards](./NX_STANDARDS.md) - Naming conventions (`data-access-{domain}` pattern)
 > - [Effect Patterns Guide](./EFFECT_PATTERNS.md) - Repository service patterns and Layer composition
@@ -32,12 +33,12 @@ Data-access libraries implement the repository pattern, fulfilling contracts def
 
 Data-access repositories should use Ref or SynchronizedRef ONLY for infrastructure-level concurrent state:
 
-| Use Case | Pattern | Example |
-|----------|---------|---------|
-| **Connection pooling** | Ref.make + Ref.get | Track active database connections |
-| **Cache entries** | Ref.make + Ref.update | Pre-fetched data that needs atomic updates |
-| **Rate limiting** | Ref.make + Ref.update | Request counters for rate limiting |
-| **Query deduplication** | FiberMap | Prevent duplicate concurrent queries |
+| Use Case                | Pattern               | Example                                    |
+| ----------------------- | --------------------- | ------------------------------------------ |
+| **Connection pooling**  | Ref.make + Ref.get    | Track active database connections          |
+| **Cache entries**       | Ref.make + Ref.update | Pre-fetched data that needs atomic updates |
+| **Rate limiting**       | Ref.make + Ref.update | Request counters for rate limiting         |
+| **Query deduplication** | FiberMap              | Prevent duplicate concurrent queries       |
 
 ### State NOT Managed Here
 
@@ -50,46 +51,51 @@ Data-access repositories should use Ref or SynchronizedRef ONLY for infrastructu
 
 ```typescript
 // ✅ Use FiberMap to prevent duplicate concurrent queries
-import { FiberMap, Option } from "effect"
+import { FiberMap, Option } from 'effect';
 
-export class UserRepository extends Context.Tag("UserRepository")<
+export class UserRepository extends Context.Tag('UserRepository')<
   UserRepository,
   {
-    readonly findById: (id: string) => Effect.Effect<Option.Option<User>, RepositoryError>
+    readonly findById: (
+      id: string,
+    ) => Effect.Effect<Option.Option<User>, RepositoryError>;
   }
 >() {
   static readonly Live = Layer.scoped(
     this,
     Effect.gen(function* () {
-      const database = yield* DatabaseService
+      const database = yield* DatabaseService;
 
       // Fiber map to deduplicate queries by user ID
-      const queryDedup = yield* FiberMap.make<string>()
+      const queryDedup = yield* FiberMap.make<string>();
 
       return {
         findById: (id: string) =>
           Effect.gen(function* () {
             // Check if already querying this user
-            const existing = yield* FiberMap.get(queryDedup, id)
+            const existing = yield* FiberMap.get(queryDedup, id);
             if (Option.isSome(existing)) {
               // Wait for existing query to complete
-              return yield* Fiber.join(existing.value)
+              return yield* Fiber.join(existing.value);
             }
 
             // Start new query
-            yield* FiberMap.run(queryDedup, id,
+            yield* FiberMap.run(
+              queryDedup,
+              id,
               database.query((db) =>
-                db.selectFrom('users')
+                db
+                  .selectFrom('users')
                   .where('id', '=', id)
                   .selectAll()
                   .executeTakeFirst()
-                  .then(Option.fromNullable)
-              )
-            )
-          })
-      }
-    })
-  )
+                  .then(Option.fromNullable),
+              ),
+            );
+          }),
+      };
+    }),
+  );
 }
 ```
 
@@ -123,22 +129,25 @@ Projection Result (denormalized):
 
 ### Projection vs Write Repository
 
-| Aspect | Write Repository | Projection Repository |
-|--------|-----------------|---------------------|
-| **Data Source** | Single table (canonical) | Multiple tables (JOINed) |
-| **Operations** | CRUD (create/update/delete) | Read-only queries |
-| **Caching** | Minimal (write-through) | Heavy (read-optimized) |
-| **Updates** | Direct mutations | Re-query to rebuild |
-| **Schema** | Normalized DB schema | Denormalized query result |
+| Aspect          | Write Repository            | Projection Repository     |
+| --------------- | --------------------------- | ------------------------- |
+| **Data Source** | Single table (canonical)    | Multiple tables (JOINed)  |
+| **Operations**  | CRUD (create/update/delete) | Read-only queries         |
+| **Caching**     | Minimal (write-through)     | Heavy (read-optimized)    |
+| **Updates**     | Direct mutations            | Re-query to rebuild       |
+| **Schema**      | Normalized DB schema        | Denormalized query result |
 
 ### Example: Product List Projection Repository
 
 ```typescript
 // libs/data-access/product/src/lib/projection-repository.ts
-import { Context, Effect, Layer, Option } from "effect";
-import { ProductProjectionRepository, ProductListProjection } from "@creativetoolkits/contract-product";
-import { DatabaseService } from "@creativetoolkits/infra-database/server";
-import { CacheService } from "@creativetoolkits/infra-cache/server";
+import { Context, Effect, Layer, Option } from 'effect';
+import {
+  ProductProjectionRepository,
+  ProductListProjection,
+} from '@samuelho-dev/contract-product';
+import { DatabaseService } from '@samuelho-dev/infra-database/server';
+import { CacheService } from '@samuelho-dev/infra-cache/server';
 
 export const ProductProjectionRepositoryLive = Layer.effect(
   ProductProjectionRepository,
@@ -163,40 +172,40 @@ export const ProductProjectionRepositoryLive = Layer.effect(
                 // Build projection from existing tables via JOINs
                 const results = yield* db.query((kysely) =>
                   kysely
-                    .selectFrom("products as p")
-                    .innerJoin("sellers as s", "s.id", "p.seller_id")
-                    .innerJoin("categories as c", "c.id", "p.category_id")
-                    .leftJoin("reviews as r", "r.product_id", "p.id")
+                    .selectFrom('products as p')
+                    .innerJoin('sellers as s', 's.id', 'p.seller_id')
+                    .innerJoin('categories as c', 'c.id', 'p.category_id')
+                    .leftJoin('reviews as r', 'r.product_id', 'p.id')
                     .select([
-                      "p.id as productId",
-                      "p.name",
-                      "p.price",
-                      "p.thumbnail_url as thumbnailUrl",
+                      'p.id as productId',
+                      'p.name',
+                      'p.price',
+                      'p.thumbnail_url as thumbnailUrl',
 
                       // Denormalized seller (from JOIN)
-                      "s.id as sellerId",
-                      "s.name as sellerName",
-                      "s.avatar_url as sellerAvatarUrl",
+                      's.id as sellerId',
+                      's.name as sellerName',
+                      's.avatar_url as sellerAvatarUrl',
 
                       // Denormalized category (from JOIN)
-                      "c.id as categoryId",
-                      "c.name as categoryName",
+                      'c.id as categoryId',
+                      'c.name as categoryName',
 
                       // Aggregated stats
-                      (eb) => eb.fn.count("r.id").as("reviewCount"),
-                      (eb) => eb.fn.avg("r.rating").as("averageRating"),
+                      (eb) => eb.fn.count('r.id').as('reviewCount'),
+                      (eb) => eb.fn.avg('r.rating').as('averageRating'),
                     ])
-                    .groupBy(["p.id", "s.id", "c.id"])
+                    .groupBy(['p.id', 's.id', 'c.id'])
                     .limit(query.limit)
                     .offset((query.page - 1) * query.limit)
-                    .execute()
+                    .execute(),
                 );
 
                 const total = yield* db.query((kysely) =>
                   kysely
-                    .selectFrom("products")
-                    .select((eb) => eb.fn.countAll().as("count"))
-                    .executeTakeFirstOrThrow()
+                    .selectFrom('products')
+                    .select((eb) => eb.fn.countAll().as('count'))
+                    .executeTakeFirstOrThrow(),
                 );
 
                 const result = {
@@ -205,7 +214,7 @@ export const ProductProjectionRepositoryLive = Layer.effect(
                 };
 
                 // Cache the built projection
-                yield* cache.set(cacheKey, result, { ttl: "5 minutes" });
+                yield* cache.set(cacheKey, result, { ttl: '5 minutes' });
 
                 return result;
               }),
@@ -216,7 +225,7 @@ export const ProductProjectionRepositoryLive = Layer.effect(
       invalidateProjectionCache: (productId) =>
         cache.invalidatePattern(`projection:*:*${productId}*`),
     };
-  })
+  }),
 );
 ```
 
@@ -240,17 +249,20 @@ yield* projectionRepository.invalidateProjectionCache(productId);
 ### When to Use Projection Repositories
 
 ✅ **Use when:**
+
 - Complex JOINs needed for read operations
 - Aggregated statistics required (counts, averages, sums)
 - Read operations significantly outnumber writes
 - Denormalized data improves query performance
 
 ❌ **Don't use when:**
+
 - Simple single-table queries (use write repository)
 - Real-time consistency critical (projections are eventually consistent)
 - Write operations are frequent (cache churn)
 
 **See Also:**
+
 - [Contract Projection Schemas](./CONTRACT.md#projection-schemas-read-models) - Projection TypeScript types
 - [Feature CQRS Handlers](./FEATURE.md#cqrs-architecture-pattern) - Command/query implementation
 - [Infrastructure Cache](./INFRA.md#infra-cache) - Caching strategies
@@ -299,6 +311,7 @@ libs/data-access/{domain}/
 ```
 
 **CQRS Structure Notes:**
+
 - ✅ Commands handle CREATE, UPDATE, DELETE operations
 - ✅ Queries handle GET (single item) and LIST (multiple with filters/pagination)
 - ✅ NO repository - CQRS replaces the repository pattern entirely
@@ -333,15 +346,17 @@ libs/data-access/{domain}/
 ```
 
 **Generator Decision Logic:**
+
 ```typescript
 if (contractHasSeparateCommandAndQueryPorts) {
-  generateCQRSStructure()  // commands/ + queries/
+  generateCQRSStructure(); // commands/ + queries/
 } else {
-  generateStandardRepository()  // repository.ts
+  generateStandardRepository(); // repository.ts
 }
 ```
 
 **Generator Must Create:**
+
 - ✅ `index.ts` - All exports (layers, types, errors)
 - ✅ All command/query handlers with `.spec.ts` files
 - ✅ `layers.ts` - Effect layer composition (CommandLayer/QueryLayer or RepositoryLayer)
@@ -349,6 +364,7 @@ if (contractHasSeparateCommandAndQueryPorts) {
 - ✅ `shared/errors.ts`, `shared/types.ts`, `shared/validation.ts`
 
 **Generator Must NOT Create:**
+
 - ❌ `server.ts` / `client.ts` / `edge.ts` - Data-access is server-only
 - ❌ RPC routers/procedures - Belongs in feature layer
 - ❌ Business logic - Pure data operations only
@@ -363,16 +379,18 @@ Commands handle state-changing operations. Each command includes the command def
 
 ```typescript
 // libs/data-access/product/src/lib/commands/create.ts
-import { Effect, Schema } from "effect";
-import { DatabaseService } from "@creativetoolkits/infra-database";
-import { EventBus } from "@creativetoolkits/infra-messaging";
-import { ProductCreatedEvent } from "@creativetoolkits/contract-product";
-import type { ProductInsert } from "@creativetoolkits/types-database";
+import { Effect, Schema } from 'effect';
+import { DatabaseService } from '@samuelho-dev/infra-database';
+import { EventBus } from '@samuelho-dev/infra-messaging';
+import { ProductCreatedEvent } from '@samuelho-dev/contract-product';
+import type { ProductInsert } from '@samuelho-dev/types-database';
 
 /**
  * Create Product Command
  */
-export class CreateProductCommand extends Schema.Class<CreateProductCommand>("CreateProductCommand")({
+export class CreateProductCommand extends Schema.Class<CreateProductCommand>(
+  'CreateProductCommand',
+)({
   name: Schema.String,
   price: Schema.Number,
   sellerId: Schema.UUID,
@@ -400,7 +418,7 @@ export const createProductHandler = (cmd: CreateProductCommand) =>
         .insertInto('products')
         .values(productData)
         .returningAll()
-        .executeTakeFirstOrThrow()
+        .executeTakeFirstOrThrow(),
     );
 
     // Publish domain event
@@ -408,7 +426,7 @@ export const createProductHandler = (cmd: CreateProductCommand) =>
       ProductCreatedEvent.create({
         productId: product.id,
         aggregateVersion: 1,
-      })
+      }),
     );
 
     return product;
@@ -419,19 +437,19 @@ export const createProductHandler = (cmd: CreateProductCommand) =>
 
 ```typescript
 // libs/data-access/product/src/lib/commands/create.spec.ts
-import { Effect } from "effect";
-import { describe, it, expect } from "vitest";
-import { CreateProductCommand, createProductHandler } from "./create";
-import { DatabaseService } from "@creativetoolkits/infra-database";
-import { EventBus } from "@creativetoolkits/infra-messaging";
+import { Effect } from 'effect';
+import { describe, it, expect } from 'vitest';
+import { CreateProductCommand, createProductHandler } from './create';
+import { DatabaseService } from '@samuelho-dev/infra-database';
+import { EventBus } from '@samuelho-dev/infra-messaging';
 
-describe("CreateProductCommand", () => {
-  it.scoped("creates product and publishes event", () =>
+describe('CreateProductCommand', () => {
+  it.scoped('creates product and publishes event', () =>
     Effect.gen(function* () {
       // Mock layers with Layer.succeed
       // Execute handler with test data
       // Verify product was created and event published
-    })
+    }),
   );
 });
 ```
@@ -442,15 +460,17 @@ Queries retrieve data directly from the database without repository abstraction.
 
 ```typescript
 // libs/data-access/product/src/lib/queries/get.ts
-import { Effect, Option, Schema } from "effect";
-import { DatabaseService } from "@creativetoolkits/infra-database";
-import { CacheService } from "@creativetoolkits/infra-cache";
-import type { ProductSelect } from "@creativetoolkits/types-database";
+import { Effect, Option, Schema } from 'effect';
+import { DatabaseService } from '@samuelho-dev/infra-database';
+import { CacheService } from '@samuelho-dev/infra-cache';
+import type { ProductSelect } from '@samuelho-dev/types-database';
 
 /**
  * Get Product Query
  */
-export class GetProductQuery extends Schema.Class<GetProductQuery>("GetProductQuery")({
+export class GetProductQuery extends Schema.Class<GetProductQuery>(
+  'GetProductQuery',
+)({
   productId: Schema.UUID,
 }) {}
 
@@ -478,12 +498,12 @@ export const getProductHandler = (query: GetProductQuery) =>
         .selectAll()
         .where('id', '=', query.productId)
         .where('deleted_at', 'is', null)
-        .executeTakeFirst()
+        .executeTakeFirst(),
     );
 
     // Cache result
     if (result) {
-      yield* cache.set(cacheKey, result, { ttl: "5 minutes" });
+      yield* cache.set(cacheKey, result, { ttl: '5 minutes' });
     }
 
     return Option.fromNullable(result);
@@ -492,14 +512,16 @@ export const getProductHandler = (query: GetProductQuery) =>
 
 ```typescript
 // libs/data-access/product/src/lib/queries/list.ts
-import { Effect, Schema } from "effect";
-import { DatabaseService } from "@creativetoolkits/infra-database";
-import type { ProductSelect } from "@creativetoolkits/types-database";
+import { Effect, Schema } from 'effect';
+import { DatabaseService } from '@samuelho-dev/infra-database';
+import type { ProductSelect } from '@samuelho-dev/types-database';
 
 /**
  * List Products Query
  */
-export class ListProductsQuery extends Schema.Class<ListProductsQuery>("ListProductsQuery")({
+export class ListProductsQuery extends Schema.Class<ListProductsQuery>(
+  'ListProductsQuery',
+)({
   category: Schema.optional(Schema.String),
   sellerId: Schema.optional(Schema.UUID),
   search: Schema.optional(Schema.String),
@@ -553,13 +575,20 @@ Separate layers for commands and queries with appropriate dependencies:
 
 ```typescript
 // libs/data-access/product/src/lib/layers.ts
-import { Effect, Layer } from "effect";
-import { ProductCommandPort, ProductQueryPort } from "@creativetoolkits/contract-product";
-import { DatabaseServiceLive } from "@creativetoolkits/infra-database";
-import { CacheServiceLive } from "@creativetoolkits/infra-cache";
-import { EventBusServiceLive } from "@creativetoolkits/infra-messaging";
-import { createProductHandler, updateProductHandler, deleteProductHandler } from "./commands";
-import { getProductHandler, listProductsHandler } from "./queries";
+import { Effect, Layer } from 'effect';
+import {
+  ProductCommandPort,
+  ProductQueryPort,
+} from '@samuelho-dev/contract-product';
+import { DatabaseServiceLive } from '@samuelho-dev/infra-database';
+import { CacheServiceLive } from '@samuelho-dev/infra-cache';
+import { EventBusServiceLive } from '@samuelho-dev/infra-messaging';
+import {
+  createProductHandler,
+  updateProductHandler,
+  deleteProductHandler,
+} from './commands';
+import { getProductHandler, listProductsHandler } from './queries';
 
 /**
  * Command Layer (Write Side)
@@ -573,11 +602,8 @@ export const ProductCommandLayer = Layer.effect(
       updateProduct: updateProductHandler,
       deleteProduct: deleteProductHandler,
     };
-  })
-).pipe(
-  Layer.provide(DatabaseServiceLive),
-  Layer.provide(EventBusServiceLive)
-);
+  }),
+).pipe(Layer.provide(DatabaseServiceLive), Layer.provide(EventBusServiceLive));
 
 /**
  * Query Layer (Read Side)
@@ -590,20 +616,14 @@ export const ProductQueryLayer = Layer.effect(
       getProduct: getProductHandler,
       listProducts: listProductsHandler,
     };
-  })
-).pipe(
-  Layer.provide(DatabaseServiceLive),
-  Layer.provide(CacheServiceLive)
-);
+  }),
+).pipe(Layer.provide(DatabaseServiceLive), Layer.provide(CacheServiceLive));
 
 /**
  * Combined Layer
  * For consumers needing both commands and queries
  */
-export const ProductLayer = Layer.merge(
-  ProductCommandLayer,
-  ProductQueryLayer
-);
+export const ProductLayer = Layer.merge(ProductCommandLayer, ProductQueryLayer);
 ```
 
 ### Standard Repository (Non-CQRS)
@@ -612,11 +632,15 @@ For domains without CQRS, use a single repository with standard CRUD operations:
 
 ```typescript
 // libs/data-access/product/src/lib/repository.ts
-import { Effect, Layer, Option } from "effect";
-import { ProductRepository } from "@creativetoolkits/contract-product";
-import { DatabaseService } from "@creativetoolkits/infra-database";
-import { CacheService } from "@creativetoolkits/infra-cache";
-import type { ProductSelect, ProductInsert, ProductUpdate } from "@creativetoolkits/types-database";
+import { Effect, Layer, Option } from 'effect';
+import { ProductRepository } from '@samuelho-dev/contract-product';
+import { DatabaseService } from '@samuelho-dev/infra-database';
+import { CacheService } from '@samuelho-dev/infra-cache';
+import type {
+  ProductSelect,
+  ProductInsert,
+  ProductUpdate,
+} from '@samuelho-dev/types-database';
 
 export const ProductRepositoryLive = Layer.effect(
   ProductRepository,
@@ -638,11 +662,11 @@ export const ProductRepositoryLive = Layer.effect(
               .selectAll()
               .where('id', '=', id)
               .where('deleted_at', 'is', null)
-              .executeTakeFirst()
+              .executeTakeFirst(),
           );
 
           if (result) {
-            yield* cache.set(cacheKey, result, { ttl: "5 minutes" });
+            yield* cache.set(cacheKey, result, { ttl: '5 minutes' });
           }
 
           return Option.fromNullable(result);
@@ -678,7 +702,7 @@ export const ProductRepositoryLive = Layer.effect(
               .insertInto('products')
               .values(input)
               .returningAll()
-              .executeTakeFirstOrThrow()
+              .executeTakeFirstOrThrow(),
           );
 
           yield* cache.invalidatePattern('product:*');
@@ -694,7 +718,7 @@ export const ProductRepositoryLive = Layer.effect(
               .set(input)
               .where('id', '=', id)
               .returningAll()
-              .executeTakeFirstOrThrow()
+              .executeTakeFirstOrThrow(),
           );
 
           yield* cache.delete(`product:${id}`);
@@ -709,13 +733,13 @@ export const ProductRepositoryLive = Layer.effect(
               .updateTable('products')
               .set({ deleted_at: new Date() })
               .where('id', '=', id)
-              .execute()
+              .execute(),
           );
 
           yield* cache.delete(`product:${id}`);
         }),
     };
-  })
+  }),
 );
 ```
 
@@ -723,36 +747,36 @@ export const ProductRepositoryLive = Layer.effect(
 
 ## Executive Summary
 
-This document defines the architecture for **18 data-access libraries** that provide repository-oriented database access across the creativetoolkits platform. These libraries implement the **Repository Pattern** using Effect.ts for dependency injection, error handling, and functional composition.
+This document defines the architecture for **18 data-access libraries** that provide repository-oriented database access across the samuelho-dev platform. These libraries implement the **Repository Pattern** using Effect.ts for dependency injection, error handling, and functional composition.
 
 ### Data-Access Libraries (18 Total)
 
 **Core Domain (9 libraries - 34 tables)**
 
-- `@creativetoolkits/data-access-product` - Product catalog (11 tables)
-- `@creativetoolkits/data-access-user` - Identity & users (6 tables)
-- `@creativetoolkits/data-access-seller` - Seller accounts (4 tables)
-- `@creativetoolkits/data-access-review` - Product reviews (2 tables)
-- `@creativetoolkits/data-access-transaction` - Order processing (3 tables)
-- `@creativetoolkits/data-access-payment` - Payment processing (3 tables)
-- `@creativetoolkits/data-access-refund` - Refunds (1 table)
-- `@creativetoolkits/data-access-discount` - Discounts (1 table)
-- `@creativetoolkits/data-access-dispute` - Disputes (3 tables)
+- `@samuelho-dev/data-access-product` - Product catalog (11 tables)
+- `@samuelho-dev/data-access-user` - Identity & users (6 tables)
+- `@samuelho-dev/data-access-seller` - Seller accounts (4 tables)
+- `@samuelho-dev/data-access-review` - Product reviews (2 tables)
+- `@samuelho-dev/data-access-transaction` - Order processing (3 tables)
+- `@samuelho-dev/data-access-payment` - Payment processing (3 tables)
+- `@samuelho-dev/data-access-refund` - Refunds (1 table)
+- `@samuelho-dev/data-access-discount` - Discounts (1 table)
+- `@samuelho-dev/data-access-dispute` - Disputes (3 tables)
 
 **Supporting Domain (7 libraries - 30+ tables)**
 
-- `@creativetoolkits/data-access-license` - License keys (4 tables)
-- `@creativetoolkits/data-access-document` - Document management (3+ tables)
-- `@creativetoolkits/data-access-advertising` - Ad campaigns (8 tables)
-- `@creativetoolkits/data-access-email` - Email campaigns (7 tables)
-- `@creativetoolkits/data-access-blog` - Blog content (3 tables)
-- `@creativetoolkits/data-access-support` - Support tickets (5 tables)
-- `@creativetoolkits/data-access-posthog` - PostHog analytics integration
+- `@samuelho-dev/data-access-license` - License keys (4 tables)
+- `@samuelho-dev/data-access-document` - Document management (3+ tables)
+- `@samuelho-dev/data-access-advertising` - Ad campaigns (8 tables)
+- `@samuelho-dev/data-access-email` - Email campaigns (7 tables)
+- `@samuelho-dev/data-access-blog` - Blog content (3 tables)
+- `@samuelho-dev/data-access-support` - Support tickets (5 tables)
+- `@samuelho-dev/data-access-posthog` - PostHog analytics integration
 
 **Infrastructure (2 libraries - 8 tables)**
 
-- `@creativetoolkits/data-access-audit-log` - Event audit trail (webhook logs, search logs - 2 tables) **[Target - to be created]**
-- `@creativetoolkits/data-access-analytics` - Metrics (6 tables)
+- `@samuelho-dev/data-access-audit-log` - Event audit trail (webhook logs, search logs - 2 tables) **[Target - to be created]**
+- `@samuelho-dev/data-access-analytics` - Metrics (6 tables)
 
 **Total:** 70+ tables across 17 libraries (16 current + 1 target audit-log)
 
@@ -782,9 +806,12 @@ Use repositories when you need:
 **✅ Valid Repository Use Case:**
 
 ```typescript
-import { Effect, Layer, Option } from "effect";
-import type { ProductSelect, ProductInsert } from "@creativetoolkits/types-database";
-import { ProductRepository } from "@creativetoolkits/contract-product";
+import { Effect, Layer, Option } from 'effect';
+import type {
+  ProductSelect,
+  ProductInsert,
+} from '@samuelho-dev/types-database';
+import { ProductRepository } from '@samuelho-dev/contract-product';
 
 // Implementation class following the contract
 export class ProductRepositoryImpl implements ProductRepository {
@@ -797,20 +824,20 @@ export class ProductRepositoryImpl implements ProductRepository {
 
   readonly findById = (id: string) =>
     Effect.gen(function* () {
-      yield* this.logger.debug("Finding product", { productId: id });
+      yield* this.logger.debug('Finding product', { productId: id });
 
       // Check cache first
       const cached = yield* this.cache.get<ProductSelect>(`product:${id}`);
       if (Option.isSome(cached)) {
-        yield* this.logger.debug("Cache hit", { productId: id });
+        yield* this.logger.debug('Cache hit', { productId: id });
         return cached;
       }
 
       // Query database
       const product = yield* this.database.query((db) =>
         db
-          .selectFrom("product")
-          .where("id", "=", id)
+          .selectFrom('product')
+          .where('id', '=', id)
           .selectAll()
           .executeTakeFirst(),
       );
@@ -824,7 +851,7 @@ export class ProductRepositoryImpl implements ProductRepository {
       return Option.fromNullable(product);
     }).pipe(
       Effect.mapError(toRepositoryError),
-      Effect.withSpan("ProductRepository.findById", {
+      Effect.withSpan('ProductRepository.findById', {
         attributes: { productId: id },
       }),
     );
@@ -873,16 +900,16 @@ Modern type-safe query builders have changed the landscape. **Skip repositories*
 export const ProductRepository = {
   findById: (id: string) =>
     db
-      .selectFrom("product")
-      .where("id", "=", id)
+      .selectFrom('product')
+      .where('id', '=', id)
       .selectAll()
       .executeTakeFirst(),
 };
 
 // Just use Kysely directly in your feature service:
 const product = await db
-  .selectFrom("product")
-  .where("id", "=", id)
+  .selectFrom('product')
+  .where('id', '=', id)
   .selectAll()
   .executeTakeFirst();
 ```
@@ -922,6 +949,7 @@ This project uses repositories because:
 **Key Insight:** Repositories are valuable when you need to **coordinate multiple concerns** (database + cache + events + logging), not just for abstraction's sake.
 
 **Generator Decision Rule:**
+
 ```
 IF domain has multiple tables OR complex queries OR needs caching OR emits events
   → Create DATA-ACCESS library with repository
@@ -932,6 +960,7 @@ ELSE IF cross-cutting infrastructure concern
 ```
 
 **When Generator Creates Data-Access:**
+
 - ✅ Domain entity with >1 table (products, users, orders)
 - ✅ Complex query patterns (filters, joins, aggregations)
 - ✅ Needs caching strategy
@@ -940,6 +969,7 @@ ELSE IF cross-cutting infrastructure concern
 - ✅ Contract interface already exists
 
 **When Generator Skips Data-Access:**
+
 - ❌ Single table with basic CRUD (consider feature layer inline queries)
 - ❌ No infrastructure coordination needed
 - ❌ Feature-specific queries (keep in feature layer)
@@ -961,31 +991,31 @@ ELSE IF cross-cutting infrastructure concern
 
 **Layer Separation:**
 
-| Layer           | Responsibility   | Location                                 | Example                               |
-| --------------- | ---------------- | ---------------------------------------- | ------------------------------------- |
-| **Repository**  | Data access ONLY | `@creativetoolkits/data-access-{domain}/src/server/` | `productRepository.findById(id)`      |
-| **Service**     | Business logic   | `@creativetoolkits/feature-{domain}/src/server/`     | `productService.publishProduct(id)`   |
-| **Application** | Request handling | `apps/api/routes/` or `apps/web/api/`    | tRPC router handling request/response |
+| Layer           | Responsibility   | Location                                         | Example                               |
+| --------------- | ---------------- | ------------------------------------------------ | ------------------------------------- |
+| **Repository**  | Data access ONLY | `@samuelho-dev/data-access-{domain}/src/server/` | `productRepository.findById(id)`      |
+| **Service**     | Business logic   | `@samuelho-dev/feature-{domain}/src/server/`     | `productService.publishProduct(id)`   |
+| **Application** | Request handling | `apps/api/routes/` or `apps/web/api/`            | tRPC router handling request/response |
 
 **Source:** [Martin Fowler - Repository Pattern](https://martinfowler.com/eaaCatalog/repository.html) - "The Repository acts like an in-memory collection of domain objects."
 
 ### 2. Effect.ts Dependency Injection (Effect 3.0+)
 
-**CRITICAL**: Repository interfaces are defined in `@creativetoolkits/contract-*` libraries, NOT in data-access libraries. Data-access provides **implementations only**.
+**CRITICAL**: Repository interfaces are defined in `@samuelho-dev/contract-*` libraries, NOT in data-access libraries. Data-access provides **implementations only**.
 
 **Context.Tag Pattern:**
 
 ```typescript
-import { Context, Effect, Option, Layer } from "effect";
+import { Context, Effect, Option, Layer } from 'effect';
 import type {
   ProductSelect,
   ProductInsert,
   ProductUpdate,
-} from "@creativetoolkits/types-database";
-import type { ProductRepositoryError } from "@creativetoolkits/contract-product";
+} from '@samuelho-dev/types-database';
+import type { ProductRepositoryError } from '@samuelho-dev/contract-product';
 
 // 1. Import the repository interface from contracts (NEVER define here!)
-import { ProductRepository } from "@creativetoolkits/contract-product";
+import { ProductRepository } from '@samuelho-dev/contract-product';
 
 // 2. Create implementation class
 export class ProductRepositoryImpl implements ProductRepository {
@@ -998,11 +1028,11 @@ export class ProductRepositoryImpl implements ProductRepository {
   readonly findById = (id: string) =>
     Effect.gen(function* () {
       // Implementation
-      yield* this.logger.debug("Finding product", { productId: id });
+      yield* this.logger.debug('Finding product', { productId: id });
       const product = yield* this.database.query((db) =>
         db
-          .selectFrom("product")
-          .where("id", "=", id)
+          .selectFrom('product')
+          .where('id', '=', id)
           .selectAll()
           .executeTakeFirst(),
       );
@@ -1014,7 +1044,7 @@ export class ProductRepositoryImpl implements ProductRepository {
       // Implementation
       return yield* this.database.query((db) =>
         db
-          .insertInto("product")
+          .insertInto('product')
           .values(input)
           .returningAll()
           .executeTakeFirstOrThrow(),
@@ -1048,7 +1078,7 @@ export const ProductRepositoryLive = Layer.effect(
 pnpm exec prisma generate
 ```
 
-Generated types in `@creativetoolkits/types-database`:
+Generated types in `@samuelho-dev/types-database`:
 
 ```typescript
 // Auto-generated from Prisma schema
@@ -1057,7 +1087,7 @@ export interface Product {
   seller_id: string; // snake_case (database column)
   name: string;
   price: number;
-  status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
+  status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
   created_at: Date;
   updated_at: Date;
   deleted_at: Date | null;
@@ -1076,11 +1106,11 @@ import type {
   ProductSelect,
   ProductInsert,
   ProductUpdate,
-} from "@creativetoolkits/types-database";
+} from '@samuelho-dev/types-database';
 
 // ✅ IMPORTANT: Repository interface defined in contracts, NOT here
 // Import from contracts:
-import { ProductRepository } from "@creativetoolkits/contract-product";
+import { ProductRepository } from '@samuelho-dev/contract-product';
 
 // Repository interface in contracts uses generated types:
 // export class ProductRepository extends Context.Tag("ProductRepository")<
@@ -1109,13 +1139,13 @@ import { ProductRepository } from "@creativetoolkits/contract-product";
 
 **Required Infrastructure Services:**
 
-| Service            | Purpose                      | Contract Library                                  |
-| ------------------ | ---------------------------- | ------------------------------------------------- |
-| `DatabaseService`  | Type-safe SQL queries        | `@creativetoolkits/contract-database`            |
-| `CacheService`     | Query result caching         | `@creativetoolkits/infra-cache` (no contract)     |
-| `MessagePublisher` | Domain event publishing      | `@creativetoolkits/contract-messaging`           |
-| `LoggingService`   | Repository operation logging | `@creativetoolkits/infra-logging` (no contract)   |
-| `TelemetryService` | Performance tracing          | `@creativetoolkits/infra-telemetry` (no contract) |
+| Service            | Purpose                      | Contract Library                              |
+| ------------------ | ---------------------------- | --------------------------------------------- |
+| `DatabaseService`  | Type-safe SQL queries        | `@samuelho-dev/contract-database`             |
+| `CacheService`     | Query result caching         | `@samuelho-dev/infra-cache` (no contract)     |
+| `MessagePublisher` | Domain event publishing      | `@samuelho-dev/contract-messaging`            |
+| `LoggingService`   | Repository operation logging | `@samuelho-dev/infra-logging` (no contract)   |
+| `TelemetryService` | Performance tracing          | `@samuelho-dev/infra-telemetry` (no contract) |
 
 **Integration Pattern with Optional Dependencies:**
 
@@ -1133,7 +1163,7 @@ export class ProductRepositoryImpl implements ProductRepository {
       // Logging (if available)
       yield* Option.match(this.logger, {
         onNone: () => Effect.void,
-        onSome: (log) => log.debug("Finding product", { productId: id }),
+        onSome: (log) => log.debug('Finding product', { productId: id }),
       });
 
       // Caching (if available)
@@ -1146,8 +1176,8 @@ export class ProductRepositoryImpl implements ProductRepository {
       // Database query (always required)
       const product = yield* this.database.query((db) =>
         db
-          .selectFrom("product")
-          .where("id", "=", id)
+          .selectFrom('product')
+          .where('id', '=', id)
           .selectAll()
           .executeTakeFirst(),
       );
@@ -1181,15 +1211,15 @@ export const ProductRepositoryLive = Layer.effect(
 
 ```typescript
 import { Effect, Layer, Option } from "effect";
-import type { ProductSelect, ProductInsert, ProductUpdate } from "@creativetoolkits/types-database";
-import { ProductRepository, type ProductRepositoryError } from "@creativetoolkits/contract-product";
-import { DatabaseService } from "@creativetoolkits/infra-database";
-import { CacheService } from "@creativetoolkits/infra-cache";
-import { LoggingService } from "@creativetoolkits/infra-logging";
+import type { ProductSelect, ProductInsert, ProductUpdate } from "@samuelho-dev/types-database";
+import { ProductRepository, type ProductRepositoryError } from "@samuelho-dev/contract-product";
+import { DatabaseService } from "@samuelho-dev/infra-database";
+import { CacheService } from "@samuelho-dev/infra-cache";
+import { LoggingService } from "@samuelho-dev/infra-logging";
 
 /**
  * Product Repository implementation
- * Implements interface from @creativetoolkits/contract-product
+ * Implements interface from @samuelho-dev/contract-product
  */
 export class ProductRepositoryImpl implements ProductRepository {
   private readonly CACHE_TTL = 300; // 5 minutes
@@ -1304,6 +1334,7 @@ export const ProductRepositoryLive = Layer.effect(
 ```
 
 **Generator Must Create:**
+
 - ✅ Repository class implementing contract interface (`implements ProductRepository`)
 - ✅ Constructor with infrastructure dependencies (DatabaseService, CacheService, LoggingService)
 - ✅ All CRUD methods returning `Effect<T, RepositoryError>`
@@ -1314,6 +1345,7 @@ export const ProductRepositoryLive = Layer.effect(
 - ✅ Soft delete support (where clauses checking `deleted_at is null`)
 
 **Generator Must NOT Create:**
+
 - ❌ Business validation logic - Validation belongs in feature layer
 - ❌ Direct database client imports - Use DatabaseService
 - ❌ Hard-coded cache keys without prefix constants
@@ -1329,15 +1361,15 @@ export const ProductRepositoryLive = Layer.effect(
 **Pattern:** Build dynamic queries with type-safe filters:
 
 ```typescript
-import type { Kysely } from "kysely";
-import type { Database } from "@creativetoolkits/types-database";
+import type { Kysely } from 'kysely';
+import type { Database } from '@samuelho-dev/types-database';
 
 interface ProductFilters {
   readonly status?:
-    | "DRAFT"
-    | "PUBLISHED"
-    | "ARCHIVED"
-    | readonly ("DRAFT" | "PUBLISHED" | "ARCHIVED")[];
+    | 'DRAFT'
+    | 'PUBLISHED'
+    | 'ARCHIVED'
+    | readonly ('DRAFT' | 'PUBLISHED' | 'ARCHIVED')[];
   readonly sellerId?: string;
   readonly createdAfter?: Date;
   readonly createdBefore?: Date;
@@ -1345,7 +1377,7 @@ interface ProductFilters {
 }
 
 function applyProductFilters(
-  query: ReturnType<Kysely<Database>["selectFrom"]>,
+  query: ReturnType<Kysely<Database>['selectFrom']>,
   filters?: ProductFilters,
 ) {
   if (!filters) return query;
@@ -1356,23 +1388,23 @@ function applyProductFilters(
     const statuses = Array.isArray(filters.status)
       ? filters.status
       : [filters.status];
-    q = q.where("status", "in", statuses);
+    q = q.where('status', 'in', statuses);
   }
 
   if (filters.sellerId) {
-    q = q.where("seller_id", "=", filters.sellerId);
+    q = q.where('seller_id', '=', filters.sellerId);
   }
 
   if (filters.createdAfter) {
-    q = q.where("created_at", ">=", filters.createdAfter);
+    q = q.where('created_at', '>=', filters.createdAfter);
   }
 
   if (filters.createdBefore) {
-    q = q.where("created_at", "<=", filters.createdBefore);
+    q = q.where('created_at', '<=', filters.createdBefore);
   }
 
   if (!filters.includeDeleted) {
-    q = q.where("deleted_at", "is", null);
+    q = q.where('deleted_at', 'is', null);
   }
 
   return q;
@@ -1386,10 +1418,10 @@ const findAll = (filters?: ProductFilters, pagination?: PaginationParams) =>
     const offset = pagination?.offset ?? 0;
 
     const products = yield* database.query((db) => {
-      const q = applyProductFilters(db.selectFrom("product"), filters);
+      const q = applyProductFilters(db.selectFrom('product'), filters);
       return q
         .selectAll()
-        .orderBy("created_at", "desc")
+        .orderBy('created_at', 'desc')
         .limit(limit)
         .offset(offset)
         .execute();
@@ -1408,7 +1440,7 @@ const findAll = (filters?: ProductFilters, pagination?: PaginationParams) =>
 #### Pattern: DatabaseService.transaction with Runtime Preservation
 
 ```typescript
-import { Effect } from "effect";
+import { Effect } from 'effect';
 
 const createProductWithVariants = (
   product: ProductInsert,
@@ -1425,13 +1457,13 @@ const createProductWithVariants = (
         const createdProduct = yield* Effect.tryPromise({
           try: () =>
             tx
-              .insertInto("product")
+              .insertInto('product')
               .values(product)
               .returningAll()
               .executeTakeFirstOrThrow(),
           catch: (error) =>
             new ProductDatabaseError({
-              message: "Failed to insert product",
+              message: 'Failed to insert product',
               cause: error,
             }),
         });
@@ -1440,17 +1472,17 @@ const createProductWithVariants = (
         yield* Effect.tryPromise({
           try: () =>
             tx
-              .insertInto("product_variant")
+              .insertInto('product_variant')
               .values(
                 variants.map((v) => ({
                   ...v,
                   product_id: createdProduct.id,
-                }))
+                })),
               )
               .execute(),
           catch: (error) =>
             new ProductDatabaseError({
-              message: "Failed to insert variants",
+              message: 'Failed to insert variants',
               cause: error,
             }),
         });
@@ -1460,21 +1492,21 @@ const createProductWithVariants = (
         yield* cache.invalidate(`product:${createdProduct.id}`);
 
         return createdProduct;
-      })
+      }),
     );
-  }).pipe(
-    Effect.withSpan("ProductRepository.createProductWithVariants"),
-  );
+  }).pipe(Effect.withSpan('ProductRepository.createProductWithVariants'));
 ```
 
 #### Why This Pattern is Critical
 
 When you write:
+
 ```typescript
 database.transaction((tx) => Effect.gen(function* () { ... }))
 ```
 
 The transaction callback is an **async function** that Kysely controls. Without runtime preservation:
+
 - ❌ `yield* cache.invalidate(...)` would fail - CacheService not available
 - ❌ `yield* Effect.logInfo(...)` would fail - LoggingService not available
 - ❌ Any service access would throw an error
@@ -1486,20 +1518,18 @@ The `DatabaseService.transaction` method is implemented to preserve the Effect r
 
 ```typescript
 // Inside infra/database - how it preserves runtime
-transaction: <T>(
-  fn: (trx: Transaction<DB>) => Effect.Effect<T, E>
-) =>
+transaction: <T>(fn: (trx: Transaction<DB>) => Effect.Effect<T, E>) =>
   Effect.gen(function* () {
-    const runtime = yield* Effect.runtime()  // ← Capture current runtime
-    const database = yield* DatabaseService
+    const runtime = yield* Effect.runtime(); // ← Capture current runtime
+    const database = yield* DatabaseService;
 
     return yield* database.query((db) =>
       db.transaction().execute(async (trx) => {
         // ← Inside async callback, runtime is preserved
-        return await Runtime.runPromise(runtime)(fn(trx))
-      })
-    )
-  })
+        return await Runtime.runPromise(runtime)(fn(trx));
+      }),
+    );
+  });
 ```
 
 > **Critical Rule**: Consumers of DatabaseService.transaction should NOT manually capture runtime - the infrastructure handles this. Simply use `yield* database.transaction()` and write normal Effect.gen inside. All services remain accessible.
@@ -1519,11 +1549,13 @@ return yield* database.query((db) =>
 #### Complete Working Example
 
 See **EFFECT_PATTERNS.md - Pattern 3: Kysely Transactions with Effect Runtime Preservation** for comprehensive examples showing:
+
 - Correct pattern with runtime preservation
 - Common mistakes to avoid
 - Nested transaction handling
 
 **Generator Must Include Transaction Support:**
+
 - ✅ Use `DatabaseService.transaction` for multi-step operations
 - ✅ Pass transaction object (`trx`) to query builders
 - ✅ Return `Effect<A, RepositoryError>` from transaction
@@ -1531,6 +1563,7 @@ See **EFFECT_PATTERNS.md - Pattern 3: Kysely Transactions with Effect Runtime Pr
 - ✅ Let DatabaseService handle runtime preservation (don't capture runtime manually)
 
 **Transaction Pattern:**
+
 ```typescript
 const multiStepOperation = (data: Input) =>
   database.transaction((trx) =>
@@ -1543,9 +1576,11 @@ const multiStepOperation = (data: Input) =>
 ```
 
 ---
+
 - Error handling within transactions
 
 **Related Documentation:**
+
 - [EFFECT_PATTERNS.md - Runtime Preservation](./EFFECT_PATTERNS.md#️-critical-runtime-preservation-for-callbacks) - Complete guide with all patterns
 - [INFRA.md - DatabaseService](./INFRA.md) - DatabaseService implementation details
 
@@ -1577,7 +1612,7 @@ Data-access libraries implement repository interfaces defined in contract librar
 ```
 ┌───────────────────────────────────────────┐
 │       CONTRACT LIBRARY                    │
-│  @creativetoolkits/contract-product       │
+│  @samuelho-dev/contract-product       │
 │                                           │
 │  export class ProductRepository           │
 │    extends Context.Tag("ProductRepository") │
@@ -1591,7 +1626,7 @@ Data-access libraries implement repository interfaces defined in contract librar
                     ↓
 ┌───────────────────────────────────────────┐
 │    DATA-ACCESS LIBRARY                    │
-│  @creativetoolkits/data-access-product    │
+│  @samuelho-dev/data-access-product    │
 │                                           │
 │  export const ProductRepositoryLive =     │
 │    Layer.effect(                          │
@@ -1618,23 +1653,23 @@ Data-access libraries implement repository interfaces defined in contract librar
 
 ```typescript
 // libs/data-access/product/src/lib/server/repository.ts
-import { Effect, Layer, Option } from "effect";
+import { Effect, Layer, Option } from 'effect';
 import {
-  ProductRepository,  // ← Contract interface tag
-  Product,            // ← Contract entity
-  ProductId,          // ← Contract type
-  ProductInsert,      // ← Contract type
-  ProductUpdate,      // ← Contract type
-  ProductError,       // ← Contract error
-  ProductNotFoundError // ← Contract error
-} from "@creativetoolkits/contract-product";
-import { DatabaseService } from "@creativetoolkits/infra-database";
-import { CacheService } from "@creativetoolkits/infra-cache";
-import { LoggingService } from "@creativetoolkits/infra-logging";
+  ProductRepository, // ← Contract interface tag
+  Product, // ← Contract entity
+  ProductId, // ← Contract type
+  ProductInsert, // ← Contract type
+  ProductUpdate, // ← Contract type
+  ProductError, // ← Contract error
+  ProductNotFoundError, // ← Contract error
+} from '@samuelho-dev/contract-product';
+import { DatabaseService } from '@samuelho-dev/infra-database';
+import { CacheService } from '@samuelho-dev/infra-cache';
+import { LoggingService } from '@samuelho-dev/infra-logging';
 
 /**
  * Live implementation of ProductRepository contract
- * Implements: ProductRepository from @creativetoolkits/contract-product
+ * Implements: ProductRepository from @samuelho-dev/contract-product
  */
 export const ProductRepositoryLive = Layer.effect(
   ProductRepository, // ← Tag from contract (NOT a new tag)
@@ -1652,17 +1687,17 @@ export const ProductRepositoryLive = Layer.effect(
           // Check cache first
           const cached = yield* cache.get<Product>(`product:${id}`);
           if (Option.isSome(cached)) {
-            yield* logger.debug("Cache hit for product", { id });
+            yield* logger.debug('Cache hit for product', { id });
             return cached;
           }
 
           // Query database using Kysely
           const result = yield* database.query((db) =>
             db
-              .selectFrom("products")
-              .where("id", "=", id)
+              .selectFrom('products')
+              .where('id', '=', id)
               .selectAll()
-              .executeTakeFirst()
+              .executeTakeFirst(),
           );
 
           // Return Option.Option<Product> as per contract
@@ -1673,7 +1708,7 @@ export const ProductRepositoryLive = Layer.effect(
           const product = result as Product;
 
           // Update cache
-          yield* cache.set(`product:${id}`, product, "1 hour");
+          yield* cache.set(`product:${id}`, product, '1 hour');
 
           return Option.some(product);
         }),
@@ -1681,20 +1716,20 @@ export const ProductRepositoryLive = Layer.effect(
       // ✅ Implement create exactly as defined in contract
       create: (data: ProductInsert) =>
         Effect.gen(function* () {
-          yield* logger.info("Creating product", { data });
+          yield* logger.info('Creating product', { data });
 
           const result = yield* database.query((db) =>
             db
-              .insertInto("products")
+              .insertInto('products')
               .values(data)
               .returningAll()
-              .executeTakeFirstOrThrow()
+              .executeTakeFirstOrThrow(),
           );
 
           const product = result as Product;
 
           // Invalidate cache
-          yield* cache.delete("products:list");
+          yield* cache.delete('products:list');
 
           return product;
         }),
@@ -1704,16 +1739,16 @@ export const ProductRepositoryLive = Layer.effect(
         Effect.gen(function* () {
           const result = yield* database.query((db) =>
             db
-              .updateTable("products")
+              .updateTable('products')
               .set(data)
-              .where("id", "=", id)
+              .where('id', '=', id)
               .returningAll()
-              .executeTakeFirst()
+              .executeTakeFirst(),
           );
 
           if (!result) {
             return yield* Effect.fail(
-              new ProductNotFoundError({ productId: id })
+              new ProductNotFoundError({ productId: id }),
             );
           }
 
@@ -1726,7 +1761,7 @@ export const ProductRepositoryLive = Layer.effect(
       delete: (id: ProductId) =>
         Effect.gen(function* () {
           yield* database.query((db) =>
-            db.deleteFrom("products").where("id", "=", id).execute()
+            db.deleteFrom('products').where('id', '=', id).execute(),
           );
 
           yield* cache.delete(`product:${id}`);
@@ -1737,10 +1772,10 @@ export const ProductRepositoryLive = Layer.effect(
         Effect.gen(function* () {
           const results = yield* database.query((db) =>
             db
-              .selectFrom("products")
-              .where("id", "in", ids)
+              .selectFrom('products')
+              .where('id', 'in', ids)
               .selectAll()
-              .execute()
+              .execute(),
           );
 
           return results as Product[];
@@ -1748,8 +1783,12 @@ export const ProductRepositoryLive = Layer.effect(
 
       findBySeller: (sellerId: string, options) =>
         Effect.gen(function* () {
-          const query = database
-            .query((db) => db.selectFrom("products").where("seller_id", "=", sellerId).selectAll());
+          const query = database.query((db) =>
+            db
+              .selectFrom('products')
+              .where('seller_id', '=', sellerId)
+              .selectAll(),
+          );
 
           if (options?.limit) {
             query.limit(options.limit);
@@ -1762,22 +1801,24 @@ export const ProductRepositoryLive = Layer.effect(
           return results as Product[];
         }),
     };
-  })
+  }),
 );
 ```
 
 **Generator Must Create Layer:**
+
 - ✅ Export `{Repository}Live` layer implementing contract tag
 - ✅ Use `Layer.effect(RepositoryTag, Effect.gen(...))` pattern
 - ✅ Depend on: DatabaseService, CacheService (optional), LoggingService
 - ✅ Provide all dependencies via `Layer.provide` chain in consumer
 
 **Dependency Rules:**
+
 ```
 Data-Access depends on:
 ├── Infrastructure (DatabaseService, CacheService, LoggingService)
 ├── Contracts (Repository interface from contract library)
-└── Types (Database types from @creativetoolkits/types-database)
+└── Types (Database types from @samuelho-dev/types-database)
 
 Data-Access CANNOT depend on:
 ├── Feature layer (consumers, not dependencies)
@@ -1786,6 +1827,7 @@ Data-Access CANNOT depend on:
 ```
 
 **Layer Composition Example:**
+
 ```typescript
 // In feature layer or application bootstrap:
 export const AppLayerLive = Layer.mergeAll(
@@ -1796,7 +1838,7 @@ export const AppLayerLive = Layer.mergeAll(
 ).pipe(
   // Provide infrastructure to repositories
   Layer.provideMerge(ProductRepositoryLive),
-  Layer.provideMerge(UserRepositoryLive)
+  Layer.provideMerge(UserRepositoryLive),
 );
 ```
 
@@ -1806,7 +1848,7 @@ export const AppLayerLive = Layer.mergeAll(
 
 When implementing a repository, verify:
 
-- ✅ **Import contract tag**: `import { ProductRepository } from "@creativetoolkits/contract-product"`
+- ✅ **Import contract tag**: `import { ProductRepository } from "@samuelho-dev/contract-product"`
 - ✅ **Use contract tag in Layer**: `Layer.effect(ProductRepository, ...)`
 - ✅ **Implement ALL methods**: Every method from contract interface
 - ✅ **Match return types**: `Effect.Effect<Option.Option<Product>, ProductError>` if contract says so
@@ -1828,9 +1870,10 @@ export const ProductRepositoryLive = Layer.succeed(ProductRepositoryImpl, {...})
 **Why Wrong**: This creates a different tag than the contract. Feature services won't be able to use it.
 
 **Correct**:
+
 ```typescript
 // ✅ Use tag from contract
-import { ProductRepository } from "@creativetoolkits/contract-product";
+import { ProductRepository } from "@samuelho-dev/contract-product";
 
 export const ProductRepositoryLive = Layer.effect(ProductRepository, ...);
 ```
@@ -1862,19 +1905,20 @@ findById: (id) =>
   Effect.gen(function* () {
     const result = yield* database.query(/* ... */);
     return result as Product; // Contract expects Option.Option<Product>
-  })
+  });
 ```
 
 **Why Wrong**: Contract signature is `Effect.Effect<Option.Option<Product>, ProductError>`.
 
 **Correct**:
+
 ```typescript
 // ✅ Return Option as contract specifies
 findById: (id) =>
   Effect.gen(function* () {
     const result = yield* database.query(/* ... */);
     return result ? Option.some(result as Product) : Option.none();
-  })
+  });
 ```
 
 ### Creating Layers
@@ -1883,9 +1927,9 @@ findById: (id) =>
 
 ```typescript
 import { Layer, Effect } from "effect";
-import { ProductRepository } from "@creativetoolkits/contract-product";
-import { DatabaseService } from "@creativetoolkits/infra-database";
-import { CacheService } from "@creativetoolkits/infra-cache";
+import { ProductRepository } from "@samuelho-dev/contract-product";
+import { DatabaseService } from "@samuelho-dev/infra-database";
+import { CacheService } from "@samuelho-dev/infra-cache";
 
 export const ProductRepositoryLive = Layer.effect(
   ProductRepository,
@@ -1904,12 +1948,12 @@ export const ProductRepositoryLive = Layer.effect(
 **Application Layer Composition:**
 
 ```typescript
-import { Layer } from "effect";
-import { DatabaseServiceLive } from "@creativetoolkits/infra-database";
-import { CacheServiceLive } from "@creativetoolkits/infra-cache";
-import { LoggingServiceLive } from "@creativetoolkits/infra-logging";
-import { ProductRepositoryLive } from "@creativetoolkits/data-access-product";
-import { ProductServiceLive } from "@creativetoolkits/feature-product";
+import { Layer } from 'effect';
+import { DatabaseServiceLive } from '@samuelho-dev/infra-database';
+import { CacheServiceLive } from '@samuelho-dev/infra-cache';
+import { LoggingServiceLive } from '@samuelho-dev/infra-logging';
+import { ProductRepositoryLive } from '@samuelho-dev/data-access-product';
+import { ProductServiceLive } from '@samuelho-dev/feature-product';
 
 // Compose all layers
 export const AppLayer = Layer.mergeAll(
@@ -1957,11 +2001,11 @@ APIError (HTTP response)
 **Domain Errors (Data.TaggedError):**
 
 ```typescript
-import { Data } from "effect";
+import { Data } from 'effect';
 
 // Domain error (NOT RPC-serializable)
 export class ProductNotFoundError extends Data.TaggedError(
-  "ProductNotFoundError",
+  'ProductNotFoundError',
 )<{
   readonly productId: string;
   readonly message: string;
@@ -1971,15 +2015,19 @@ export class ProductNotFoundError extends Data.TaggedError(
 **Repository Errors (Data.TaggedError):**
 
 ```typescript
-import { Data } from "effect";
+import { Data } from 'effect';
 
 // Repository errors (domain layer - NOT serialized)
-export class ProductNotFoundError extends Data.TaggedError("ProductNotFoundError")<{
+export class ProductNotFoundError extends Data.TaggedError(
+  'ProductNotFoundError',
+)<{
   readonly productId: string;
   readonly message: string;
 }> {}
 
-export class ProductDatabaseError extends Data.TaggedError("ProductDatabaseError")<{
+export class ProductDatabaseError extends Data.TaggedError(
+  'ProductDatabaseError',
+)<{
   readonly message: string;
   readonly operation: string;
   readonly cause?: unknown;
@@ -1997,28 +2045,28 @@ export type ProductRepositoryError =
 ### Error Transformation Pattern
 
 ```typescript
-import { Effect, Data } from "effect";
-import type { DatabaseError } from "@creativetoolkits/infra-database";
-import { ProductDatabaseError } from "./errors";
+import { Effect, Data } from 'effect';
+import type { DatabaseError } from '@samuelho-dev/infra-database';
+import { ProductDatabaseError } from './errors';
 
 /**
  * Transform database errors to repository errors
  */
 const toRepositoryError = (error: DatabaseError): ProductRepositoryError => {
   if (
-    error._tag === "DatabaseConstraintError" &&
-    error.violationType === "unique"
+    error._tag === 'DatabaseConstraintError' &&
+    error.violationType === 'unique'
   ) {
     return new ProductDatabaseError({
       message: `Product with duplicate constraint: ${error.constraintName}`,
-      operation: "create",
+      operation: 'create',
       cause: error,
     });
   }
 
   return new ProductDatabaseError({
     message: error.message,
-    operation: "unknown",
+    operation: 'unknown',
     cause: error,
   });
 };
@@ -2028,14 +2076,14 @@ const create = (input: ProductInsert) =>
   database
     .query((db) =>
       db
-        .insertInto("product")
+        .insertInto('product')
         .values(input)
         .returningAll()
         .executeTakeFirstOrThrow(),
     )
     .pipe(
       Effect.mapError(toRepositoryError), // Transform error at boundary
-      Effect.withSpan("ProductRepository.create"),
+      Effect.withSpan('ProductRepository.create'),
     );
 ```
 
@@ -2074,11 +2122,11 @@ Tests verify that repository implementations correctly fulfill contract interfac
 
 ```typescript
 // src/lib/repository.spec.ts
-import { Effect, Option, Layer } from "effect";
-import { describe, it, expect } from "vitest";
-import { ProductRepository } from "@creativetoolkits/contract-product";
-import { KyselyService } from "@creativetoolkits/provider-kysely";
-import type { ProductSelect } from "@creativetoolkits/types-database";
+import { Effect, Option, Layer } from 'effect';
+import { describe, it, expect } from 'vitest';
+import { ProductRepository } from '@samuelho-dev/contract-product';
+import { KyselyService } from '@samuelho-dev/provider-kysely';
+import type { ProductSelect } from '@samuelho-dev/types-database';
 
 // Mock Kysely layer inline for testing
 const KyselyServiceMock = Layer.succeed(KyselyService, {
@@ -2089,10 +2137,10 @@ const KyselyServiceMock = Layer.succeed(KyselyService, {
         where: () => ({
           executeTakeFirst: () =>
             Effect.succeed<ProductSelect | null>({
-              id: "prod-123",
-              name: "Test Product",
+              id: 'prod-123',
+              name: 'Test Product',
               price: 1000,
-              sellerId: "seller-456",
+              sellerId: 'seller-456',
               createdAt: new Date(),
               updatedAt: new Date(),
             } as ProductSelect),
@@ -2103,22 +2151,26 @@ const KyselyServiceMock = Layer.succeed(KyselyService, {
 });
 
 // Test repository implementation
-describe("ProductRepository", () => {
+describe('ProductRepository', () => {
   // Use it.scoped for repository tests (they need Scope)
-  it.scoped("findById returns product when it exists", () =>
+  it.scoped('findById returns product when it exists', () =>
     Effect.gen(function* () {
       const repo = yield* ProductRepository;
-      const result = yield* repo.findById("prod-123");
+      const result = yield* repo.findById('prod-123');
 
       expect(Option.isSome(result)).toBe(true);
       if (Option.isSome(result)) {
-        expect(result.value.id).toBe("prod-123");
-        expect(result.value.name).toBe("Test Product");
+        expect(result.value.id).toBe('prod-123');
+        expect(result.value.name).toBe('Test Product');
       }
-    }).pipe(Effect.provide(ProductRepositoryLive.pipe(Layer.provide(KyselyServiceMock))))
+    }).pipe(
+      Effect.provide(
+        ProductRepositoryLive.pipe(Layer.provide(KyselyServiceMock)),
+      ),
+    ),
   );
 
-  it.scoped("findById returns None when product does not exist", () =>
+  it.scoped('findById returns None when product does not exist', () =>
     Effect.gen(function* () {
       const mockNotFound = Layer.succeed(KyselyService, {
         db: {
@@ -2133,13 +2185,15 @@ describe("ProductRepository", () => {
       });
 
       const repo = yield* ProductRepository;
-      const result = yield* repo.findById("nonexistent");
+      const result = yield* repo.findById('nonexistent');
 
       expect(Option.isNone(result)).toBe(true);
-    }).pipe(Effect.provide(ProductRepositoryLive.pipe(Layer.provide(mockNotFound))))
+    }).pipe(
+      Effect.provide(ProductRepositoryLive.pipe(Layer.provide(mockNotFound))),
+    ),
   );
 
-  it.scoped("create inserts new product", () =>
+  it.scoped('create inserts new product', () =>
     Effect.gen(function* () {
       const mockCreate = Layer.succeed(KyselyService, {
         db: {
@@ -2148,10 +2202,10 @@ describe("ProductRepository", () => {
               returningAll: () => ({
                 executeTakeFirstOrThrow: () =>
                   Effect.succeed({
-                    id: "new-prod-789",
-                    name: "New Product",
+                    id: 'new-prod-789',
+                    name: 'New Product',
                     price: 2000,
-                    sellerId: "seller-456",
+                    sellerId: 'seller-456',
                     createdAt: new Date(),
                     updatedAt: new Date(),
                   } as ProductSelect),
@@ -2163,14 +2217,16 @@ describe("ProductRepository", () => {
 
       const repo = yield* ProductRepository;
       const result = yield* repo.create({
-        name: "New Product",
+        name: 'New Product',
         price: 2000,
-        sellerId: "seller-456",
+        sellerId: 'seller-456',
       });
 
-      expect(result.id).toBe("new-prod-789");
-      expect(result.name).toBe("New Product");
-    }).pipe(Effect.provide(ProductRepositoryLive.pipe(Layer.provide(mockCreate))))
+      expect(result.id).toBe('new-prod-789');
+      expect(result.name).toBe('New Product');
+    }).pipe(
+      Effect.provide(ProductRepositoryLive.pipe(Layer.provide(mockCreate))),
+    ),
   );
 });
 ```
@@ -2181,12 +2237,12 @@ describe("ProductRepository", () => {
 
 ```typescript
 // vitest.config.ts
-import { defineConfig } from "vitest/config";
+import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
     globals: true,
-    setupFiles: ["@effect/vitest/setup"],
+    setupFiles: ['@effect/vitest/setup'],
   },
 });
 ```
@@ -2200,6 +2256,7 @@ export default defineConfig({
 5. **Minimal Mocking**: Mock only what you need for each specific test
 
 **Generator Must Create:**
+
 - ✅ Single `repository.spec.ts` file (not multiple test files)
 - ✅ Use `@effect/vitest` with `it.scoped` for resource cleanup
 - ✅ Mock infrastructure with `Layer.succeed` inline
@@ -2209,6 +2266,7 @@ export default defineConfig({
 - ✅ Test transaction rollback behavior (if applicable)
 
 **Generator Must NOT Create:**
+
 - ❌ Separate mock files (`mock-factories.ts`, `test-utils.ts`)
 - ❌ Multiple test files per repository
 - ❌ Integration tests requiring real database (use Effect test layers)
@@ -2224,14 +2282,14 @@ export default defineConfig({
 
 **Examples:**
 
-- ✅ `@creativetoolkits/data-access-product`
-- ✅ `@creativetoolkits/data-access-user`
-- ✅ `@creativetoolkits/data-access-seller`
+- ✅ `@samuelho-dev/data-access-product`
+- ✅ `@samuelho-dev/data-access-user`
+- ✅ `@samuelho-dev/data-access-seller`
 
 **Wrong:**
 
-- ❌ `@creativetoolkits/product-data-access` (incorrect order - domain before type)
-- ❌ `@creativetoolkits/product-repo` (non-standard suffix)
+- ❌ `@samuelho-dev/product-data-access` (incorrect order - domain before type)
+- ❌ `@samuelho-dev/product-repo` (non-standard suffix)
 
 **Source:** [Nx Library Types](https://nx.dev/concepts/more-concepts/library-types) - Official Nx naming patterns for data-access libraries.
 
@@ -2347,7 +2405,7 @@ Data-access libraries follow Nx best practices for buildable libraries with Type
 
 ```json
 {
-  "name": "@creativetoolkits/data-access-product",
+  "name": "@samuelho-dev/data-access-product",
   "version": "0.0.1",
   "type": "module",
   "exports": {
@@ -2365,11 +2423,11 @@ Data-access libraries follow Nx best practices for buildable libraries with Type
     "kysely": "^0.27.0"
   },
   "dependencies": {
-    "@creativetoolkits/contract-product": "workspace:*",
-    "@creativetoolkits/types-database": "workspace:*",
-    "@creativetoolkits/infra-database": "workspace:*",
-    "@creativetoolkits/infra-cache": "workspace:*",
-    "@creativetoolkits/infra-logging": "workspace:*"
+    "@samuelho-dev/contract-product": "workspace:*",
+    "@samuelho-dev/types-database": "workspace:*",
+    "@samuelho-dev/infra-database": "workspace:*",
+    "@samuelho-dev/infra-cache": "workspace:*",
+    "@samuelho-dev/infra-logging": "workspace:*"
   }
 }
 ```
@@ -2416,13 +2474,13 @@ All data-access libraries follow the **`data-access-{domain}`** pattern:
 
 ```
 ✅ CORRECT:
-@creativetoolkits/data-access-product
-@creativetoolkits/data-access-user
-@creativetoolkits/data-access-audit-log
+@samuelho-dev/data-access-product
+@samuelho-dev/data-access-user
+@samuelho-dev/data-access-audit-log
 
 ❌ INCORRECT (legacy):
-@creativetoolkits/product-data-access (domain-before-type)
-@creativetoolkits/data-access-logging (ambiguous naming)
+@samuelho-dev/product-data-access (domain-before-type)
+@samuelho-dev/data-access-logging (ambiguous naming)
 ```
 
 ### Infrastructure vs Domain Data-Access
@@ -2475,6 +2533,7 @@ This separation maintains clear boundaries:
 **Validated**: Effect Logger documentation (documentId 7333)
 
 Data-access layer should use Effect's structured logging for all operations. This provides:
+
 - Query traceability
 - Performance monitoring
 - Error context
@@ -2483,7 +2542,7 @@ Data-access layer should use Effect's structured logging for all operations. Thi
 ### Repository Logging Pattern
 
 ```typescript
-import { Effect } from "effect";
+import { Effect } from 'effect';
 
 export const ProductRepositoryLive = Layer.effect(
   ProductRepository,
@@ -2495,40 +2554,41 @@ export const ProductRepositoryLive = Layer.effect(
       findById: (id) =>
         Effect.gen(function* () {
           // Log operation start with structured metadata
-          yield* Effect.logInfo("Finding product by ID").pipe(
+          yield* Effect.logInfo('Finding product by ID').pipe(
             Effect.annotateLogs({
               productId: id,
-              operation: "findById",
-              layer: "data-access"
-            })
+              operation: 'findById',
+              layer: 'data-access',
+            }),
           );
 
           // Check cache
           const cached = yield* cache.get(`product:${id}`);
           if (Option.isSome(cached)) {
-            yield* Effect.logDebug("Cache hit");
+            yield* Effect.logDebug('Cache hit');
             return cached;
           }
 
-          yield* Effect.logDebug("Cache miss, querying database");
+          yield* Effect.logDebug('Cache miss, querying database');
 
           // Query database
           const product = yield* database.query((db) =>
-            db.selectFrom("product")
-              .where("id", "=", id)
+            db
+              .selectFrom('product')
+              .where('id', '=', id)
               .selectAll()
-              .executeTakeFirst()
+              .executeTakeFirst(),
           );
 
           if (Option.isSome(product)) {
-            yield* cache.set(`product:${id}`, product.value, "5 minutes");
-            yield* Effect.logDebug("Product cached");
+            yield* cache.set(`product:${id}`, product.value, '5 minutes');
+            yield* Effect.logDebug('Product cached');
           }
 
           return product;
-        })
+        }),
     };
-  })
+  }),
 );
 ```
 
@@ -2539,22 +2599,22 @@ const findAll = (filters: ProductFilters) =>
   Effect.gen(function* () {
     const startTime = Date.now();
 
-    yield* Effect.logInfo("Querying products").pipe(
+    yield* Effect.logInfo('Querying products').pipe(
       Effect.annotateLogs({
-        operation: "findAll",
-        filters: JSON.stringify(filters)
-      })
+        operation: 'findAll',
+        filters: JSON.stringify(filters),
+      }),
     );
 
     const products = yield* database.query((db) => {
-      let query = db.selectFrom("product").selectAll();
+      let query = db.selectFrom('product').selectAll();
 
       if (filters.category) {
-        query = query.where("category", "=", filters.category);
+        query = query.where('category', '=', filters.category);
       }
 
       if (filters.minPrice) {
-        query = query.where("price", ">=", filters.minPrice);
+        query = query.where('price', '>=', filters.minPrice);
       }
 
       return query.execute();
@@ -2562,11 +2622,11 @@ const findAll = (filters: ProductFilters) =>
 
     const duration = Date.now() - startTime;
 
-    yield* Effect.logInfo("Query completed").pipe(
+    yield* Effect.logInfo('Query completed').pipe(
       Effect.annotateLogs({
         resultCount: products.length,
-        durationMs: duration
-      })
+        durationMs: duration,
+      }),
     );
 
     return products;
@@ -2578,37 +2638,38 @@ const findAll = (filters: ProductFilters) =>
 ```typescript
 const create = (input: ProductInsert) =>
   Effect.gen(function* () {
-    yield* Effect.logInfo("Creating product").pipe(
+    yield* Effect.logInfo('Creating product').pipe(
       Effect.annotateLogs({
-        operation: "create",
+        operation: 'create',
         productData: {
           name: input.name,
           category: input.category,
-          price: input.price
-        }
-      })
+          price: input.price,
+        },
+      }),
     );
 
     return yield* database.query((db) =>
-      db.insertInto("product")
+      db
+        .insertInto('product')
         .values(input)
         .returningAll()
-        .executeTakeFirstOrThrow()
+        .executeTakeFirstOrThrow(),
     );
   }).pipe(
     Effect.catchAll((error) =>
       Effect.gen(function* () {
-        yield* Effect.logError("Product creation failed").pipe(
+        yield* Effect.logError('Product creation failed').pipe(
           Effect.annotateLogs({
             errorType: error._tag,
             errorMessage: error.message,
-            productName: input.name
-          })
+            productName: input.name,
+          }),
         );
 
         return Effect.fail(error);
-      })
-    )
+      }),
+    ),
   );
 ```
 
@@ -2617,82 +2678,84 @@ const create = (input: ProductInsert) =>
 ```typescript
 const createProductWithVariants = (
   product: ProductInsert,
-  variants: ProductVariantInsert[]
+  variants: ProductVariantInsert[],
 ) =>
   Effect.gen(function* () {
-    yield* Effect.logInfo("Starting product creation transaction").pipe(
+    yield* Effect.logInfo('Starting product creation transaction').pipe(
       Effect.annotateLogs({
-        operation: "createProductWithVariants",
-        variantCount: variants.length
-      })
+        operation: 'createProductWithVariants',
+        variantCount: variants.length,
+      }),
     );
 
     const database = yield* DatabaseService;
 
     // ✅ CORRECT: Just yield* transaction - infra handles runtime preservation
-    return yield* database.transaction((tx) =>
-      Effect.gen(function* () {
-        // ✅ Effect.log* works inside transaction - infra preserves context
-        yield* Effect.logDebug("Creating product record");
-
-        const createdProduct = yield* Effect.tryPromise({
-          try: () =>
-            tx
-              .insertInto("product")
-              .values(product)
-              .returningAll()
-              .executeTakeFirstOrThrow(),
-          catch: (error) =>
-            new ProductDatabaseError({
-              message: "Failed to insert product",
-              cause: error,
-            }),
-        });
-
-        yield* Effect.logDebug("Creating variant records", {
-          productId: createdProduct.id
-        });
-
-        yield* Effect.tryPromise({
-          try: () =>
-            tx
-              .insertInto("product_variant")
-              .values(
-                variants.map((v) => ({
-                  ...v,
-                  product_id: createdProduct.id
-                }))
-              )
-              .execute(),
-          catch: (error) =>
-            new ProductDatabaseError({
-              message: "Failed to insert variants",
-              cause: error,
-            }),
-        });
-
-        yield* Effect.logInfo("Transaction completed successfully").pipe(
-          Effect.annotateLogs({
-            productId: createdProduct.id,
-            variantCount: variants.length
-          })
-        );
-
-        return createdProduct;
-      })
-    ).pipe(
-      Effect.catchAll((error) =>
+    return yield* database
+      .transaction((tx) =>
         Effect.gen(function* () {
-          yield* Effect.logError("Transaction failed").pipe(
+          // ✅ Effect.log* works inside transaction - infra preserves context
+          yield* Effect.logDebug('Creating product record');
+
+          const createdProduct = yield* Effect.tryPromise({
+            try: () =>
+              tx
+                .insertInto('product')
+                .values(product)
+                .returningAll()
+                .executeTakeFirstOrThrow(),
+            catch: (error) =>
+              new ProductDatabaseError({
+                message: 'Failed to insert product',
+                cause: error,
+              }),
+          });
+
+          yield* Effect.logDebug('Creating variant records', {
+            productId: createdProduct.id,
+          });
+
+          yield* Effect.tryPromise({
+            try: () =>
+              tx
+                .insertInto('product_variant')
+                .values(
+                  variants.map((v) => ({
+                    ...v,
+                    product_id: createdProduct.id,
+                  })),
+                )
+                .execute(),
+            catch: (error) =>
+              new ProductDatabaseError({
+                message: 'Failed to insert variants',
+                cause: error,
+              }),
+          });
+
+          yield* Effect.logInfo('Transaction completed successfully').pipe(
             Effect.annotateLogs({
-              errorMessage: String(error),
-              productName: product.name
-            })
+              productId: createdProduct.id,
+              variantCount: variants.length,
+            }),
           );
-          return Effect.fail(error);
-        })
+
+          return createdProduct;
+        }),
       )
-    );
+      .pipe(
+        Effect.catchAll((error) =>
+          Effect.gen(function* () {
+            yield* Effect.logError('Transaction failed').pipe(
+              Effect.annotateLogs({
+                errorMessage: String(error),
+                productName: product.name,
+              }),
+            );
+            return Effect.fail(error);
+          }),
+        ),
+      );
   });
 ```
 
@@ -2711,37 +2774,41 @@ Use appropriate log levels:
 
 ```typescript
 // ✅ GOOD - Structured, searchable metadata
-yield* Effect.logInfo("Product search executed").pipe(
-  Effect.annotateLogs({
-    operation: "search",
-    query: searchTerm,
-    resultCount: results.length,
-    durationMs: duration,
-    userId: context.userId,
-    cached: false
-  })
-);
+yield *
+  Effect.logInfo('Product search executed').pipe(
+    Effect.annotateLogs({
+      operation: 'search',
+      query: searchTerm,
+      resultCount: results.length,
+      durationMs: duration,
+      userId: context.userId,
+      cached: false,
+    }),
+  );
 
 // ❌ BAD - String concatenation, hard to query
-yield* Effect.logInfo(
-  `Product search for "${searchTerm}" returned ${results.length} results in ${duration}ms`
-);
+yield *
+  Effect.logInfo(
+    `Product search for "${searchTerm}" returned ${results.length} results in ${duration}ms`,
+  );
 
 // ✅ GOOD - Consistent field names across operations
-yield* Effect.annotateLogs({
-  operation: "create",    // Always use "operation"
-  productId: id,          // Always use "productId"
-  userId: userId,         // Always use "userId"
-  durationMs: duration    // Always use "durationMs"
-});
+yield *
+  Effect.annotateLogs({
+    operation: 'create', // Always use "operation"
+    productId: id, // Always use "productId"
+    userId: userId, // Always use "userId"
+    durationMs: duration, // Always use "durationMs"
+  });
 
 // ❌ BAD - Inconsistent naming
-yield* Effect.annotateLogs({
-  action: "create",       // Inconsistent with "operation"
-  id: id,                 // Ambiguous - what kind of ID?
-  user: userId,           // Inconsistent with "userId"
-  time: duration          // Unclear units
-});
+yield *
+  Effect.annotateLogs({
+    action: 'create', // Inconsistent with "operation"
+    id: id, // Ambiguous - what kind of ID?
+    user: userId, // Inconsistent with "userId"
+    time: duration, // Unclear units
+  });
 ```
 
 ### Integration with Telemetry
@@ -2750,26 +2817,27 @@ Combine logging with spans for full observability:
 
 ```typescript
 const findById = (id: string) =>
-  Effect.withSpan("ProductRepository.findById", {
-    attributes: { productId: id }
+  Effect.withSpan('ProductRepository.findById', {
+    attributes: { productId: id },
   })(
     Effect.gen(function* () {
-      yield* Effect.logInfo("Finding product").pipe(
-        Effect.annotateLogs({ productId: id })
+      yield* Effect.logInfo('Finding product').pipe(
+        Effect.annotateLogs({ productId: id }),
       );
 
       const product = yield* database.query(/* ... */);
 
       yield* Effect.annotateCurrentSpan({
-        found: Option.isSome(product)
+        found: Option.isSome(product),
       });
 
       return product;
-    })
+    }),
   );
 ```
 
 This ensures:
+
 - Logs are associated with trace spans
 - Distributed tracing works correctly
 - Performance metrics are captured

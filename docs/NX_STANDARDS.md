@@ -1,6 +1,7 @@
 # Nx Standards and Naming Conventions
 
 > **📚 Related Documentation:**
+>
 > - [Architecture Overview](./ARCHITECTURE_OVERVIEW.md) - Library inventory and integration patterns
 > - [Effect Patterns Guide](./EFFECT_PATTERNS.md) - Effect.ts patterns and best practices
 > - [Contract Libraries](./CONTRACT.md) - Domain interfaces and ports
@@ -11,7 +12,7 @@
 
 ## Overview
 
-This document defines the official naming conventions and standards for the Creative Toolkits Nx monorepo. These patterns follow **official Nx best practices** using:
+This document defines the official naming conventions and standards for the Nx monorepo. These patterns follow **official Nx best practices** using:
 
 - **pnpm workspaces** for project linking (NOT TypeScript path aliases)
 - **TypeScript project references** for incremental compilation
@@ -26,56 +27,64 @@ This document defines the official naming conventions and standards for the Crea
 The standard pattern places the library **type** before the **domain**.
 
 **Import Alias Pattern**:
+
 ```
-@creativetoolkits/{type}-{domain}
+@samuelho-dev/{type}-{domain}
 ```
 
 **Project Name Pattern**:
+
 ```
 {type}-{domain}
 ```
 
 **Note on Naming**:
+
 - **Directory**: `libs/contract/` (singular) for contracts
-- **Import Path**: `@creativetoolkits/contract-{domain}`
+- **Import Path**: `@samuelho-dev/contract-{domain}`
 - **Project Name**: `contract-{domain}` in project.json
 
 ### Library Types and Prefixes
 
-| Type | Prefix | Purpose | Pattern | Example |
-|------|--------|---------|---------|---------|
-| **Contracts** | `contract-` | Domain interfaces and ports | Repository Pattern (interfaces) | `contract-product` |
-| **Data Access** | `data-access-` | Repository implementations | Repository Pattern (implementation) | `data-access-product` |
-| **Feature** | `feature-` | Business logic and services | Service Pattern | `feature-payment` |
-| **Infrastructure** | `infra-` | Cross-cutting concerns | Service Pattern | `infra-logging` |
-| **Provider** | `provider-` | External service adapters | Adapter Pattern | `provider-stripe` |
-| **UI** | `ui-` | React components | Component Pattern | `ui-components` |
-| **Utility** | `util-` | Pure utility functions | Function Pattern | `util-format` |
-| **Types** | `types-` | Shared type definitions | Type Definitions | `types-database` |
+| Type               | Prefix         | Purpose                     | Pattern                             | Example               |
+| ------------------ | -------------- | --------------------------- | ----------------------------------- | --------------------- |
+| **Contracts**      | `contract-`    | Domain interfaces and ports | Repository Pattern (interfaces)     | `contract-product`    |
+| **Data Access**    | `data-access-` | Repository implementations  | Repository Pattern (implementation) | `data-access-product` |
+| **Feature**        | `feature-`     | Business logic and services | Service Pattern                     | `feature-payment`     |
+| **Infrastructure** | `infra-`       | Cross-cutting concerns      | Service Pattern                     | `infra-logging`       |
+| **Provider**       | `provider-`    | External service adapters   | Adapter Pattern                     | `provider-stripe`     |
+| **UI**             | `ui-`          | React components            | Component Pattern                   | `ui-components`       |
+| **Utility**        | `util-`        | Pure utility functions      | Function Pattern                    | `util-format`         |
+| **Types**          | `types-`       | Shared type definitions     | Type Definitions                    | `types-database`      |
 
 ### Architectural Patterns by Library Type
 
 #### Contracts Libraries
+
 - **Pattern**: Repository interfaces with domain entities, events, and ports
 - **Service Definition**: Interfaces only, no implementations
 - **Example**: `ProductRepository` interface with methods like `findById`, `save`, `delete`
 
 #### Data-Access Libraries
+
 - **Pattern**: Repository implementations with Effect.ts services
 - **Service Definition**: `Context.Tag` with inline interfaces implementing contract ports
 - **Example**: `ProductRepositoryLive` implementing `ProductRepository` interface
 
 #### Feature Libraries
+
 - **Pattern**: Service-oriented architecture with business logic
 - **Service Definition**: `Context.Tag` with inline interfaces for service operations
 - **Example**: `PaymentService` with methods like `processPayment`, `refund`, `validateCard`
 
 #### Infrastructure Libraries
+
 - **Pattern**: Cross-cutting services for technical concerns
 - **Service Definition**: `Context.Tag` with inline interfaces for infrastructure operations
 - **Example**: `LoggingService` with methods like `log`, `error`, `debug`, `flush`
 
 #### Provider Libraries
+
 - **Pattern**: Adapter pattern wrapping external SDKs
 - **Service Definition**: `Context.Tag` with inline interfaces adapting external APIs
 - **Example**: `StripeService` wrapping Stripe SDK with Effect.ts error handling
@@ -83,18 +92,20 @@ The standard pattern places the library **type** before the **domain**.
 ### Examples
 
 ✅ **CORRECT Import Paths**:
+
 ```typescript
-@creativetoolkits/contract-product
-@creativetoolkits/data-access-user
-@creativetoolkits/feature-auth
-@creativetoolkits/infra-cache
-@creativetoolkits/provider-stripe
-@creativetoolkits/ui-buttons
-@creativetoolkits/util-date
-@creativetoolkits/types-database
+@samuelho-dev/contract-product
+@samuelho-dev/data-access-user
+@samuelho-dev/feature-auth
+@samuelho-dev/infra-cache
+@samuelho-dev/provider-stripe
+@samuelho-dev/ui-buttons
+@samuelho-dev/util-date
+@samuelho-dev/types-database
 ```
 
 ✅ **CORRECT Project Names**:
+
 ```
 contract-product
 data-access-user
@@ -107,13 +118,14 @@ types-database
 ```
 
 ❌ **INCORRECT**:
+
 ```
-@creativetoolkits/product-contract      # Wrong order (should be contract-product)
-@creativetoolkits/user/data-access      # Missing hyphen in type
-@creativetoolkits/auth                  # Missing type prefix
-@libs/feature-auth                      # Wrong alias (should be @creativetoolkits)
-@creativetoolkits/stripe-provider       # Wrong order (should be provider-stripe)
-@creativetoolkits/database/types        # Wrong separator (should be types-database)
+@samuelho-dev/product-contract      # Wrong order (should be contract-product)
+@samuelho-dev/user/data-access      # Missing hyphen in type
+@samuelho-dev/auth                  # Missing type prefix
+@libs/feature-auth                      # Wrong alias (should be @samuelho-dev)
+@samuelho-dev/stripe-provider       # Wrong order (should be provider-stripe)
+@samuelho-dev/database/types        # Wrong separator (should be types-database)
 ```
 
 ## Directory Structure
@@ -121,7 +133,7 @@ types-database
 ### Root Structure
 
 ```
-creativetoolkits/
+samuelho-dev/
 ├── apps/
 │   ├── web/              # Next.js application
 │   └── api/              # Fastify API
@@ -160,6 +172,7 @@ libs/{type}/{domain}/
 ```
 
 **Required Files:**
+
 - `package.json` - Defines workspace package name, exports, and dependencies
 - `project.json` - Defines Nx targets and configuration
 - `tsconfig.json` - Project root TypeScript config with references
@@ -174,7 +187,7 @@ Every library **MUST** have a `package.json` file that defines it as a workspace
 
 ```json
 {
-  "name": "@creativetoolkits/{type}-{domain}",
+  "name": "@samuelho-dev/{type}-{domain}",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -186,8 +199,8 @@ Every library **MUST** have a `package.json` file that defines it as a workspace
   },
   "dependencies": {
     "effect": "^3.17.13",
-    "@creativetoolkits/types-database": "workspace:*",
-    "@creativetoolkits/infra-cache": "workspace:*"
+    "@samuelho-dev/types-database": "workspace:*",
+    "@samuelho-dev/infra-cache": "workspace:*"
   }
 }
 ```
@@ -199,28 +212,29 @@ The `exports` field defines entry points for your library. This enables platform
 ```json
 {
   "exports": {
-    ".": "./src/index.ts",              // Main entry
-    "./client": "./src/client.ts",      // Client platform (browser)
-    "./server": "./src/server.ts",      // Server platform (Node.js)
-    "./edge": "./src/edge.ts",          // Edge runtime (Cloudflare, Vercel)
-    "./package.json": "./package.json"  // Allow package.json imports
+    ".": "./src/index.ts", // Main entry
+    "./client": "./src/client.ts", // Client platform (browser)
+    "./server": "./src/server.ts", // Server platform (Node.js)
+    "./edge": "./src/edge.ts", // Edge runtime (Cloudflare, Vercel)
+    "./package.json": "./package.json" // Allow package.json imports
   }
 }
 ```
 
 **Usage:**
+
 ```typescript
 // Import from main entry (universal)
-import { ProductService } from '@creativetoolkits/feature-product';
+import { ProductService } from '@samuelho-dev/feature-product';
 
 // Import from client entry (browser-specific)
-import { useProduct } from '@creativetoolkits/feature-product/client';
+import { useProduct } from '@samuelho-dev/feature-product/client';
 
 // Import from server entry (Node.js-specific)
-import { ProductRepository } from '@creativetoolkits/feature-product/server';
+import { ProductRepository } from '@samuelho-dev/feature-product/server';
 
 // Import from edge entry (Edge runtime-specific)
-import { createEdgeAuth } from '@creativetoolkits/feature-auth/edge';
+import { createEdgeAuth } from '@samuelho-dev/feature-auth/edge';
 ```
 
 ### TypesVersions Field (Optional)
@@ -246,14 +260,15 @@ Use the `workspace:*` protocol for internal dependencies. This ensures proper de
 ```json
 {
   "dependencies": {
-    "effect": "^3.17.13",                                    // External npm package
-    "@creativetoolkits/types-database": "workspace:*",      // Workspace package
-    "@creativetoolkits/infra-logging": "workspace:*"        // Workspace package
+    "effect": "^3.17.13", // External npm package
+    "@samuelho-dev/types-database": "workspace:*", // Workspace package
+    "@samuelho-dev/infra-logging": "workspace:*" // Workspace package
   }
 }
 ```
 
 **Benefits:**
+
 - Type-safe version resolution
 - Ensures latest local version is always used
 - pnpm validates workspace dependencies exist
@@ -267,36 +282,32 @@ Nx enforces strict module boundaries using tags:
 
 ```json
 {
-  "tags": [
-    "type:feature",
-    "scope:server",
-    "domain:product"
-  ]
+  "tags": ["type:feature", "scope:server", "domain:product"]
 }
 ```
 
 ### Allowed Dependencies
 
-| From | Can Import From |
-|------|-----------------|
-| **Apps** | feature, ui, data-access, util, types, infra, provider |
-| **Feature** | data-access, ui, util, types, infra, provider, contract |
-| **Data-Access** | util, types, infra, provider, contract |
-| **UI** | util, types |
-| **Infra** | util, types, provider, infra (cross-infra allowed) |
-| **Provider** | util, types, infra |
-| **Contract** | types, util, contract (cross-contract allowed) |
-| **Types** | (no dependencies) |
-| **Util** | types |
+| From            | Can Import From                                         |
+| --------------- | ------------------------------------------------------- |
+| **Apps**        | feature, ui, data-access, util, types, infra, provider  |
+| **Feature**     | data-access, ui, util, types, infra, provider, contract |
+| **Data-Access** | util, types, infra, provider, contract                  |
+| **UI**          | util, types                                             |
+| **Infra**       | util, types, provider, infra (cross-infra allowed)      |
+| **Provider**    | util, types, infra                                      |
+| **Contract**    | types, util, contract (cross-contract allowed)          |
+| **Types**       | (no dependencies)                                       |
+| **Util**        | types                                                   |
 
 ### Platform Tags
 
-| Tag | Platform | Usage |
-|-----|----------|-------|
-| `platform:node` | Node.js server | Server-side only code |
-| `platform:browser` | Web browser | Client-side only code |
-| `platform:edge` | Edge runtime | Cloudflare Workers, Vercel Edge |
-| `platform:universal` | All platforms | Shared code |
+| Tag                  | Platform       | Usage                           |
+| -------------------- | -------------- | ------------------------------- |
+| `platform:node`      | Node.js server | Server-side only code           |
+| `platform:browser`   | Web browser    | Client-side only code           |
+| `platform:edge`      | Edge runtime   | Cloudflare Workers, Vercel Edge |
+| `platform:universal` | All platforms  | Shared code                     |
 
 ## Import Paths
 
@@ -306,9 +317,9 @@ All libraries are workspace packages resolved via pnpm workspaces. Imports use t
 
 ```typescript
 // ✅ CORRECT - Import workspace packages by name
-import { ProductRepository } from '@creativetoolkits/contract-product';
-import { DatabaseService } from '@creativetoolkits/infra-database';
-import { Button } from '@creativetoolkits/ui-components';
+import { ProductRepository } from '@samuelho-dev/contract-product';
+import { DatabaseService } from '@samuelho-dev/infra-database';
+import { Button } from '@samuelho-dev/ui-components';
 
 // ❌ INCORRECT - No relative imports between libraries
 import { ProductRepository } from '../../../contract/product';
@@ -317,7 +328,8 @@ import { Button } from 'ui/components';
 ```
 
 **How it works:**
-- Each library has a `package.json` with a `name` field matching `@creativetoolkits/{type}-{domain}`
+
+- Each library has a `package.json` with a `name` field matching `@samuelho-dev/{type}-{domain}`
 - pnpm workspaces resolve these packages using the workspace protocol
 - No TypeScript path aliases are required
 - Native Node.js module resolution is used
@@ -328,13 +340,13 @@ Libraries can provide platform-specific exports through separate entry points:
 
 ```typescript
 // Client code (React hooks, browser-only)
-import { useAuth } from '@creativetoolkits/feature-auth/client';
+import { useAuth } from '@samuelho-dev/feature-auth/client';
 
 // Server code (Node.js, backend services)
-import { AuthService } from '@creativetoolkits/feature-auth/server';
+import { AuthService } from '@samuelho-dev/feature-auth/server';
 
 // Edge code (Cloudflare Workers, Vercel Edge)
-import { verifyToken } from '@creativetoolkits/feature-auth/edge';
+import { verifyToken } from '@samuelho-dev/feature-auth/edge';
 ```
 
 ### Entry Point Structure
@@ -378,7 +390,7 @@ libs/feature/auth/
         "main": "libs/feature/payment/src/index.ts",
         "tsConfig": "libs/feature/payment/tsconfig.lib.json",
         "assets": ["libs/feature/payment/*.md"],
-        "batch": true,  // REQUIRED: Enables TypeScript project references and incremental compilation
+        "batch": true, // REQUIRED: Enables TypeScript project references and incremental compilation
         "additionalEntryPoints": [
           "libs/feature/payment/src/server.ts",
           "libs/feature/payment/src/client.ts"
@@ -400,6 +412,7 @@ libs/feature/auth/
 ```
 
 **Critical Configuration:**
+
 - `batch: true` - Uses TypeScript project references for incremental compilation
 - `additionalEntryPoints` - Defines platform-specific exports for client/server/edge
 - Global default in `nx.json` ensures all projects use batch mode automatically
@@ -470,6 +483,7 @@ The root `tsconfig.base.json` should contain **ONLY** `compilerOptions` and **NO
 ```
 
 **Critical Requirements:**
+
 - `composite: true` - Enables TypeScript project references (automatically enables `incremental: true`)
 - `declaration: true` - Required when composite is true
 - `declarationMap: true` - Enables IDE go-to-definition in IDEs
@@ -486,7 +500,7 @@ The root `tsconfig.json` extends `tsconfig.base.json` and defines references to 
 // tsconfig.json (root)
 {
   "extends": "./tsconfig.base.json",
-  "files": [],  // intentionally empty
+  "files": [], // intentionally empty
   "references": [
     // AUTOMATICALLY UPDATED BY NX SYNC
     // All projects in the repository should be referenced
@@ -506,6 +520,7 @@ The root `tsconfig.json` extends `tsconfig.base.json` and defines references to 
 ```
 
 **Note:** The `references` array is automatically maintained by:
+
 1. Nx generators when creating new projects
 2. `nx sync` command based on the project graph
 
@@ -521,7 +536,7 @@ Extends `tsconfig.base.json` and lists references to dependencies and build conf
 // libs/{type}/{domain}/tsconfig.json
 {
   "extends": "../../../tsconfig.base.json",
-  "files": [],  // intentionally empty
+  "files": [], // intentionally empty
   "references": [
     // AUTOMATICALLY UPDATED BY NX SYNC
     // All project dependencies (projects this library imports from)
@@ -556,11 +571,7 @@ Handles compilation of production code with unique output directories:
     "types": ["node"]
   },
   "include": ["src/**/*.ts"],
-  "exclude": [
-    "jest.config.ts",
-    "src/**/*.spec.ts",
-    "src/**/*.test.ts"
-  ],
+  "exclude": ["jest.config.ts", "src/**/*.spec.ts", "src/**/*.test.ts"],
   "references": [
     // AUTOMATICALLY UPDATED BY NX SYNC
     // References to tsconfig.lib.json files of dependencies
@@ -570,6 +581,7 @@ Handles compilation of production code with unique output directories:
 ```
 
 **Critical Points:**
+
 - `outDir` must be unique per tsconfig file (prevents cache conflicts)
 - `tsBuildInfoFile` stores incremental compilation state
 - References point to dependency's `tsconfig.lib.json` (not root tsconfig)
@@ -587,11 +599,7 @@ Handles test file compilation:
     "outDir": "../../../dist/libs/{type}/{domain}/spec",
     "types": ["jest", "node"]
   },
-  "include": [
-    "jest.config.ts",
-    "src/**/*.test.ts",
-    "src/**/*.spec.ts"
-  ],
+  "include": ["jest.config.ts", "src/**/*.test.ts", "src/**/*.spec.ts"],
   "references": [
     // Reference to this project's lib config
     { "path": "./tsconfig.lib.json" }
@@ -619,14 +627,14 @@ Enable TypeScript sync in `nx.json`:
 // nx.json
 {
   "sync": {
-    "applyChanges": true  // Auto-apply changes without prompting
+    "applyChanges": true // Auto-apply changes without prompting
   },
   "plugins": [
     {
       "plugin": "@nx/js/typescript",
       "options": {
         "sync": {
-          "enabled": true  // Enable TypeScript sync
+          "enabled": true // Enable TypeScript sync
         }
       }
     }
@@ -640,12 +648,12 @@ Enable TypeScript sync in `nx.json`:
 
 ```bash
 # 1. Add import to your code
-import { UserService } from '@creativetoolkits/feature-user';
+import { UserService } from '@samuelho-dev/feature-user';
 
 # 2. Add to package.json dependencies
 {
   "dependencies": {
-    "@creativetoolkits/feature-user": "workspace:*"
+    "@samuelho-dev/feature-user": "workspace:*"
   }
 }
 
@@ -719,7 +727,7 @@ describe('ServiceName', () => {
   const TestLayer = Layer.mergeAll(
     TestDatabaseService,
     TestCacheService,
-    ServiceLive
+    ServiceLive,
   );
 
   test('should perform operation', () =>
@@ -728,11 +736,7 @@ describe('ServiceName', () => {
       const result = yield* service.operation();
 
       expect(result).toEqual(expectedValue);
-    }).pipe(
-      Effect.provide(TestLayer),
-      Effect.runPromise
-    )
-  );
+    }).pipe(Effect.provide(TestLayer), Effect.runPromise));
 });
 ```
 
@@ -744,18 +748,24 @@ All services use `Context.Tag` with inline interfaces for dependency injection:
 
 ```typescript
 // ✅ CORRECT: Context.Tag with inline interface
-export class PaymentService extends Context.Tag("PaymentService")<
+export class PaymentService extends Context.Tag('PaymentService')<
   PaymentService,
   {
-    readonly processPayment: (amount: number) => Effect.Effect<PaymentResult, PaymentError>;
+    readonly processPayment: (
+      amount: number,
+    ) => Effect.Effect<PaymentResult, PaymentError>;
     readonly refund: (paymentId: string) => Effect.Effect<void, RefundError>;
-    readonly validateCard: (card: CardDetails) => Effect.Effect<boolean, ValidationError>;
+    readonly validateCard: (
+      card: CardDetails,
+    ) => Effect.Effect<boolean, ValidationError>;
   }
 >() {}
 
 // ❌ INCORRECT: Separate interface
-export interface PaymentServiceInterface { /* ... */ }
-export class PaymentService extends Context.Tag("PaymentService")<
+export interface PaymentServiceInterface {
+  /* ... */
+}
+export class PaymentService extends Context.Tag('PaymentService')<
   PaymentService,
   PaymentServiceInterface
 >() {}
@@ -781,7 +791,7 @@ export class PaymentServiceImpl extends PaymentService {
           }),
         // ... other methods
       };
-    })
+    }),
   );
 }
 ```
@@ -791,8 +801,8 @@ export class PaymentServiceImpl extends PaymentService {
 Use `Data.TaggedError` for runtime errors:
 
 ```typescript
-export class PaymentError extends Data.TaggedError("PaymentError")<{
-  readonly reason: "InvalidAmount" | "CardDeclined" | "NetworkError";
+export class PaymentError extends Data.TaggedError('PaymentError')<{
+  readonly reason: 'InvalidAmount' | 'CardDeclined' | 'NetworkError';
   readonly message: string;
   readonly cause?: unknown;
 }> {}
@@ -805,16 +815,16 @@ Create test layers with factory functions for complete objects:
 ```typescript
 // ✅ CORRECT: Factory function with complete object
 const createMockPayment = (): PaymentResult => ({
-  id: "test_payment_123",
+  id: 'test_payment_123',
   amount: 1000,
-  currency: "usd",
-  status: "succeeded",
+  currency: 'usd',
+  status: 'succeeded',
   created: Date.now(),
   // ... all required fields
 });
 
 // ❌ INCORRECT: Type assertions
-const mockPayment = { id: "test" } as PaymentResult; // NEVER do this
+const mockPayment = { id: 'test' } as PaymentResult; // NEVER do this
 ```
 
 ## Build and CI/CD
@@ -843,11 +853,14 @@ pnpm exec nx build feature-payment
 Using TypeScript project references with `batch: true` provides significant performance improvements:
 
 **Compilation Performance:**
+
 - **First Build (Clean):** Individual project compilation with reduced memory usage
+
   - Generates `.tsbuildinfo` files for each project
   - Memory usage: ~429 MB (vs 6.14 GB without batch mode)
 
 - **Incremental Builds:** Only recompiles changed projects
+
   - Reuses `.tsbuildinfo` files from unchanged dependencies
   - **7x faster:** ~25 seconds (vs 175 seconds without incremental)
 
@@ -857,6 +870,7 @@ Using TypeScript project references with `batch: true` provides significant perf
   - 100 projects updated: ~80 seconds
 
 **Why It's Fast:**
+
 1. TypeScript only recompiles projects that actually changed
 2. Dependencies use cached `.tsbuildinfo` files
 3. Project references eliminate re-parsing unchanged code
@@ -927,27 +941,31 @@ Nx enforces these boundaries through `nx.json` configuration:
 ### Common Module Boundary Violations
 
 ❌ **Feature → Feature** (Direct)
+
 ```typescript
 // In libs/feature/payment
-import { UserService } from '@creativetoolkits/feature-user'; // ❌ WRONG
+import { UserService } from '@samuelho-dev/feature-user'; // ❌ WRONG
 ```
 
 ✅ **Feature → Feature** (Through shared contract)
+
 ```typescript
 // In libs/feature/payment
-import { UserRepository } from '@creativetoolkits/contract-user'; // ✅ CORRECT
+import { UserRepository } from '@samuelho-dev/contract-user'; // ✅ CORRECT
 ```
 
 ❌ **Data-Access → Feature**
+
 ```typescript
 // In libs/data-access/product
-import { PaymentService } from '@creativetoolkits/feature-payment'; // ❌ WRONG
+import { PaymentService } from '@samuelho-dev/feature-payment'; // ❌ WRONG
 ```
 
 ✅ **Feature → Data-Access**
+
 ```typescript
 // In libs/feature/payment
-import { ProductRepository } from '@creativetoolkits/data-access-product'; // ✅ CORRECT
+import { ProductRepository } from '@samuelho-dev/data-access-product'; // ✅ CORRECT
 ```
 
 ## Migration from Path Aliases to Workspaces
@@ -965,7 +983,7 @@ Remove all `paths` property entries and enable project references:
     "composite": false,
     "declaration": false,
     "paths": {
-      "@creativetoolkits/contract-product": ["libs/contract/product/src/index.ts"]
+      "@samuelho-dev/contract-product": ["libs/contract/product/src/index.ts"]
     }
   }
 }
@@ -1003,7 +1021,7 @@ For each library in `libs/`, create a `package.json`:
 # For each library in libs/{type}/{domain}/
 cat > package.json << 'EOF'
 {
-  "name": "@creativetoolkits/{type}-{domain}",
+  "name": "@samuelho-dev/{type}-{domain}",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -1069,7 +1087,7 @@ For each library, add workspace dependencies to `package.json`:
 
 ```bash
 # Install dependencies using workspace protocol
-pnpm add @creativetoolkits/types-database@workspace:* --filter @creativetoolkits/feature-auth
+pnpm add @samuelho-dev/types-database@workspace:* --filter @samuelho-dev/feature-auth
 ```
 
 ### Step 8: Verify Build
@@ -1089,13 +1107,13 @@ pnpm exec nx build feature-auth
 
 ### Common Migration Issues
 
-| Issue | Fix |
-|-------|-----|
-| "Cannot find module '@creativetoolkits/...'" | Add package.json with correct name to library |
-| "Project references are out of sync" | Run `pnpm exec nx sync` |
-| "Incremental builds not working" | Verify `composite: true` in tsconfig.base.json and `batch: true` in executor |
-| "IDE not finding types" | Ensure root tsconfig.json has all project references and TypeScript server restarted |
-| "Cannot find type definitions" | Add `declaration: true` to tsconfig.base.json and `types` to tsconfig.lib.json |
+| Issue                                    | Fix                                                                                  |
+| ---------------------------------------- | ------------------------------------------------------------------------------------ |
+| "Cannot find module '@samuelho-dev/...'" | Add package.json with correct name to library                                        |
+| "Project references are out of sync"     | Run `pnpm exec nx sync`                                                              |
+| "Incremental builds not working"         | Verify `composite: true` in tsconfig.base.json and `batch: true` in executor         |
+| "IDE not finding types"                  | Ensure root tsconfig.json has all project references and TypeScript server restarted |
+| "Cannot find type definitions"           | Add `declaration: true` to tsconfig.base.json and `types` to tsconfig.lib.json       |
 
 ## Migration Guidelines
 
@@ -1103,10 +1121,10 @@ pnpm exec nx build feature-auth
 
 ```bash
 # Old pattern: domain-type
-@creativetoolkits/product-contract
+@samuelho-dev/product-contract
 
 # New pattern: type-domain
-@creativetoolkits/contract-product
+@samuelho-dev/contract-product
 ```
 
 ### Migration Steps
@@ -1141,6 +1159,7 @@ pnpm exec nx build feature-auth
 ## References
 
 ### Nx Documentation
+
 - [Nx Library Types](https://nx.dev/concepts/more-concepts/library-types) - Categorizing and structuring libraries
 - [Nx Module Boundaries](https://nx.dev/features/enforce-module-boundaries) - Enforcing project dependencies
 - [Nx Naming Conventions](https://nx.dev/concepts/decisions/project-dependency-rules) - Best practices for naming projects
@@ -1150,8 +1169,10 @@ pnpm exec nx build feature-auth
 - [Nx Sync Generators](https://nx.dev/concepts/sync-generators) - Automatic TypeScript reference management
 
 ### TypeScript Documentation
+
 - [TypeScript Project References](https://www.typescriptlang.org/docs/handbook/project-references.html) - Official TypeScript docs
 
 ### Additional Resources
+
 - [Effect.ts Documentation](https://effect.website) - Effect functional programming library
 - [TypeScript Compilation Performance](https://github.com/jaysoo/typecheck-timings) - Performance benchmarks

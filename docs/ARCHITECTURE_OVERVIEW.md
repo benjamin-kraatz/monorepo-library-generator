@@ -1,6 +1,7 @@
-# Architecture Overview - Creative Toolkits Monorepo
+# Architecture Overview - Monorepo
 
 > **📚 Related Documentation:**
+>
 > - [Effect Patterns Guide](./EFFECT_PATTERNS.md) - Effect.ts patterns and best practices
 > - [Nx Standards](./NX_STANDARDS.md) - Naming conventions and workspace organization
 > - [Export Patterns Guide](./EXPORT_PATTERNS.md) - Platform-aware exports and barrel patterns
@@ -12,7 +13,7 @@
 
 ## Quick Reference
 
-This document provides a high-level overview of the library architecture, dependency relationships, and common integration patterns for the Creative Toolkits Nx monorepo.
+This document provides a high-level overview of the library architecture, dependency relationships, and common integration patterns for the Nx monorepo.
 
 ## Library Type Reference
 
@@ -20,9 +21,10 @@ This document provides a high-level overview of the library architecture, depend
 
 **Purpose**: Define domain boundaries through interfaces, entities, and errors
 
-**Naming**: `@creativetoolkits/contract-{domain}`
+**Naming**: `@samuelho-dev/contract-{domain}`
 
 **Contains**:
+
 - Domain entities (Product, User, Order)
 - Repository interfaces (ports)
 - Domain events
@@ -33,6 +35,7 @@ This document provides a high-level overview of the library architecture, depend
 **Used By**: data-access, feature
 
 **Key Files**:
+
 - `src/lib/entities.ts` - Domain entities
 - `src/lib/ports.ts` - Repository interfaces
 - `src/lib/errors.ts` - Domain errors
@@ -44,15 +47,17 @@ This document provides a high-level overview of the library architecture, depend
 
 **Purpose**: Implement repository pattern with database operations
 
-**Naming**: `@creativetoolkits/data-access-{domain}`
+**Naming**: `@samuelho-dev/data-access-{domain}`
 
 **Contains**:
+
 - Repository implementations (fulfill contract ports)
 - Database queries (Kysely)
 - Data transformations
 - Query builders
 
 **Dependencies**:
+
 - `contract-{domain}` (implements interfaces)
 - `infra-database` (database service)
 - `infra-cache` (optional caching)
@@ -62,6 +67,7 @@ This document provides a high-level overview of the library architecture, depend
 **Used By**: feature
 
 **Key Files**:
+
 - `src/lib/server/repository.ts` - Repository implementation
 - `src/lib/server/layers.ts` - Layer composition
 - `src/lib/server/repository.spec.ts` - Tests with @effect/vitest
@@ -72,15 +78,17 @@ This document provides a high-level overview of the library architecture, depend
 
 **Purpose**: Implement business logic and application features
 
-**Naming**: `@creativetoolkits/feature-{name}`
+**Naming**: `@samuelho-dev/feature-{name}`
 
 **Contains**:
+
 - Business logic services
 - Use case orchestration
 - Feature-specific RPC endpoints
 - Business rules and validation
 
 **Dependencies**:
+
 - `data-access-{domain}` (repositories)
 - `contract-{domain}` (domain interfaces)
 - `infra-*` (logging, caching, etc.)
@@ -89,6 +97,7 @@ This document provides a high-level overview of the library architecture, depend
 **Used By**: apps (web, api)
 
 **Key Files**:
+
 - `src/lib/server/service.ts` - Business logic service
 - `src/lib/server/layers.ts` - Layer composition
 - `src/lib/rpc/*.ts` - RPC endpoint definitions
@@ -100,14 +109,16 @@ This document provides a high-level overview of the library architecture, depend
 
 **Purpose**: Provide cross-cutting concerns and resource management
 
-**Naming**: `@creativetoolkits/infra-{concern}`
+**Naming**: `@samuelho-dev/infra-{concern}`
 
 **Contains**:
+
 - Resource management (database, cache, storage)
 - Cross-cutting services (logging, telemetry)
 - Platform-specific implementations (client/server/edge)
 
 **Common Libraries**:
+
 - `infra-database` - Database service with Kysely
 - `infra-cache` - Caching with Redis
 - `infra-storage` - File storage with Supabase
@@ -116,6 +127,7 @@ This document provides a high-level overview of the library architecture, depend
 - `infra-webhooks` - Webhook handling
 
 **Dependencies**:
+
 - `provider-*` (external service adapters)
 - `util-*` (utility functions)
 - Other `infra-*` (cross-infra dependencies allowed)
@@ -123,6 +135,7 @@ This document provides a high-level overview of the library architecture, depend
 **Used By**: data-access, feature, apps
 
 **Key Files**:
+
 - `src/lib/service/service.ts` - Service implementation
 - `src/lib/service/interface.ts` - Service interface
 - `src/lib/layers/server-layers.ts` - Server-side layers
@@ -135,15 +148,17 @@ This document provides a high-level overview of the library architecture, depend
 
 **Purpose**: Wrap external SDKs with consistent Effect interfaces
 
-**Naming**: `@creativetoolkits/provider-{service}`
+**Naming**: `@samuelho-dev/provider-{service}`
 
 **Contains**:
+
 - SDK adapters (Stripe, Supabase, Redis, etc.)
 - Error transformation from SDK errors to Effect errors
 - Type-safe API wrappers
 - Mock factories for testing
 
 **Common Libraries**:
+
 - `provider-stripe` - Stripe payments
 - `provider-supabase` - Supabase client
 - `provider-kysely` - Kysely query builder
@@ -153,6 +168,7 @@ This document provides a high-level overview of the library architecture, depend
 - `provider-resend` - Resend email
 
 **Dependencies**:
+
 - `infra-logging` (for adapter logging)
 - External SDKs (stripe, @supabase/supabase-js, etc.)
 - `util-*` (utility functions)
@@ -160,6 +176,7 @@ This document provides a high-level overview of the library architecture, depend
 **Used By**: infra, feature, data-access
 
 **Key Files**:
+
 - `src/lib/service.ts` - SDK adapter service
 - `src/lib/interface.ts` - Service interface
 - `src/lib/layers.ts` - Layer composition
@@ -189,30 +206,37 @@ Feature Libraries (business logic)
 ## Module Boundary Rules (Enforced by Nx)
 
 ### Apps
+
 - ✅ Can depend on: feature, ui, data-access, util, types, infra, provider
 - ❌ Cannot depend on: contracts (use through data-access)
 
 ### Feature Libraries
+
 - ✅ Can depend on: data-access, contract, ui, util, types, infra, provider
 - ❌ Cannot depend on: apps, other features
 
 ### Data-Access Libraries
+
 - ✅ Can depend on: contract, util, types, infra, provider
 - ❌ Cannot depend on: apps, feature, ui, other data-access
 
 ### Infrastructure Libraries
+
 - ✅ Can depend on: provider, util, types, other infra
 - ❌ Cannot depend on: apps, feature, data-access, contract, ui
 
 ### Provider Libraries
+
 - ✅ Can depend on: util, types, infra (for logging only)
 - ❌ Cannot depend on: apps, feature, data-access, contract, ui, other providers
 
 ### Contract Libraries
+
 - ✅ Can depend on: types, util, other contracts
 - ❌ Cannot depend on: apps, feature, data-access, ui, infra, provider
 
 ### Types Libraries
+
 - ✅ No dependencies (leaf nodes)
 - ❌ Cannot depend on anything
 
@@ -280,21 +304,21 @@ export const ProductRepositoryLive = Layer.effect(
           // Query database
           const result = yield* database.query((db) =>
             db
-              .selectFrom("products")
-              .where("id", "=", id)
+              .selectFrom('products')
+              .where('id', '=', id)
               .selectAll()
-              .executeTakeFirst()
+              .executeTakeFirst(),
           );
 
           // Cache and return
           if (result) {
-            yield* cache.set(`product:${id}`, result, "1 hour");
+            yield* cache.set(`product:${id}`, result, '1 hour');
             return Option.some(result);
           }
           return Option.none();
         }),
     };
-  })
+  }),
 );
 ```
 
@@ -302,11 +326,17 @@ export const ProductRepositoryLive = Layer.effect(
 
 ```typescript
 // Infrastructure: Cache Service
-export class CacheService extends Context.Tag("CacheService")<
+export class CacheService extends Context.Tag('CacheService')<
   CacheService,
   {
-    readonly get: <A>(key: string) => Effect.Effect<Option.Option<A>, CacheError>;
-    readonly set: <A>(key: string, value: A, ttl?: string) => Effect.Effect<void, CacheError>;
+    readonly get: <A>(
+      key: string,
+    ) => Effect.Effect<Option.Option<A>, CacheError>;
+    readonly set: <A>(
+      key: string,
+      value: A,
+      ttl?: string,
+    ) => Effect.Effect<void, CacheError>;
   }
 >() {
   static readonly Live = Layer.scoped(
@@ -319,9 +349,9 @@ export class CacheService extends Context.Tag("CacheService")<
       // Register cleanup
       yield* Effect.addFinalizer(() =>
         Effect.gen(function* () {
-          yield* logger.info("Closing cache connections");
+          yield* logger.info('Closing cache connections');
           yield* redis.quit();
-        })
+        }),
       );
 
       return {
@@ -336,7 +366,7 @@ export class CacheService extends Context.Tag("CacheService")<
             yield* redis.set(key, serialized, ttl);
           }),
       };
-    })
+    }),
   );
 }
 ```
@@ -345,11 +375,13 @@ export class CacheService extends Context.Tag("CacheService")<
 
 ```typescript
 // Provider: Stripe Service
-export class StripeService extends Context.Tag("StripeService")<
+export class StripeService extends Context.Tag('StripeService')<
   StripeService,
   {
     readonly paymentIntents: {
-      readonly create: (params: CreatePaymentIntentParams) => Effect.Effect<PaymentIntent, StripeError>;
+      readonly create: (
+        params: CreatePaymentIntentParams,
+      ) => Effect.Effect<PaymentIntent, StripeError>;
     };
   }
 >() {
@@ -360,21 +392,23 @@ export class StripeService extends Context.Tag("StripeService")<
       const logger = yield* LoggingService;
 
       // Initialize SDK
-      const stripe = new Stripe(config.apiKey, { apiVersion: "2024-11-20.acacia" });
+      const stripe = new Stripe(config.apiKey, {
+        apiVersion: '2024-11-20.acacia',
+      });
 
       // Register cleanup function for resource management
       yield* Effect.addFinalizer(() =>
         Effect.gen(function* () {
-          yield* logger.info("Cleaning up Stripe client resources");
+          yield* logger.info('Cleaning up Stripe client resources');
           // Add any SDK-specific cleanup here if available
-        })
+        }),
       );
 
       return {
         paymentIntents: {
           create: (params) =>
             Effect.gen(function* () {
-              yield* logger.debug("Creating payment intent", { params });
+              yield* logger.debug('Creating payment intent', { params });
 
               // Transform SDK errors to Effect errors
               const result = yield* Effect.tryPromise({
@@ -386,7 +420,7 @@ export class StripeService extends Context.Tag("StripeService")<
             }),
         },
       };
-    })
+    }),
   );
 }
 ```
@@ -401,12 +435,12 @@ Compose all layers at the application entry point:
 
 ```typescript
 // apps/api/src/main.ts
-import { Layer } from "effect";
-import { ProductRepositoryLive } from "@creativetoolkits/data-access-product";
-import { ProductServiceLive } from "@creativetoolkits/feature-product";
-import { DatabaseServiceLive } from "@creativetoolkits/infra-database";
-import { CacheServiceLive } from "@creativetoolkits/infra-cache";
-import { StripeServiceLive } from "@creativetoolkits/provider-stripe";
+import { Layer } from 'effect';
+import { ProductRepositoryLive } from '@samuelho-dev/data-access-product';
+import { ProductServiceLive } from '@samuelho-dev/feature-product';
+import { DatabaseServiceLive } from '@samuelho-dev/infra-database';
+import { CacheServiceLive } from '@samuelho-dev/infra-cache';
+import { StripeServiceLive } from '@samuelho-dev/provider-stripe';
 
 // Compose all dependencies in one place
 const AppLayer = Layer.mergeAll(
@@ -421,7 +455,7 @@ const AppLayer = Layer.mergeAll(
   ProductRepositoryLive,
 
   // Features
-  ProductServiceLive
+  ProductServiceLive,
 );
 
 // Provide to your application
@@ -441,14 +475,14 @@ Each library provides its own layer with dependencies:
 // libs/feature/product/src/lib/server/layers.ts
 export const ProductFeatureLayer = ProductServiceLive.pipe(
   Layer.provide(ProductRepositoryLive),
-  Layer.provide(StripeServiceLive)
+  Layer.provide(StripeServiceLive),
 );
 
 // Apps just need to provide infrastructure
 const AppLayer = Layer.mergeAll(
   DatabaseServiceLive,
   CacheServiceLive,
-  ProductFeatureLayer // Pre-wired
+  ProductFeatureLayer, // Pre-wired
 );
 ```
 
@@ -462,39 +496,39 @@ Libraries support platform-specific exports to enable tree-shaking and runtime c
 
 ```typescript
 // Main index.ts - Universal exports
-export type * from "./lib/types";
-export * from "./lib/errors";
-export { MyService } from "./lib/service";
+export type * from './lib/types';
+export * from './lib/errors';
+export { MyService } from './lib/service';
 
 // server.ts - Node.js specific
-export * from "./index";
-export * from "./lib/layers/server-layers";
-export { serverOnlyFunction } from "./lib/server-utils";
+export * from './index';
+export * from './lib/layers/server-layers';
+export { serverOnlyFunction } from './lib/server-utils';
 
 // client.ts - Browser specific
-export type * from "./lib/types";
-export * from "./lib/errors";
-export { MyService } from "./lib/service";
-export * from "./lib/layers/client-layers";
+export type * from './lib/types';
+export * from './lib/errors';
+export { MyService } from './lib/service';
+export * from './lib/layers/client-layers';
 
 // edge.ts - Edge runtime specific
-export type * from "./lib/types";
-export * from "./lib/errors";
-export { MyService } from "./lib/service";
-export * from "./lib/layers/edge-layers";
+export type * from './lib/types';
+export * from './lib/errors';
+export { MyService } from './lib/service';
+export * from './lib/layers/edge-layers';
 ```
 
 ### Usage in Applications
 
 ```typescript
 // Node.js application
-import { MyService, MyServiceLive } from "@my-scope/infra-service/server";
+import { MyService, MyServiceLive } from '@my-scope/infra-service/server';
 
 // Browser application
-import { MyService, MyServiceLive } from "@my-scope/infra-service/client";
+import { MyService, MyServiceLive } from '@my-scope/infra-service/client';
 
 // Edge runtime (Cloudflare Workers, Vercel Edge)
-import { MyService, MyServiceLive } from "@my-scope/infra-service/edge";
+import { MyService, MyServiceLive } from '@my-scope/infra-service/edge';
 ```
 
 ### Platform Configuration
@@ -568,50 +602,50 @@ Automatic dependency detection with graceful fallbacks:
 ### Repository Testing (with @effect/vitest)
 
 ```typescript
-import { it } from "@effect/vitest";
-import { Effect, Layer, Option } from "effect";
-import { ProductRepository } from "@creativetoolkits/contract-product";
-import { ProductRepositoryLive } from "../repository";
+import { it } from '@effect/vitest';
+import { Effect, Layer, Option } from 'effect';
+import { ProductRepository } from '@samuelho-dev/contract-product';
+import { ProductRepositoryLive } from '../repository';
 
 // Mock infrastructure dependencies
 const MockDatabaseLayer = Layer.succeed(DatabaseService, {
-  query: () => Effect.succeed({ id: "test", name: "Test Product" })
+  query: () => Effect.succeed({ id: 'test', name: 'Test Product' }),
 });
 
-it.scoped("findById returns product", () =>
+it.scoped('findById returns product', () =>
   Effect.gen(function* () {
     const repo = yield* ProductRepository;
-    const result = yield* repo.findById("test");
+    const result = yield* repo.findById('test');
 
     expect(Option.isSome(result)).toBe(true);
   }).pipe(
     Effect.provide(ProductRepositoryLive),
-    Effect.provide(MockDatabaseLayer)
-  )
+    Effect.provide(MockDatabaseLayer),
+  ),
 );
 ```
 
 ### Service Testing (with mocked dependencies)
 
 ```typescript
-import { it } from "@effect/vitest";
-import { Effect, Layer } from "effect";
-import { ProductService } from "../service";
+import { it } from '@effect/vitest';
+import { Effect, Layer } from 'effect';
+import { ProductService } from '../service';
 
 const MockProductRepository = Layer.succeed(ProductRepository, {
-  findById: () => Effect.succeed(Option.some(mockProduct))
+  findById: () => Effect.succeed(Option.some(mockProduct)),
 });
 
-it.scoped("createOrder validates product", () =>
+it.scoped('createOrder validates product', () =>
   Effect.gen(function* () {
     const service = yield* ProductService;
-    const result = yield* service.createOrder({ productId: "test" });
+    const result = yield* service.createOrder({ productId: 'test' });
 
-    expect(result.productId).toBe("test");
+    expect(result.productId).toBe('test');
   }).pipe(
     Effect.provide(ProductServiceLive),
-    Effect.provide(MockProductRepository)
-  )
+    Effect.provide(MockProductRepository),
+  ),
 );
 ```
 
@@ -639,6 +673,7 @@ All libraries use TypeScript composite projects for incremental compilation:
 ```
 
 **Benefits**:
+
 - ✅ Incremental compilation (only rebuild what changed)
 - ✅ Enforced dependency graph
 - ✅ Faster CI builds with Nx
@@ -671,6 +706,7 @@ All libraries use TypeScript composite projects for incremental compilation:
 ## Library Inventory
 
 ### Contract Libraries
+
 - `contract-product` - Product domain interfaces
 - `contract-seller` - Seller domain interfaces
 - `contract-user` - User domain interfaces
@@ -679,11 +715,13 @@ All libraries use TypeScript composite projects for incremental compilation:
 - `contract-common` - Shared domain interfaces
 
 ### Data-Access Libraries
+
 - `data-access-product` - Product repository
 - `data-access-seller` - Seller repository
 - `data-access-user` - User repository
 
 ### Feature Libraries
+
 - `feature-advertising` - Ad auction and targeting
 - `feature-analytics` - Analytics and metrics
 - `feature-auth` - Authentication
@@ -694,6 +732,7 @@ All libraries use TypeScript composite projects for incremental compilation:
 - `feature-search` - Search with Typesense
 
 ### Infrastructure Libraries
+
 - `infra-cache` - Caching with Redis
 - `infra-database` - Database service with Kysely
 - `infra-error-tracking` - Error tracking with Sentry
@@ -704,6 +743,7 @@ All libraries use TypeScript composite projects for incremental compilation:
 - `infra-webhooks` - Webhook handling
 
 ### Provider Libraries
+
 - `provider-cloudamqp` - CloudAMQP client
 - `provider-kysely` - Kysely query builder
 - `provider-posthog` - PostHog analytics
@@ -718,57 +758,72 @@ All libraries use TypeScript composite projects for incremental compilation:
 ## Pre-Wiring Configuration
 
 ### Contract Libraries
+
 **Auto-wired dependencies**:
+
 - `types-database` (for database-backed entities)
 - `util-common` (for utility functions)
 
 **Auto-generated files**:
+
 - `src/lib/entities.ts` - Domain entities
 - `src/lib/ports.ts` - Repository interfaces
 - `src/lib/errors.ts` - Domain errors
 - `src/lib/events.ts` - Domain events
 
 ### Data-Access Libraries
+
 **Auto-wired dependencies**:
+
 - `contract-{domain}` (implements interfaces)
 - `infra-database` (database service)
 - `provider-kysely` (query builder)
 - `types-database` (database types)
 
 **Auto-generated files**:
+
 - `src/lib/server/repository.ts` - Repository implementation
 - `src/lib/server/layers.ts` - Layer composition
 - `src/lib/server/repository.spec.ts` - Tests
 
 ### Feature Libraries
+
 **Auto-wired dependencies**:
+
 - `data-access-{relevant-domains}` (repositories)
 - `infra-logging` (logging service)
 - `infra-rpc` (RPC framework)
 
 **Auto-generated files**:
+
 - `src/lib/server/service.ts` - Business logic service
 - `src/lib/server/layers.ts` - Layer composition
 - `src/lib/rpc/{name}-rpc.ts` - RPC endpoints
 - `src/lib/server/service.spec.ts` - Tests
 
 ### Infrastructure Libraries
+
 **Auto-wired dependencies**:
+
 - `util-common` (utility functions)
 - `infra-logging` (for service logging)
 
 **Auto-generated files**:
+
 - `src/lib/service/service.ts` - Service implementation
 - `src/lib/service/interface.ts` - Service interface
 - `src/lib/layers/server-layers.ts` - Server layers
 - `src/lib/service/service.spec.ts` - Tests
 
 ### Provider Libraries
+
 **Auto-wired dependencies**:
+
 - `infra-logging` (for adapter logging)
 - External SDK package (Stripe, AWS, etc.)
 
 **Auto-generated files**:
+
 - `src/lib/service.ts` - SDK adapter
 - `src/lib/interface.ts` - Service interface
 - `src/lib/layers.ts` - Layer composition
@@ -781,12 +836,14 @@ All libraries use TypeScript composite projects for incremental compilation:
 ## Common Pitfalls
 
 ### ❌ Don't: Implement repositories in providers
+
 ```typescript
 // WRONG: provider-supabase implementing ProductRepository
 export const ProductRepositoryLive = Layer.effect(/* ... */);
 ```
 
 ### ✅ Do: Implement repositories in data-access
+
 ```typescript
 // CORRECT: data-access-product implementing ProductRepository
 export const ProductRepositoryLive = Layer.effect(/* ... */);
@@ -795,6 +852,7 @@ export const ProductRepositoryLive = Layer.effect(/* ... */);
 ---
 
 ### ❌ Don't: Put business logic in data-access
+
 ```typescript
 // WRONG: Pricing logic in repository
 findById: (id) => {
@@ -805,6 +863,7 @@ findById: (id) => {
 ```
 
 ### ✅ Do: Keep data-access focused on queries
+
 ```typescript
 // CORRECT: Just query and return
 findById: (id) => {
@@ -816,11 +875,13 @@ findById: (id) => {
 ---
 
 ### ❌ Don't: Create circular dependencies
+
 ```typescript
 // WRONG: feature-product depends on feature-order which depends on feature-product
 ```
 
 ### ✅ Do: Extract shared logic to a new library
+
 ```typescript
 // CORRECT: Create feature-shared or data-access-shared
 ```

@@ -1,6 +1,7 @@
 # Effect.ts Pattern Reference Guide
 
 > **📚 Related Documentation:**
+>
 > - [Architecture Overview](./ARCHITECTURE_OVERVIEW.md) - Library inventory and integration patterns
 > - [Nx Standards](./NX_STANDARDS.md) - Naming conventions and workspace organization
 > - [Export Patterns](./EXPORT_PATTERNS.md) - Platform-aware exports and barrel patterns
@@ -12,7 +13,7 @@
 
 ## Quick Reference
 
-This guide provides production-ready Effect.ts patterns (Effect 3.0+) for the Creative Toolkits monorepo.
+This guide provides production-ready Effect.ts patterns (Effect 3.0+) for the monorepo.
 
 ## Service Definition Patterns
 
@@ -20,13 +21,13 @@ Effect provides two main approaches for defining services: **Effect.Service** (s
 
 ### 📊 Quick Decision Matrix
 
-| Criteria | Effect.Service | Context.Tag |
-|----------|----------------|-------------|
-| **Boilerplate** | Low (single declaration) | Medium (separate Tag + Layer) |
-| **Multiple implementations** | Difficult (only .Default) | Easy (Live, Test, Mock, Dev) |
-| **Accessor generation** | Built-in (`accessors: true`) | Manual |
-| **Best for** | Standard services, prototypes | Complex architectures, libraries |
-| **Recommended when** | Single implementation needed | Need test/mock/dev variants |
+| Criteria                     | Effect.Service                | Context.Tag                      |
+| ---------------------------- | ----------------------------- | -------------------------------- |
+| **Boilerplate**              | Low (single declaration)      | Medium (separate Tag + Layer)    |
+| **Multiple implementations** | Difficult (only .Default)     | Easy (Live, Test, Mock, Dev)     |
+| **Accessor generation**      | Built-in (`accessors: true`)  | Manual                           |
+| **Best for**                 | Standard services, prototypes | Complex architectures, libraries |
+| **Recommended when**         | Single implementation needed  | Need test/mock/dev variants      |
 
 **👉 Default Choice**: Use **Context.Tag** for this codebase - we need multiple layer implementations (Live, Test, Mock) for comprehensive testing and flexibility.
 
@@ -36,43 +37,49 @@ Use for non-generic services with <10 methods (90% of cases):
 
 ```typescript
 // ✅ CORRECT - Modern Effect 3.0+ pattern with inline interface
-export class PaymentService extends Context.Tag("PaymentService")<
+export class PaymentService extends Context.Tag('PaymentService')<
   PaymentService,
   {
-    readonly processPayment: (amount: number) => Effect.Effect<Payment, PaymentError>
-    readonly refundPayment: (id: string) => Effect.Effect<void, PaymentError>
+    readonly processPayment: (
+      amount: number,
+    ) => Effect.Effect<Payment, PaymentError>;
+    readonly refundPayment: (id: string) => Effect.Effect<void, PaymentError>;
   }
 >() {
   // Static Live property for layer composition
   static readonly Live = Layer.effect(
     this,
     Effect.gen(function* () {
-      const stripe = yield* StripeService
-      const database = yield* DatabaseService
+      const stripe = yield* StripeService;
+      const database = yield* DatabaseService;
 
       return {
         processPayment: (amount) =>
           Effect.gen(function* () {
             const result = yield* Effect.tryPromise({
-              try: () => stripe.paymentIntents.create({ amount, currency: 'usd' }),
-              catch: (error) => new PaymentError({ cause: error })
-            })
+              try: () =>
+                stripe.paymentIntents.create({ amount, currency: 'usd' }),
+              catch: (error) => new PaymentError({ cause: error }),
+            });
 
             yield* database.query((db) =>
-              db.insertInto('payments').values({ amount, stripeId: result.id }).execute()
-            )
+              db
+                .insertInto('payments')
+                .values({ amount, stripeId: result.id })
+                .execute(),
+            );
 
-            return result
+            return result;
           }),
 
         refundPayment: (id) =>
           Effect.tryPromise({
             try: () => stripe.refunds.create({ payment_intent: id }),
-            catch: (error) => new PaymentError({ cause: error })
-          }).pipe(Effect.asVoid)
-      }
-    })
-  )
+            catch: (error) => new PaymentError({ cause: error }),
+          }).pipe(Effect.asVoid),
+      };
+    }),
+  );
 
   // Test implementation included in service definition
   // ✅ BEST PRACTICE: Use complete mock factory for type safety
@@ -92,8 +99,8 @@ export class PaymentService extends Context.Tag("PaymentService")<
       };
       return Effect.succeed(mockPayment);
     },
-    refundPayment: () => Effect.succeed(void 0)
-  })
+    refundPayment: () => Effect.succeed(void 0),
+  });
 }
 ```
 
@@ -105,27 +112,27 @@ Use when service has 10+ methods or interface is shared:
 // ✅ CORRECT - For complex services only
 // interfaces.ts
 export interface LoggingServiceInterface {
-  readonly trace: (msg: string, meta?: LogMetadata) => Effect.Effect<void>
-  readonly debug: (msg: string, meta?: LogMetadata) => Effect.Effect<void>
-  readonly info: (msg: string, meta?: LogMetadata) => Effect.Effect<void>
-  readonly warn: (msg: string, meta?: LogMetadata) => Effect.Effect<void>
-  readonly error: (msg: string, meta?: LogMetadata) => Effect.Effect<void>
+  readonly trace: (msg: string, meta?: LogMetadata) => Effect.Effect<void>;
+  readonly debug: (msg: string, meta?: LogMetadata) => Effect.Effect<void>;
+  readonly info: (msg: string, meta?: LogMetadata) => Effect.Effect<void>;
+  readonly warn: (msg: string, meta?: LogMetadata) => Effect.Effect<void>;
+  readonly error: (msg: string, meta?: LogMetadata) => Effect.Effect<void>;
   // ... 10+ more methods
 }
 
 // service.ts
-export class LoggingService extends Context.Tag("LoggingService")<
+export class LoggingService extends Context.Tag('LoggingService')<
   LoggingService,
   LoggingServiceInterface
 >() {
   static readonly Live = Layer.effect(
     this,
     Effect.gen(function* () {
-      const config = yield* Config
+      const config = yield* Config;
       // Complex initialization
-      return createStructuredLogger(config)
-    })
-  )
+      return createStructuredLogger(config);
+    }),
+  );
 }
 ```
 
@@ -178,17 +185,17 @@ const MyDatabaseService = KyselyService<Database>()
 
 ```typescript
 // Single-declaration service with auto-generated layer
-class Logger extends Effect.Service<Logger>()("Logger", {
+class Logger extends Effect.Service<Logger>()('Logger', {
   sync: () => ({
     info: (msg: string) => Effect.sync(() => console.log(`[INFO] ${msg}`)),
-    error: (msg: string) => Effect.sync(() => console.error(`[ERROR] ${msg}`))
+    error: (msg: string) => Effect.sync(() => console.error(`[ERROR] ${msg}`)),
   }),
-  accessors: true  // Optional: generates Logger.info() convenience functions
+  accessors: true, // Optional: generates Logger.info() convenience functions
 }) {}
 
 // Usage
 const program = Effect.gen(function* () {
-  yield* Logger.info("Hello")  // Direct accessor (if accessors: true)
+  yield* Logger.info('Hello'); // Direct accessor (if accessors: true)
 });
 
 Effect.runPromise(program.pipe(Effect.provide(Logger.Default)));
@@ -197,6 +204,7 @@ Effect.runPromise(program.pipe(Effect.provide(Logger.Default)));
 **Options**: `sync`, `effect`, `scoped`, `succeed`, `dependencies`, `accessors`
 
 **Why Context.Tag instead?**
+
 - ✅ Multiple implementations (Live, Test, Mock, Dev) - Effect.Service only provides `.Default`
 - ✅ Explicit layer control - easier to see dependencies
 - ✅ Better for library code - consumers can provide their own implementations
@@ -207,78 +215,84 @@ Repositories use the same pattern as services:
 
 ```typescript
 // ✅ CORRECT - Repository with inline interface
-export class UserRepository extends Context.Tag("UserRepository")<
+export class UserRepository extends Context.Tag('UserRepository')<
   UserRepository,
   {
-    readonly findById: (id: string) => Effect.Effect<Option.Option<User>, DatabaseError>
-    readonly create: (input: UserInput) => Effect.Effect<User, DatabaseError>
-    readonly update: (id: string, input: Partial<UserInput>) => Effect.Effect<User, DatabaseError>
-    readonly delete: (id: string) => Effect.Effect<void, DatabaseError>
+    readonly findById: (
+      id: string,
+    ) => Effect.Effect<Option.Option<User>, DatabaseError>;
+    readonly create: (input: UserInput) => Effect.Effect<User, DatabaseError>;
+    readonly update: (
+      id: string,
+      input: Partial<UserInput>,
+    ) => Effect.Effect<User, DatabaseError>;
+    readonly delete: (id: string) => Effect.Effect<void, DatabaseError>;
   }
 >() {
   static readonly Live = Layer.effect(
     this,
     Effect.gen(function* () {
-      const database = yield* DatabaseService
-      const cache = yield* CacheService
+      const database = yield* DatabaseService;
+      const cache = yield* CacheService;
 
       return {
         findById: (id) =>
           Effect.gen(function* () {
             // Check cache first - use type-safe cache.get with schema
-            const cached = yield* cache.get<User>(`user:${id}`, UserSchema)
-            if (Option.isSome(cached)) return cached
+            const cached = yield* cache.get<User>(`user:${id}`, UserSchema);
+            if (Option.isSome(cached)) return cached;
 
             // Query database
             const user = yield* database.query((db) =>
-              db.selectFrom('users')
+              db
+                .selectFrom('users')
                 .where('id', '=', id)
                 .selectAll()
-                .executeTakeFirst()
-            )
+                .executeTakeFirst(),
+            );
 
             // Cache result if found
             if (user) {
-              yield* cache.set(`user:${id}`, user, UserSchema)
+              yield* cache.set(`user:${id}`, user, UserSchema);
             }
 
-            return Option.fromNullable(user)
+            return Option.fromNullable(user);
           }),
 
         create: (input) =>
           database.query((db) =>
-            db.insertInto('users')
+            db
+              .insertInto('users')
               .values(input)
               .returningAll()
-              .executeTakeFirstOrThrow()
+              .executeTakeFirstOrThrow(),
           ),
 
         update: (id, input) =>
           Effect.gen(function* () {
             const updated = yield* database.query((db) =>
-              db.updateTable('users')
+              db
+                .updateTable('users')
                 .set(input)
                 .where('id', '=', id)
                 .returningAll()
-                .executeTakeFirstOrThrow()
-            )
+                .executeTakeFirstOrThrow(),
+            );
             // Invalidate cache
-            yield* cache.delete(`user:${id}`)
-            return updated
+            yield* cache.delete(`user:${id}`);
+            return updated;
           }),
 
         delete: (id) =>
           Effect.gen(function* () {
             yield* database.query((db) =>
-              db.deleteFrom('users')
-                .where('id', '=', id)
-                .execute()
-            )
-            yield* cache.delete(`user:${id}`)
-          })
-      }
-    })
-  )
+              db.deleteFrom('users').where('id', '=', id).execute(),
+            );
+            yield* cache.delete(`user:${id}`);
+          }),
+      };
+    }),
+  );
 }
 ```
 
@@ -326,25 +340,27 @@ START: Creating a new Layer for your service
 
 ### Decision Tree Summary Table
 
-| Decision | Use | When | Cleanup? |
-|----------|-----|------|----------|
-| Sync, no deps, no cleanup | `Layer.sync` | Stripe SDK, config objects | No |
-| Sync, needs deps, no cleanup | `Layer.sync` first, then compose | Can't use deps in sync | No |
-| Async, needs deps, no cleanup | `Layer.effect` | DatabaseService dependency | No |
-| Async, no deps, no cleanup | `Layer.effect` | API calls without context | No |
-| Async, needs deps, NEEDS cleanup | `Layer.scoped` | DB pool, WebSocket | YES - acquireRelease |
-| Async, no deps, NEEDS cleanup | `Layer.scoped` | File handle, connection | YES - acquireRelease |
-| Test/Mock layer | `Layer.succeed` | Testing with predictable values | No |
+| Decision                         | Use                              | When                            | Cleanup?             |
+| -------------------------------- | -------------------------------- | ------------------------------- | -------------------- |
+| Sync, no deps, no cleanup        | `Layer.sync`                     | Stripe SDK, config objects      | No                   |
+| Sync, needs deps, no cleanup     | `Layer.sync` first, then compose | Can't use deps in sync          | No                   |
+| Async, needs deps, no cleanup    | `Layer.effect`                   | DatabaseService dependency      | No                   |
+| Async, no deps, no cleanup       | `Layer.effect`                   | API calls without context       | No                   |
+| Async, needs deps, NEEDS cleanup | `Layer.scoped`                   | DB pool, WebSocket              | YES - acquireRelease |
+| Async, no deps, NEEDS cleanup    | `Layer.scoped`                   | File handle, connection         | YES - acquireRelease |
+| Test/Mock layer                  | `Layer.succeed`                  | Testing with predictable values | No                   |
 
 ### Real-World Examples by Decision Path
 
 **Example 1: Stripe Service (sync, no deps)**
+
 ```typescript
 // ✅ Synchronous - no async/promises
 static readonly Live = Layer.sync(this, () => new Stripe(apiKey))
 ```
 
 **Example 2: PaymentService (async, needs deps, no cleanup)**
+
 ```typescript
 // ✅ Needs DatabaseService, but no cleanup
 static readonly Live = Layer.effect(this, Effect.gen(function* () {
@@ -354,6 +370,7 @@ static readonly Live = Layer.effect(this, Effect.gen(function* () {
 ```
 
 **Example 3: KyselyService (async, needs deps, NEEDS cleanup)**
+
 ```typescript
 // ✅ Needs pool creation AND cleanup
 static readonly Live = Layer.scoped(this, Effect.gen(function* () {
@@ -367,20 +384,21 @@ static readonly Live = Layer.scoped(this, Effect.gen(function* () {
 ```
 
 **Example 4: Test Mock (no decisions needed)**
+
 ```typescript
 // ✅ PATTERN B: Test layer as static property (recommended)
 // Keep test layer with service definition for discoverability
-export class PaymentService extends Context.Tag("PaymentService")<
+export class PaymentService extends Context.Tag('PaymentService')<
   PaymentService,
   PaymentServiceInterface
 >() {
-  static readonly Live = Layer.effect(/* ... */)
+  static readonly Live = Layer.effect(/* ... */);
 
   // ✅ Pattern B: Test layer as static property
   static readonly Test = Layer.succeed(this, {
     processPayment: () => Effect.succeed(mockResult),
-    refundPayment: () => Effect.succeed(void 0)
-  })
+    refundPayment: () => Effect.succeed(void 0),
+  });
 }
 ```
 
@@ -388,14 +406,14 @@ export class PaymentService extends Context.Tag("PaymentService")<
 
 ```typescript
 // ✅ For synchronous service creation (no async/Effects)
-export class StripeService extends Context.Tag("StripeService")<
+export class StripeService extends Context.Tag('StripeService')<
   StripeService,
-  Stripe  // Direct SDK type
+  Stripe // Direct SDK type
 >() {
   static readonly Live = Layer.sync(
     this,
-    () => new Stripe(process.env.STRIPE_KEY!)
-  )
+    () => new Stripe(process.env.STRIPE_KEY!),
+  );
 }
 ```
 
@@ -442,39 +460,38 @@ export const DatabaseServiceLive = Layer.scoped(
     // Acquire resource with automatic cleanup
     const pool = yield* Effect.acquireRelease(
       Effect.sync(() => createPool(config)),
-      (pool) => Effect.sync(() => pool.end())
-    )
+      (pool) => Effect.sync(() => pool.end()),
+    );
 
-    const db = new Kysely({ dialect: new PostgresDialect({ pool }) })
+    const db = new Kysely({ dialect: new PostgresDialect({ pool }) });
 
     // Direct object return - no .make() or .of()
     return {
-      query: (fn) => Effect.tryPromise({
-        try: () => fn(db),
-        catch: (error) => new DatabaseQueryError({ cause: error })
-      })
-    }
-  })
-)
+      query: (fn) =>
+        Effect.tryPromise({
+          try: () => fn(db),
+          catch: (error) => new DatabaseQueryError({ cause: error }),
+        }),
+    };
+  }),
+);
 
 // Alternative: Using addFinalizer
 export const WebSocketServiceLive = Layer.scoped(
   WebSocketService,
   Effect.gen(function* () {
-    const ws = new WebSocket(url)
+    const ws = new WebSocket(url);
 
     // Register cleanup
-    yield* Effect.addFinalizer(() =>
-      Effect.sync(() => ws.close())
-    )
+    yield* Effect.addFinalizer(() => Effect.sync(() => ws.close()));
 
     // Direct object return
     return {
       send: (message) => Effect.sync(() => ws.send(message)),
-      close: () => Effect.sync(() => ws.close())
-    }
-  })
-)
+      close: () => Effect.sync(() => ws.close()),
+    };
+  }),
+);
 ```
 
 ### Layer.succeed - Test/Mock Layers
@@ -521,18 +538,16 @@ Only use when test layer needs to be in a different file:
 
 ```typescript
 // ⚠️ Less discoverable - only use when test must be separate
-export const PaymentServiceTest = Layer.succeed(
-  PaymentService,
-  {
-    processPayment: () => Effect.succeed({
+export const PaymentServiceTest = Layer.succeed(PaymentService, {
+  processPayment: () =>
+    Effect.succeed({
       id: 'test',
       status: 'success',
       amount: 1000,
-      currency: 'usd'
+      currency: 'usd',
     }),
-    refundPayment: () => Effect.succeed(void 0)
-  }
-);
+  refundPayment: () => Effect.succeed(void 0),
+});
 ```
 
 #### Type-Safe Mock Factory (Complex Types)
@@ -551,12 +566,12 @@ export const PaymentServiceTest = Layer.succeed(
  * @returns Fully typed Stripe.PaymentIntent without type coercion
  */
 const createMockPaymentIntent = (
-  overrides?: Partial<Stripe.PaymentIntent>
+  overrides?: Partial<Stripe.PaymentIntent>,
 ): Stripe.PaymentIntent => {
   // Define complete base object with ALL required fields
   const base: Stripe.PaymentIntent = {
-    id: "pi_test_mock",
-    object: "payment_intent",
+    id: 'pi_test_mock',
+    object: 'payment_intent',
     amount: 1000,
     amount_capturable: 0,
     amount_received: 1000,
@@ -565,11 +580,11 @@ const createMockPaymentIntent = (
     automatic_payment_methods: null,
     canceled_at: null,
     cancellation_reason: null,
-    capture_method: "automatic",
-    client_secret: "pi_test_secret_mock",
-    confirmation_method: "automatic",
+    capture_method: 'automatic',
+    client_secret: 'pi_test_secret_mock',
+    confirmation_method: 'automatic',
     created: Math.floor(Date.now() / 1000),
-    currency: "usd",
+    currency: 'usd',
     customer: null,
     description: null,
     invoice: null,
@@ -579,8 +594,8 @@ const createMockPaymentIntent = (
     metadata: {},
     next_action: null,
     payment_method: null,
-    payment_method_types: ["card"],
-    status: "succeeded",
+    payment_method_types: ['card'],
+    status: 'succeeded',
     // ... ALL other required fields
   };
 
@@ -589,53 +604,57 @@ const createMockPaymentIntent = (
 };
 
 // ✅ PATTERN B: Use factory in test layer (static property)
-export class StripeService extends Context.Tag("StripeService")<
+export class StripeService extends Context.Tag('StripeService')<
   StripeService,
   StripeServiceInterface
 >() {
   static readonly Live = Layer.sync(
     this,
-    () => new Stripe(process.env.STRIPE_KEY!)
-  )
+    () => new Stripe(process.env.STRIPE_KEY!),
+  );
 
   // ✅ Pattern B: Test layer with factory function
   static readonly Test = Layer.succeed(this, {
     createPaymentIntent: (params) =>
-      Effect.succeed(createMockPaymentIntent({
-        amount: params.amount,
-        currency: params.currency
-      })),
+      Effect.succeed(
+        createMockPaymentIntent({
+          amount: params.amount,
+          currency: params.currency,
+        }),
+      ),
     retrievePaymentIntent: (id) =>
-      Effect.succeed(createMockPaymentIntent({ id }))
-  })
+      Effect.succeed(createMockPaymentIntent({ id })),
+  });
 }
 ```
 
 **❌ ANTI-PATTERN - Type Assertions**:
+
 ```typescript
 // ❌ WRONG - Type assertion masks missing fields
 const mockPayment = {
-  id: "test",
-  amount: 1000
-} as Stripe.PaymentIntent;  // Compiler can't catch missing required fields!
+  id: 'test',
+  amount: 1000,
+} as Stripe.PaymentIntent; // Compiler can't catch missing required fields!
 
 // ❌ WRONG - Partial mock with assertion
 return {
-  id: "test",
-  status: "succeeded"
-} as PaymentIntent;  // Missing required fields won't be caught
+  id: 'test',
+  status: 'succeeded',
+} as PaymentIntent; // Missing required fields won't be caught
 ```
 
 **When to Use Each Approach**:
 
-| Pattern | Use When | Example |
-|---------|----------|---------|
-| **Inline Mock** | Simple types (<5 fields) | Domain entities, DTOs |
+| Pattern             | Use When                   | Example                          |
+| ------------------- | -------------------------- | -------------------------------- |
+| **Inline Mock**     | Simple types (<5 fields)   | Domain entities, DTOs            |
 | **Factory Pattern** | Complex types (10+ fields) | External SDK types (Stripe, AWS) |
-| **Factory Pattern** | Type safety critical | Financial data, user records |
-| **Inline Mock** | Rapid prototyping | Early development, POCs |
+| **Factory Pattern** | Type safety critical       | Financial data, user records     |
+| **Inline Mock**     | Rapid prototyping          | Early development, POCs          |
 
 **Benefits of Factory Pattern**:
+
 - ✅ Compiler enforces ALL required fields
 - ✅ Type-safe overrides for test scenarios
 - ✅ Reusable across multiple tests
@@ -676,6 +695,7 @@ export class PaymentService extends Context.Tag("PaymentService")<
 ### Why Pattern B?
 
 **✅ Benefits**:
+
 1. **Discoverability**: Test layer is immediately visible when reading service definition
 2. **Co-location**: Test and implementation stay together, reducing file switching
 3. **Type Safety**: TypeScript enforces test layer matches service interface
@@ -685,62 +705,73 @@ export class PaymentService extends Context.Tag("PaymentService")<
 7. **Convention**: Matches Effect.ts official patterns and ecosystem libraries
 
 **Usage**:
+
 ```typescript
 // Test file - just import the service
-import { PaymentService } from './payment-service'
-import { DatabaseService } from '@creativetoolkits/infra-database'
+import { PaymentService } from './payment-service';
+import { DatabaseService } from '@samuelho-dev/infra-database';
 
 const TestLayer = Layer.mergeAll(
-  DatabaseService.Test,  // ✅ Clear and discoverable
-  PaymentService.Test    // ✅ Clear and discoverable
-)
+  DatabaseService.Test, // ✅ Clear and discoverable
+  PaymentService.Test, // ✅ Clear and discoverable
+);
 ```
 
 ### Pattern Comparison
 
 #### Pattern B (Recommended): Static Property
+
 ```typescript
 // service.ts
-export class MyService extends Context.Tag("MyService")</*...*/> {
-  static readonly Live = Layer.effect(/* ... */)
-  static readonly Test = Layer.succeed(this, { /* mock */ })
+export class MyService extends Context.Tag('MyService')</*...*/> {
+  static readonly Live = Layer.effect(/* ... */);
+  static readonly Test = Layer.succeed(this, {
+    /* mock */
+  });
 }
 
 // test.ts
-import { MyService } from './service'
-Effect.provide(MyService.Test)  // ✅ Discoverable
+import { MyService } from './service';
+Effect.provide(MyService.Test); // ✅ Discoverable
 ```
 
 **Pros**:
+
 - ✅ Test layer always visible with service
 - ✅ IDE autocomplete shows all layer variants
 - ✅ Single import needed
 - ✅ Refactoring-friendly
 
 **Cons**:
+
 - ⚠️ Test code in production bundle (negligible size impact)
 
 #### Pattern A (Legacy): Separate Export
+
 ```typescript
 // service.ts
-export class MyService extends Context.Tag("MyService")</*...*/> {
-  static readonly Live = Layer.effect(/* ... */)
+export class MyService extends Context.Tag('MyService')</*...*/> {
+  static readonly Live = Layer.effect(/* ... */);
 }
 
 // service.test-utils.ts (separate file)
-export const MyServiceTest = Layer.succeed(MyService, { /* mock */ })
+export const MyServiceTest = Layer.succeed(MyService, {
+  /* mock */
+});
 
 // test.ts
-import { MyService } from './service'
-import { MyServiceTest } from './service.test-utils'
-Effect.provide(MyServiceTest)  // ⚠️ Less discoverable
+import { MyService } from './service';
+import { MyServiceTest } from './service.test-utils';
+Effect.provide(MyServiceTest); // ⚠️ Less discoverable
 ```
 
 **Pros**:
+
 - ✅ Test code excluded from production bundle
 - ✅ Separate test utilities file for complex setups
 
 **Cons**:
+
 - ❌ Requires multiple imports
 - ❌ Easy to miss when service changes
 - ❌ Less discoverable (need to know test utils file exists)
@@ -749,6 +780,7 @@ Effect.provide(MyServiceTest)  // ⚠️ Less discoverable
 ### When to Use Pattern A (Separate Export)
 
 Only use separate exports when:
+
 1. **Complex Test Setup**: Test layer requires extensive mock factories or utilities that would clutter service file
 2. **Shared Test Infrastructure**: Test layer is used across multiple test files and benefits from centralization
 3. **Bundle Size Critical**: Production bundle size is critical and test code must be excluded (rare)
@@ -757,110 +789,124 @@ Only use separate exports when:
 ### Pattern B Best Practices
 
 **1. Multiple Test Variants**:
+
 ```typescript
-export class PaymentService extends Context.Tag("PaymentService")</*...*/> {
-  static readonly Live = Layer.effect(/* ... */)
+export class PaymentService extends Context.Tag('PaymentService')</*...*/> {
+  static readonly Live = Layer.effect(/* ... */);
 
   // Default test layer
   static readonly Test = Layer.succeed(this, {
-    processPayment: () => Effect.succeed(successResult)
-  })
+    processPayment: () => Effect.succeed(successResult),
+  });
 
   // Failure test layer
   static readonly TestFailure = Layer.succeed(this, {
-    processPayment: () => Effect.fail(new PaymentError({ message: "Card declined" }))
-  })
+    processPayment: () =>
+      Effect.fail(new PaymentError({ message: 'Card declined' })),
+  });
 
   // Mock with configurable overrides
   static readonly Mock = (overrides?: Partial<PaymentServiceInterface>) =>
     Layer.succeed(this, {
-      processPayment: overrides?.processPayment ??
-        (() => Effect.succeed(mockResult))
-    })
+      processPayment:
+        overrides?.processPayment ?? (() => Effect.succeed(mockResult)),
+    });
 }
 ```
 
 **2. Dev Layer for Local Development**:
+
 ```typescript
-export class PaymentService extends Context.Tag("PaymentService")</*...*/> {
-  static readonly Live = Layer.effect(/* production */)
-  static readonly Test = Layer.succeed(/* fast mocks */)
+export class PaymentService extends Context.Tag('PaymentService')</*...*/> {
+  static readonly Live = Layer.effect(/* production */);
+  static readonly Test = Layer.succeed(/* fast mocks */);
 
   // Dev layer with logging and delays
   static readonly Dev = Layer.effect(
     this,
     Effect.gen(function* () {
-      const logger = yield* LoggingService
+      const logger = yield* LoggingService;
       return {
         processPayment: (amount) =>
           Effect.gen(function* () {
-            yield* logger.info(`[DEV] Processing payment: ${amount}`)
-            yield* Effect.sleep("100 millis")
-            return mockResult
-          })
-      }
-    })
-  )
+            yield* logger.info(`[DEV] Processing payment: ${amount}`);
+            yield* Effect.sleep('100 millis');
+            return mockResult;
+          }),
+      };
+    }),
+  );
 }
 ```
 
 **3. Environment-Based Auto Layer**:
+
 ```typescript
-export class PaymentService extends Context.Tag("PaymentService")</*...*/> {
-  static readonly Live = Layer.effect(/* production */)
-  static readonly Test = Layer.succeed(/* test */)
-  static readonly Dev = Layer.effect(/* dev */)
+export class PaymentService extends Context.Tag('PaymentService')</*...*/> {
+  static readonly Live = Layer.effect(/* production */);
+  static readonly Test = Layer.succeed(/* test */);
+  static readonly Dev = Layer.effect(/* dev */);
 
   // Auto-select based on NODE_ENV
   static readonly Auto = Layer.unwrapEffect(
     Effect.gen(function* () {
-      const env = yield* Config.string("NODE_ENV")
+      const env = yield* Config.string('NODE_ENV');
       switch (env) {
-        case "test": return PaymentService.Test
-        case "development": return PaymentService.Dev
-        default: return PaymentService.Live
+        case 'test':
+          return PaymentService.Test;
+        case 'development':
+          return PaymentService.Dev;
+        default:
+          return PaymentService.Live;
       }
-    })
-  )
+    }),
+  );
 }
 ```
 
 ### Migration from Pattern A to Pattern B
 
 **Before (Pattern A)**:
+
 ```typescript
 // service.ts
-export class MyService extends Context.Tag("MyService")</*...*/> {
-  static readonly Live = Layer.effect(/* ... */)
+export class MyService extends Context.Tag('MyService')</*...*/> {
+  static readonly Live = Layer.effect(/* ... */);
 }
 
 // service.test-utils.ts
-export const MyServiceTest = Layer.succeed(MyService, { /* mock */ })
+export const MyServiceTest = Layer.succeed(MyService, {
+  /* mock */
+});
 ```
 
 **After (Pattern B)**:
+
 ```typescript
 // service.ts
-export class MyService extends Context.Tag("MyService")</*...*/> {
-  static readonly Live = Layer.effect(/* ... */)
+export class MyService extends Context.Tag('MyService')</*...*/> {
+  static readonly Live = Layer.effect(/* ... */);
 
   // ✅ Moved test layer here
-  static readonly Test = Layer.succeed(this, { /* mock */ })
+  static readonly Test = Layer.succeed(this, {
+    /* mock */
+  });
 }
 
 // Delete service.test-utils.ts
 ```
 
 **Update tests**:
+
 ```typescript
 // Before
-import { MyService } from './service'
-import { MyServiceTest } from './service.test-utils'
-Effect.provide(MyServiceTest)
+import { MyService } from './service';
+import { MyServiceTest } from './service.test-utils';
+Effect.provide(MyServiceTest);
 
 // After
-import { MyService } from './service'
-Effect.provide(MyService.Test)  // ✅ Cleaner
+import { MyService } from './service';
+Effect.provide(MyService.Test); // ✅ Cleaner
 ```
 
 ## Error Handling Patterns
@@ -874,6 +920,7 @@ Effect.provide(MyService.Test)  // ✅ Cleaner
 **Use for**: Domain-specific errors in contracts, data-access, and feature layers.
 
 ✅ **Use Data.TaggedError when:**
+
 - Domain validation errors (ProductNotFoundError, InvalidPriceError)
 - Business rule violations (InsufficientStockError, UnauthorizedActionError)
 - Repository operation failures (DatabaseError, CacheError)
@@ -886,18 +933,22 @@ Effect.provide(MyService.Test)  // ✅ Cleaner
 // ✅ Domain errors in contracts layer
 import { Data } from 'effect';
 
-export class ProductNotFoundError extends Data.TaggedError("ProductNotFoundError")<{
+export class ProductNotFoundError extends Data.TaggedError(
+  'ProductNotFoundError',
+)<{
   readonly productId: string;
   readonly reason?: string;
 }> {}
 
-export class PaymentError extends Data.TaggedError("PaymentError")<{
+export class PaymentError extends Data.TaggedError('PaymentError')<{
   readonly message: string;
   readonly code?: string;
   readonly cause?: unknown;
 }> {}
 
-export class InsufficientFundsError extends Data.TaggedError("InsufficientFundsError")<{
+export class InsufficientFundsError extends Data.TaggedError(
+  'InsufficientFundsError',
+)<{
   readonly available: number;
   readonly required: number;
 }> {}
@@ -912,7 +963,7 @@ const processPayment = (amount: number) =>
 
     if (balance < amount) {
       return yield* Effect.fail(
-        new InsufficientFundsError({ available: balance, required: amount })
+        new InsufficientFundsError({ available: balance, required: amount }),
       );
     }
 
@@ -921,6 +972,7 @@ const processPayment = (amount: number) =>
 ```
 
 **Benefits:**
+
 - ✅ Lightweight (no schema validation overhead)
 - ✅ Fast error creation
 - ✅ Ideal for domain logic
@@ -931,6 +983,7 @@ const processPayment = (amount: number) =>
 **Use for**: Errors that cross RPC boundaries and need schema validation.
 
 ✅ **Use Schema.TaggedError when:**
+
 - Errors sent over tRPC, HTTP, or RPC protocols
 - Need runtime schema validation of error structure
 - Error properties need encoding/decoding (dates, complex types)
@@ -942,13 +995,13 @@ const processPayment = (amount: number) =>
 import { Schema } from 'effect';
 
 export class PaymentRpcError extends Schema.TaggedError<PaymentRpcError>()(
-  "PaymentRpcError",
+  'PaymentRpcError',
   {
     message: Schema.String,
     code: Schema.String,
-    timestamp: Schema.DateTimeUtc,  // Schema encoding needed for Date
-    metadata: Schema.optional(Schema.Record(Schema.String, Schema.Unknown))
-  }
+    timestamp: Schema.DateTimeUtc, // Schema encoding needed for Date
+    metadata: Schema.optional(Schema.Record(Schema.String, Schema.Unknown)),
+  },
 ) {}
 
 // Usage in RPC router
@@ -963,18 +1016,19 @@ export const paymentRouter = Rpc.make([
           Effect.fail(
             new PaymentRpcError({
               message: domainError.message,
-              code: "PAYMENT_FAILED",
-              timestamp: new Date().toISOString()
-            })
-          )
-        )
-      )
-    )
-  )
+              code: 'PAYMENT_FAILED',
+              timestamp: new Date().toISOString(),
+            }),
+          ),
+        ),
+      ),
+    ),
+  ),
 ]);
 ```
 
 **Benefits:**
+
 - ✅ Schema validation on encode/decode
 - ✅ Type-safe serialization
 - ✅ Works across RPC boundaries
@@ -982,16 +1036,16 @@ export const paymentRouter = Rpc.make([
 
 ### Decision Matrix
 
-| Scenario | Use | Rationale |
-|----------|-----|-----------|
-| Repository error | Data.TaggedError | Domain boundary, no RPC |
-| Service error | Data.TaggedError | Business logic, no RPC |
-| tRPC error response | Schema.TaggedError | Crosses RPC boundary |
-| HTTP API error | Schema.TaggedError | Needs serialization |
-| Validation error | Data.TaggedError | Domain validation |
-| Database error | Data.TaggedError | Infrastructure, no RPC |
-| Microservice call | Schema.TaggedError | Crosses service boundary |
-| WebSocket error | Schema.TaggedError | Needs wire encoding |
+| Scenario            | Use                | Rationale                |
+| ------------------- | ------------------ | ------------------------ |
+| Repository error    | Data.TaggedError   | Domain boundary, no RPC  |
+| Service error       | Data.TaggedError   | Business logic, no RPC   |
+| tRPC error response | Schema.TaggedError | Crosses RPC boundary     |
+| HTTP API error      | Schema.TaggedError | Needs serialization      |
+| Validation error    | Data.TaggedError   | Domain validation        |
+| Database error      | Data.TaggedError   | Infrastructure, no RPC   |
+| Microservice call   | Schema.TaggedError | Crosses service boundary |
+| WebSocket error     | Schema.TaggedError | Needs wire encoding      |
 
 ### Error Transformation Pattern
 
@@ -999,17 +1053,19 @@ Transform domain errors to RPC errors at the boundary:
 
 ```typescript
 // Domain layer: Use Data.TaggedError
-export class ProductNotFoundError extends Data.TaggedError("ProductNotFoundError")<{
+export class ProductNotFoundError extends Data.TaggedError(
+  'ProductNotFoundError',
+)<{
   readonly productId: string;
 }> {}
 
 // RPC layer: Transform to Schema.TaggedError
 export class ProductNotFoundRpcError extends Schema.TaggedError<ProductNotFoundRpcError>()(
-  "ProductNotFoundRpcError",
+  'ProductNotFoundRpcError',
   {
     productId: Schema.String,
-    timestamp: Schema.DateTimeUtc
-  }
+    timestamp: Schema.DateTimeUtc,
+  },
 ) {}
 
 // Transformation at RPC boundary
@@ -1017,23 +1073,24 @@ export const productRouter = Rpc.make([
   GetProductRequest.pipe(
     Rpc.toHandler((req) =>
       productService.getProduct(req.id).pipe(
-        Effect.catchTag("ProductNotFoundError", (error) =>
+        Effect.catchTag('ProductNotFoundError', (error) =>
           Effect.fail(
             new ProductNotFoundRpcError({
               productId: error.productId,
-              timestamp: new Date().toISOString()
-            })
-          )
-        )
-      )
-    )
-  )
+              timestamp: new Date().toISOString(),
+            }),
+          ),
+        ),
+      ),
+    ),
+  ),
 ]);
 ```
 
 ### Effect 4.0 Compatibility
 
 Both error types are stable and expected to remain in Effect 4.0:
+
 - ✅ **Data.TaggedError**: Core error type, guaranteed stability
 - ✅ **Schema.TaggedError**: RPC integration, guaranteed stability
 
@@ -1042,12 +1099,14 @@ Both error types are stable and expected to remain in Effect 4.0:
 **Use Data.TaggedError unless you're explicitly at an RPC boundary.**
 
 When in doubt:
+
 - Are you sending this error over the network? → Schema.TaggedError
 - Is it internal domain logic? → Data.TaggedError
 
 ## Effect.gen vs Combinators
 
 ### Use Effect.gen for:
+
 - Multiple sequential operations
 - Complex control flow
 - Readable step-by-step logic
@@ -1071,6 +1130,7 @@ const processOrder = (orderId: string) =>
 ```
 
 ### Use Combinators for:
+
 - Simple transformations
 - Parallel operations
 - Concise pipelines
@@ -1078,22 +1138,17 @@ const processOrder = (orderId: string) =>
 ```typescript
 // ✅ Good use of combinators
 const getUserWithPermissions = (id: string) =>
-  Effect.all([
-    getUser(id),
-    getPermissions(id)
-  ]).pipe(
+  Effect.all([getUser(id), getPermissions(id)]).pipe(
     Effect.map(([user, permissions]) => ({
       ...user,
-      permissions
-    }))
+      permissions,
+    })),
   );
 
 // ✅ Error handling with combinators
 const safeGetUser = (id: string) =>
   getUser(id).pipe(
-    Effect.catchTag("UserNotFound", () =>
-      Effect.succeed(defaultUser)
-    )
+    Effect.catchTag('UserNotFound', () => Effect.succeed(defaultUser)),
   );
 ```
 
@@ -1119,17 +1174,14 @@ const AppLayer = Layer.mergeAll(
 
   // Features (depend on repos + providers)
   PaymentService.Live,
-  EmailService.Live
-)
+  EmailService.Live,
+);
 
 // Use in application
 const program = Effect.gen(function* () {
-  const payment = yield* PaymentService
-  return yield* payment.processPayment(100)
-}).pipe(
-  Effect.provide(AppLayer),
-  Effect.runPromise
-)
+  const payment = yield* PaymentService;
+  return yield* payment.processPayment(100);
+}).pipe(Effect.provide(AppLayer), Effect.runPromise);
 
 // For testing - compose with test layers
 const TestLayer = Layer.mergeAll(
@@ -1138,27 +1190,27 @@ const TestLayer = Layer.mergeAll(
   CacheService.Test,
   StripeService.Test,
   ResendService.Test,
-  UserRepository.Live,  // Can use real repos with test DB
+  UserRepository.Live, // Can use real repos with test DB
   ProductRepository.Live,
   PaymentService.Live,
-  EmailService.Live
-)
+  EmailService.Live,
+);
 ```
 
 ### Service Composition Decision Matrix
 
 **Question: Which services should I compose together?**
 
-| Layer Type | Should Combine | Examples | Rationale |
-|-----------|---|---|---|
-| **Infrastructure Services** | ✅ YES | DatabaseService + CacheService + LoggingService | No dependencies between them |
-| **Provider Services** | ✅ YES | StripeService + ResendService + SupabaseService | External SDKs, independent |
-| **Repository Services** | ✅ YES | UserRepository + ProductRepository + OrderRepository | Depend on infra, not each other |
-| **Feature Services** | ⚠️ MAYBE | PaymentService + EmailService + NotificationService | Often interdependent - may need sequential composition |
-| **Infrastructure + Providers** | ✅ YES | Provide infra, then providers | Providers depend on infra |
-| **Providers + Repositories** | ✅ YES | Provide providers, then repos | Repos depend on providers |
-| **Repositories + Features** | ✅ YES | Provide repos, then features | Features depend on repos |
-| **Infrastructure + Repositories** | ✅ YES (implicit) | Don't combine - infra used by repos | Repos depend on infra via dependencies |
+| Layer Type                        | Should Combine    | Examples                                             | Rationale                                              |
+| --------------------------------- | ----------------- | ---------------------------------------------------- | ------------------------------------------------------ |
+| **Infrastructure Services**       | ✅ YES            | DatabaseService + CacheService + LoggingService      | No dependencies between them                           |
+| **Provider Services**             | ✅ YES            | StripeService + ResendService + SupabaseService      | External SDKs, independent                             |
+| **Repository Services**           | ✅ YES            | UserRepository + ProductRepository + OrderRepository | Depend on infra, not each other                        |
+| **Feature Services**              | ⚠️ MAYBE          | PaymentService + EmailService + NotificationService  | Often interdependent - may need sequential composition |
+| **Infrastructure + Providers**    | ✅ YES            | Provide infra, then providers                        | Providers depend on infra                              |
+| **Providers + Repositories**      | ✅ YES            | Provide providers, then repos                        | Repos depend on providers                              |
+| **Repositories + Features**       | ✅ YES            | Provide repos, then features                         | Features depend on repos                               |
+| **Infrastructure + Repositories** | ✅ YES (implicit) | Don't combine - infra used by repos                  | Repos depend on infra via dependencies                 |
 
 ### Service Composition Patterns by Use Case
 
@@ -1186,8 +1238,8 @@ const AppLayer = Layer.mergeAll(
   // 4. Features (depend on repos + providers)
   PaymentService.Live,
   EmailService.Live,
-  NotificationService.Live
-)
+  NotificationService.Live,
+);
 ```
 
 #### Pattern 2: Conditional Feature Composition
@@ -1198,18 +1250,16 @@ const CoreLayer = Layer.mergeAll(
   DatabaseService.Live,
   CacheService.Live,
   UserRepository.Live,
-  AuthService.Live  // Needed by payment service
-)
+  AuthService.Live, // Needed by payment service
+);
 
 // Payment service depends on AuthService
-const PaymentLayer = CoreLayer.pipe(
-  Layer.provide(PaymentService.Live)
-)
+const PaymentLayer = CoreLayer.pipe(Layer.provide(PaymentService.Live));
 
 // Notification depends on auth but not payment
 const NotificationLayer = CoreLayer.pipe(
-  Layer.provide(NotificationService.Live)
-)
+  Layer.provide(NotificationService.Live),
+);
 ```
 
 #### Pattern 3: Testing Layer Composition
@@ -1228,8 +1278,8 @@ const TestLayer = Layer.mergeAll(
 
   // Feature services use real repos with test data
   PaymentService.Live,
-  EmailService.Live
-)
+  EmailService.Live,
+);
 ```
 
 #### Pattern 4: Development Layer Composition
@@ -1237,27 +1287,27 @@ const TestLayer = Layer.mergeAll(
 ```typescript
 // ✅ Use Dev layers with logging and delays for local development
 const DevLayer = Layer.mergeAll(
-  ConfigService.Dev,          // Config from env
-  DatabaseService.Dev,        // Real DB with logging
-  LoggingService.Dev,         // Verbose logging
-  StripeService.Test,         // Mock Stripe in dev
-  ResendService.Test,         // Mock email in dev
-  UserRepository.Live,        // Real repos
+  ConfigService.Dev, // Config from env
+  DatabaseService.Dev, // Real DB with logging
+  LoggingService.Dev, // Verbose logging
+  StripeService.Test, // Mock Stripe in dev
+  ResendService.Test, // Mock email in dev
+  UserRepository.Live, // Real repos
   ProductRepository.Live,
-  PaymentService.Live,        // Real services with mocked SDKs
-  EmailService.Live
-)
+  PaymentService.Live, // Real services with mocked SDKs
+  EmailService.Live,
+);
 ```
 
 ### When to Use Layer.provide vs Layer.mergeAll
 
-| Scenario | Use | Why |
-|----------|-----|-----|
-| Multiple independent services | `Layer.mergeAll` | Simpler, all provided together |
-| Service A depends on B | `Layer.mergeAll` first, then use | Order doesn't matter with mergeAll |
-| Sequential dependency resolution | `Layer.provide` | Force explicit ordering for clarity |
-| Testing single service | `Layer.provide` | Minimal layer for isolation |
-| Complex interdependencies | Custom composition | Use explicit Layer.provide chain |
+| Scenario                         | Use                              | Why                                 |
+| -------------------------------- | -------------------------------- | ----------------------------------- |
+| Multiple independent services    | `Layer.mergeAll`                 | Simpler, all provided together      |
+| Service A depends on B           | `Layer.mergeAll` first, then use | Order doesn't matter with mergeAll  |
+| Sequential dependency resolution | `Layer.provide`                  | Force explicit ordering for clarity |
+| Testing single service           | `Layer.provide`                  | Minimal layer for isolation         |
+| Complex interdependencies        | Custom composition               | Use explicit Layer.provide chain    |
 
 ### Anti-Patterns: What NOT to Do
 
@@ -1301,21 +1351,27 @@ const AppLayer = Layer.mergeAll(...)
 ### Basic Ref Pattern (Pure Updates)
 
 ```typescript
-import { Ref, Effect, Context, Layer } from "effect";
+import { Ref, Effect, Context, Layer } from 'effect';
 
 // Create ref in service layer
-export class CacheService extends Context.Tag("CacheService")<CacheService, {
-  readonly increment: () => Effect.Effect<void>;
-  readonly get: () => Effect.Effect<number>;
-}>() {
-  static readonly Live = Layer.effect(this, Effect.gen(function* () {
-    const counter = yield* Ref.make(0);
+export class CacheService extends Context.Tag('CacheService')<
+  CacheService,
+  {
+    readonly increment: () => Effect.Effect<void>;
+    readonly get: () => Effect.Effect<number>;
+  }
+>() {
+  static readonly Live = Layer.effect(
+    this,
+    Effect.gen(function* () {
+      const counter = yield* Ref.make(0);
 
-    return {
-      increment: () => Ref.update(counter, (n) => n + 1),
-      get: () => Ref.get(counter)
-    };
-  }));
+      return {
+        increment: () => Ref.update(counter, (n) => n + 1),
+        get: () => Ref.get(counter),
+      };
+    }),
+  );
 }
 
 // Usage - thread-safe concurrent updates
@@ -1325,7 +1381,7 @@ const program = Effect.gen(function* () {
   // 100 concurrent increments - all will be applied correctly
   yield* Effect.all(
     Array.from({ length: 100 }, () => cache.increment()),
-    { concurrency: "unbounded" }
+    { concurrency: 'unbounded' },
   );
 
   const value = yield* cache.get(); // ✅ Guaranteed to be 100
@@ -1334,20 +1390,22 @@ const program = Effect.gen(function* () {
 
 ### Ref API
 
-| Operation | Purpose | Example |
-|-----------|---------|---------|
-| `Ref.make(initial)` | Create ref | `yield* Ref.make(0)` |
-| `Ref.get(ref)` | Read value | `yield* Ref.get(counter)` |
-| `Ref.set(ref, value)` | Set value | `yield* Ref.set(counter, 10)` |
+| Operation             | Purpose                              | Example                                  |
+| --------------------- | ------------------------------------ | ---------------------------------------- |
+| `Ref.make(initial)`   | Create ref                           | `yield* Ref.make(0)`                     |
+| `Ref.get(ref)`        | Read value                           | `yield* Ref.get(counter)`                |
+| `Ref.set(ref, value)` | Set value                            | `yield* Ref.set(counter, 10)`            |
 | `Ref.update(ref, fn)` | Update atomically with pure function | `yield* Ref.update(counter, n => n + 1)` |
 
 ### When to Use Ref vs SynchronizedRef
 
 ✅ **Use Ref for**: Pure state updates without effects
+
 - Connection pools, rate limiters, caches with pre-fetched data, concurrent counters, feature flags
 - Updates are synchronous pure functions
 
 ✅ **Use SynchronizedRef for**: Effectful state updates
+
 - Updates requiring database queries, API calls, or other effects
 - Use `SynchronizedRef.updateEffect` for atomic effectful updates
 
@@ -1357,22 +1415,24 @@ const program = Effect.gen(function* () {
 
 ```typescript
 // ✅ CORRECT with Ref - Perform effects before update
-const data = yield* fetchData();
-yield* Ref.update(state, (current) => ({ ...current, data }));
+const data = yield * fetchData();
+yield * Ref.update(state, (current) => ({ ...current, data }));
 
 // ❌ WRONG with Ref - Effects inside update function (pure functions only!)
-yield* Ref.update(state, (current) => {
-  const data = yield* fetchData(); // ERROR - can't use yield* in pure function!
-  return { ...current, data };
-});
+yield *
+  Ref.update(state, (current) => {
+    const data = yield * fetchData(); // ERROR - can't use yield* in pure function!
+    return { ...current, data };
+  });
 
 // ✅ CORRECT with SynchronizedRef - Effects ARE allowed in updateEffect
-yield* SynchronizedRef.updateEffect(state, (current) =>
-  Effect.gen(function* () {
-    const data = yield* fetchData(); // ✅ This works with SynchronizedRef!
-    return { ...current, data };
-  })
-);
+yield *
+  SynchronizedRef.updateEffect(state, (current) =>
+    Effect.gen(function* () {
+      const data = yield* fetchData(); // ✅ This works with SynchronizedRef!
+      return { ...current, data };
+    }),
+  );
 ```
 
 ### SynchronizedRef Pattern (Effectful Updates)
@@ -1380,25 +1440,32 @@ yield* SynchronizedRef.updateEffect(state, (current) =>
 Use **SynchronizedRef** when state updates require effects (database queries, API calls):
 
 ```typescript
-import { SynchronizedRef, Effect, Context, Layer } from "effect";
+import { SynchronizedRef, Effect, Context, Layer } from 'effect';
 
-export class DataCache extends Context.Tag("DataCache")<DataCache, {
-  readonly refresh: (id: string) => Effect.Effect<void>;
-}>() {
-  static readonly Live = Layer.effect(this, Effect.gen(function* () {
-    const cache = yield* SynchronizedRef.make<Map<string, Data>>(new Map());
+export class DataCache extends Context.Tag('DataCache')<
+  DataCache,
+  {
+    readonly refresh: (id: string) => Effect.Effect<void>;
+  }
+>() {
+  static readonly Live = Layer.effect(
+    this,
+    Effect.gen(function* () {
+      const cache = yield* SynchronizedRef.make<Map<string, Data>>(new Map());
 
-    return {
-      refresh: (id) => SynchronizedRef.updateEffect(cache, (current) =>
-        Effect.gen(function* () {
-          const data = yield* fetchFromDatabase(id); // ✅ Effects allowed!
-          const updated = new Map(current);
-          updated.set(id, data);
-          return updated;
-        })
-      )
-    };
-  }));
+      return {
+        refresh: (id) =>
+          SynchronizedRef.updateEffect(cache, (current) =>
+            Effect.gen(function* () {
+              const data = yield* fetchFromDatabase(id); // ✅ Effects allowed!
+              const updated = new Map(current);
+              updated.set(id, data);
+              return updated;
+            }),
+          ),
+      };
+    }),
+  );
 }
 ```
 
@@ -1408,16 +1475,16 @@ export class DataCache extends Context.Tag("DataCache")<DataCache, {
 
 ### Atom vs Ref: Decision Table
 
-| Aspect | @effect-atom/atom | Effect Ref | Effect SynchronizedRef |
-|--------|------------------|-----------|----------------------|
-| **Platform** | Client/Browser only | Server/Node.js | Server/Node.js |
-| **Purpose** | React reactive state | Thread-safe concurrent state | Effectful concurrent updates |
-| **APIs** | Atom.make, Atom.get, Atom.set, Atom.update | Ref.make, Ref.get, Ref.set, Ref.update | SynchronizedRef.make, SynchronizedRef.updateEffect |
-| **Integration** | useAtomValue, useAtomSet hooks | Effect.gen, service layers | Effect.gen, service layers |
-| **Use Cases** | Cart, filters, form state | Pools, limiters, counters | Database refreshes, API caching |
-| **Package** | @effect-atom/atom-react | effect (built-in) | effect (built-in) |
-| **Dependencies** | React | None | None |
-| **Example** | `const atom = yield* Atom.make({items: []})` | `const ref = yield* Ref.make(0)` | `const ref = yield* SynchronizedRef.make(new Map())` |
+| Aspect           | @effect-atom/atom                            | Effect Ref                             | Effect SynchronizedRef                               |
+| ---------------- | -------------------------------------------- | -------------------------------------- | ---------------------------------------------------- |
+| **Platform**     | Client/Browser only                          | Server/Node.js                         | Server/Node.js                                       |
+| **Purpose**      | React reactive state                         | Thread-safe concurrent state           | Effectful concurrent updates                         |
+| **APIs**         | Atom.make, Atom.get, Atom.set, Atom.update   | Ref.make, Ref.get, Ref.set, Ref.update | SynchronizedRef.make, SynchronizedRef.updateEffect   |
+| **Integration**  | useAtomValue, useAtomSet hooks               | Effect.gen, service layers             | Effect.gen, service layers                           |
+| **Use Cases**    | Cart, filters, form state                    | Pools, limiters, counters              | Database refreshes, API caching                      |
+| **Package**      | @effect-atom/atom-react                      | effect (built-in)                      | effect (built-in)                                    |
+| **Dependencies** | React                                        | None                                   | None                                                 |
+| **Example**      | `const atom = yield* Atom.make({items: []})` | `const ref = yield* Ref.make(0)`       | `const ref = yield* SynchronizedRef.make(new Map())` |
 
 ### Atom Basics (Client-Side State)
 
@@ -1425,69 +1492,69 @@ export class DataCache extends Context.Tag("DataCache")<DataCache, {
 
 ```typescript
 // ✅ Client-side: Create atom in service layer
-import { Atom } from "@effect-atom/atom-react"
-import { Effect, Context, Layer } from "effect"
+import { Atom } from '@effect-atom/atom-react';
+import { Effect, Context, Layer } from 'effect';
 
-export class CartService extends Context.Tag("CartService")<
+export class CartService extends Context.Tag('CartService')<
   CartService,
   {
-    readonly getItems: () => Effect.Effect<CartItem[]>
-    readonly addItem: (item: CartItem) => Effect.Effect<void>
-    readonly removeItem: (productId: string) => Effect.Effect<void>
-    readonly getTotalPrice: () => Effect.Effect<number>
+    readonly getItems: () => Effect.Effect<CartItem[]>;
+    readonly addItem: (item: CartItem) => Effect.Effect<void>;
+    readonly removeItem: (productId: string) => Effect.Effect<void>;
+    readonly getTotalPrice: () => Effect.Effect<number>;
   }
 >() {
   static readonly Live = Layer.effect(
     this,
     Effect.gen(function* () {
       // Create reactive atom for cart state
-      const cartAtom = yield* Atom.make<{ items: CartItem[] }>({ items: [] })
+      const cartAtom = yield* Atom.make<{ items: CartItem[] }>({ items: [] });
 
       return {
         getItems: () =>
           Effect.gen(function* () {
-            const state = yield* Atom.get(cartAtom)
-            return state.items
+            const state = yield* Atom.get(cartAtom);
+            return state.items;
           }),
 
         addItem: (item) =>
           Atom.update(cartAtom, (state) => ({
             items: [
               ...state.items.filter((i) => i.productId !== item.productId),
-              item
-            ]
+              item,
+            ],
           })),
 
         removeItem: (productId) =>
           Atom.update(cartAtom, (state) => ({
-            items: state.items.filter((item) => item.productId !== productId)
+            items: state.items.filter((item) => item.productId !== productId),
           })),
 
         getTotalPrice: () =>
           Effect.gen(function* () {
-            const state = yield* Atom.get(cartAtom)
+            const state = yield* Atom.get(cartAtom);
             return state.items.reduce(
               (sum, item) => sum + item.price * item.quantity,
-              0
-            )
-          })
-      }
-    })
-  )
+              0,
+            );
+          }),
+      };
+    }),
+  );
 }
 ```
 
 ### Atom API Reference
 
-| Operation | Purpose | Example |
-|-----------|---------|---------|
-| `Atom.make(initial)` | Create atom | `yield* Atom.make({ count: 0 })` |
-| `Atom.get(atom)` | Read current value | `yield* Atom.get(countAtom)` |
-| `Atom.set(atom, value)` | Set value | `Atom.set(countAtom, 10)` |
-| `Atom.update(atom, fn)` | Update with pure function | `Atom.update(countAtom, n => n + 1)` |
-| `Atom.family(fn)` | Create dynamic atoms from keys | `Atom.family((key) => Atom.make(key))` |
-| `Atom.map(atom, fn)` | Derive from another atom | `Atom.map(userAtom, u => u.name)` |
-| `Atom.runtime(layer)` | Create atom runtime | `Atom.runtime(Layer.empty)` |
+| Operation               | Purpose                        | Example                                |
+| ----------------------- | ------------------------------ | -------------------------------------- |
+| `Atom.make(initial)`    | Create atom                    | `yield* Atom.make({ count: 0 })`       |
+| `Atom.get(atom)`        | Read current value             | `yield* Atom.get(countAtom)`           |
+| `Atom.set(atom, value)` | Set value                      | `Atom.set(countAtom, 10)`              |
+| `Atom.update(atom, fn)` | Update with pure function      | `Atom.update(countAtom, n => n + 1)`   |
+| `Atom.family(fn)`       | Create dynamic atoms from keys | `Atom.family((key) => Atom.make(key))` |
+| `Atom.map(atom, fn)`    | Derive from another atom       | `Atom.map(userAtom, u => u.name)`      |
+| `Atom.runtime(layer)`   | Create atom runtime            | `Atom.runtime(Layer.empty)`            |
 
 ### React Integration with useAtomValue and useAtomSet
 
@@ -1495,21 +1562,21 @@ Use React hooks to read and update atom values in components:
 
 ```typescript
 // ✅ React component using Atom
-import { useAtomValue, useAtomSet } from "@effect-atom/atom-react"
-import { CartService } from "./cart-service"
+import { useAtomValue, useAtomSet } from '@effect-atom/atom-react';
+import { CartService } from './cart-service';
 
 export function CartComponent() {
-  const cartService = useCartService()  // Get service from context
-  const cartAtom = cartService.cartAtom  // Reference to atom
+  const cartService = useCartService(); // Get service from context
+  const cartAtom = cartService.cartAtom; // Reference to atom
 
   // Read atom value with hook
-  const cart = useAtomValue(cartAtom)
+  const cart = useAtomValue(cartAtom);
 
   // Get setter function for atom
-  const setCart = useAtomSet(cartAtom)
+  const setCart = useAtomSet(cartAtom);
 
   // Combined hook (read + write)
-  const [cart, setCart] = useAtom(cartAtom)
+  const [cart, setCart] = useAtom(cartAtom);
 
   return (
     <div>
@@ -1517,14 +1584,14 @@ export function CartComponent() {
       <button
         onClick={() =>
           setCart((state) => ({
-            items: [...state.items, newItem]
+            items: [...state.items, newItem],
           }))
         }
       >
         Add Item
       </button>
     </div>
-  )
+  );
 }
 ```
 
@@ -1534,23 +1601,25 @@ Provide the Atom runtime to your React application:
 
 ```typescript
 // ✅ app/layout.tsx
-import { AtomRuntimeProvider } from '@creativetoolkits/ui-state/client'
-import { ClientRuntimeProvider } from '@creativetoolkits/ui-state/client'
+import { AtomRuntimeProvider } from '@samuelho-dev/ui-state/client';
+import { ClientRuntimeProvider } from '@samuelho-dev/ui-state/client';
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html>
       <body>
         {/* Provide Effect Atom runtime */}
         <AtomRuntimeProvider>
           {/* Provide any additional Effect runtimes */}
-          <ClientRuntimeProvider>
-            {children}
-          </ClientRuntimeProvider>
+          <ClientRuntimeProvider>{children}</ClientRuntimeProvider>
         </AtomRuntimeProvider>
       </body>
     </html>
-  )
+  );
 }
 ```
 
@@ -1564,13 +1633,13 @@ const userPreferencesFamily = Atom.family((userId: string) =>
   Atom.make({
     theme: 'light',
     notifications: true,
-    language: 'en'
-  })
-)
+    language: 'en',
+  }),
+);
 
 // Usage: Different atom instance per userId
-const user1Prefs = userPreferencesFamily('user-123')
-const user2Prefs = userPreferencesFamily('user-456')
+const user1Prefs = userPreferencesFamily('user-123');
+const user2Prefs = userPreferencesFamily('user-456');
 ```
 
 ### Atom.map for Derived State
@@ -1592,6 +1661,7 @@ const price = yield* Atom.get(totalPriceAtom)
 ### Server vs Client State: When to Use Each
 
 **Use Atom (Client) for:**
+
 - ✅ React component state
 - ✅ UI toggles and modals
 - ✅ Form input values
@@ -1600,6 +1670,7 @@ const price = yield* Atom.get(totalPriceAtom)
 - ✅ User preferences (display, theme)
 
 **Use Ref (Server) for:**
+
 - ✅ Connection pools
 - ✅ Rate limiters
 - ✅ Cache entries (pre-fetched data)
@@ -1608,6 +1679,7 @@ const price = yield* Atom.get(totalPriceAtom)
 - ✅ Session tracking
 
 **Use SynchronizedRef (Server, Effectful) for:**
+
 - ✅ Updates requiring database queries
 - ✅ API calls during state updates
 - ✅ Atomic database transactions
@@ -1616,45 +1688,52 @@ const price = yield* Atom.get(totalPriceAtom)
 ### Common Patterns
 
 **Pattern 1: Search State with Atom**
+
 ```typescript
 // ✅ Client-side search state
-const searchAtom = yield* Atom.make({
-  query: '',
-  filters: {},
-  page: 1,
-  sortBy: '_text_match:desc'
-})
+const searchAtom =
+  yield *
+  Atom.make({
+    query: '',
+    filters: {},
+    page: 1,
+    sortBy: '_text_match:desc',
+  });
 
 // React component updates
 const setFilters = (newFilters) =>
   Atom.update(searchAtom, (state) => ({
     ...state,
     filters: newFilters,
-    page: 1  // Reset to first page
-  }))
+    page: 1, // Reset to first page
+  }));
 ```
 
 **Pattern 2: Form State with Atom**
+
 ```typescript
 // ✅ Form validation state in Atom
-const formAtom = yield* Atom.make({
-  values: { name: '', email: '' },
-  errors: {},
-  touched: {}
-})
+const formAtom =
+  yield *
+  Atom.make({
+    values: { name: '', email: '' },
+    errors: {},
+    touched: {},
+  });
 
 // Validate on change
 const handleFieldChange = (field: string, value: string) =>
   Atom.update(formAtom, (state) => ({
     ...state,
     values: { ...state.values, [field]: value },
-    errors: validateField(field, value)
-  }))
+    errors: validateField(field, value),
+  }));
 ```
 
 ### Effect 4.0 Compatibility
 
 ✅ **@effect-atom/atom is stable and independent of Effect version**
+
 - Works with Effect 3.0+
 - No breaking changes expected in Effect 4.0
 - Separate library from core Effect
@@ -1672,33 +1751,29 @@ const handleFieldChange = (field: string, value: string) =>
 
 ```typescript
 // ✅ Recommended: Effect.runPromise for async contexts
-await Effect.runPromise(
-  program.pipe(Effect.provide(AppLayer))
-)
+await Effect.runPromise(program.pipe(Effect.provide(AppLayer)));
 
 // ✅ For Node.js CLI applications
-import { NodeRuntime } from "@effect/platform-node"
+import { NodeRuntime } from '@effect/platform-node';
 
-NodeRuntime.runMain(
-  program.pipe(Effect.provide(AppLayer))
-)
+NodeRuntime.runMain(program.pipe(Effect.provide(AppLayer)));
 
 // ✅ For testing
-import { Effect } from "effect"
-import { expect, it } from "vitest"
+import { Effect } from 'effect';
+import { expect, it } from 'vitest';
 
-it("should process payment", async () => {
+it('should process payment', async () => {
   const result = await Effect.runPromise(
-    processPayment(100).pipe(Effect.provide(TestLayer))
-  )
-  expect(result.status).toBe("success")
-})
+    processPayment(100).pipe(Effect.provide(TestLayer)),
+  );
+  expect(result.status).toBe('success');
+});
 
 // ❌ AVOID: runSync for async effects
-Effect.runSync(asyncEffect)  // Will throw if effect is async
+Effect.runSync(asyncEffect); // Will throw if effect is async
 
 // ✅ Use runSync only for pure synchronous effects
-Effect.runSync(Effect.succeed(42))
+Effect.runSync(Effect.succeed(42));
 ```
 
 ## ⚠️ CRITICAL: Runtime Preservation for Callbacks
@@ -1708,6 +1783,7 @@ Effect.runSync(Effect.succeed(42))
 ### Why Runtime Preservation is Critical
 
 When you call `Effect.runPromise()` or `Effect.runSync()` without the current runtime:
+
 - ❌ Creates a **new, isolated runtime** with no access to your services
 - ❌ Context tags (CurrentUser, DatabaseService, etc.) are **not available**
 - ❌ Layer composition is **lost** - services can't be injected
@@ -1716,37 +1792,35 @@ When you call `Effect.runPromise()` or `Effect.runSync()` without the current ru
 
 ### Decision Rule: When to Capture Runtime
 
-| Scenario | Capture Runtime? | Rationale | Example |
-|----------|-----------------|-----------|---------|
-| **Callback-based SDK** | ✅ YES | SDK controls execution timing | WebSocket, Node event emitters |
-| **Promise-based SDK** | ✅ YES | Need Effect context in continuation | SDK callbacks, custom Promise chains |
-| **Kysely transactions** | ✅ YES | Async callback needs service access | `db.transaction().execute(async ...)` |
-| **Effect-based service** | ❌ NO | Service already has runtime | DatabaseService.transaction() |
-| **Inside Effect.gen** | ❌ NO | Already in Effect context | Service operations, computed values |
-| **Library exports** | ✅ YES (conditionally) | Consumer may need their runtime | SDK wrappers, adapters |
+| Scenario                 | Capture Runtime?       | Rationale                           | Example                               |
+| ------------------------ | ---------------------- | ----------------------------------- | ------------------------------------- |
+| **Callback-based SDK**   | ✅ YES                 | SDK controls execution timing       | WebSocket, Node event emitters        |
+| **Promise-based SDK**    | ✅ YES                 | Need Effect context in continuation | SDK callbacks, custom Promise chains  |
+| **Kysely transactions**  | ✅ YES                 | Async callback needs service access | `db.transaction().execute(async ...)` |
+| **Effect-based service** | ❌ NO                  | Service already has runtime         | DatabaseService.transaction()         |
+| **Inside Effect.gen**    | ❌ NO                  | Already in Effect context           | Service operations, computed values   |
+| **Library exports**      | ✅ YES (conditionally) | Consumer may need their runtime     | SDK wrappers, adapters                |
 
 ### Pattern 1: WebSocket with Runtime Preservation
 
 ```typescript
 // ❌ WRONG - Runtime context lost
 websocket.on('message', (data) => {
-  Effect.runPromise(handleMessage(data))  // Creates new runtime!
-})
+  Effect.runPromise(handleMessage(data)); // Creates new runtime!
+});
 
 // ✅ CORRECT - Preserve runtime with Effect.runtime
 const setupWebSocket = Effect.gen(function* () {
-  const runtime = yield* Effect.runtime()
-  const runFork = Runtime.runFork(runtime)
+  const runtime = yield* Effect.runtime();
+  const runFork = Runtime.runFork(runtime);
 
   websocket.on('message', (data) => {
-    runFork(handleMessage(data))  // Preserves context and layers
-  })
+    runFork(handleMessage(data)); // Preserves context and layers
+  });
 
   // Cleanup on scope exit
-  yield* Effect.addFinalizer(() =>
-    Effect.sync(() => websocket.close())
-  )
-})
+  yield* Effect.addFinalizer(() => Effect.sync(() => websocket.close()));
+});
 ```
 
 **Why this matters**: The `handleMessage` Effect now has access to all services (DatabaseService, CurrentUser context, etc.) that were provided via layers.
@@ -1758,17 +1832,15 @@ Use when you need explicit control over forked fibers:
 ```typescript
 // ✅ Alternative: Use FiberHandle for managed callbacks
 const setupWebSocket = Effect.gen(function* () {
-  const handle = yield* FiberHandle.make()
+  const handle = yield* FiberHandle.make();
 
   websocket.on('message', (data) => {
-    FiberHandle.run(handle, handleMessage(data))  // Runtime preserved
-  })
+    FiberHandle.run(handle, handleMessage(data)); // Runtime preserved
+  });
 
   // Cleanup on scope exit - all forked fibers cleaned up
-  yield* Effect.addFinalizer(() =>
-    Effect.sync(() => websocket.close())
-  )
-})
+  yield* Effect.addFinalizer(() => Effect.sync(() => websocket.close()));
+});
 ```
 
 **Advantage**: FiberHandle automatically manages all forked fibers and cleans them up when the scope exits.
@@ -1779,17 +1851,18 @@ const setupWebSocket = Effect.gen(function* () {
 
 ```typescript
 // ❌ WRONG - DatabaseService not available in transaction
-export const UserRepository = class extends Context.Tag("UserRepository")<
+export const UserRepository = class extends Context.Tag('UserRepository')<
   UserRepository,
   {
-    readonly createWithRelated: (data: CreateUserData) =>
-      Effect.Effect<User, RepositoryError>
+    readonly createWithRelated: (
+      data: CreateUserData,
+    ) => Effect.Effect<User, RepositoryError>;
   }
 >() {
   static readonly Live = Layer.effect(
     this,
     Effect.gen(function* () {
-      const database = yield* DatabaseService
+      const database = yield* DatabaseService;
 
       return {
         createWithRelated: (data) =>
@@ -1797,27 +1870,28 @@ export const UserRepository = class extends Context.Tag("UserRepository")<
             db.transaction().execute(async (trx) => {
               // ❌ PROBLEM: Can't use Effect here - runtime lost
               // const something = yield* SomeService  // ERROR!
-              return await createUser(trx, data)
-            })
-          )
-      }
-    })
-  )
-}
+              return await createUser(trx, data);
+            }),
+          ),
+      };
+    }),
+  );
+};
 
 // ✅ CORRECT - Preserve runtime for Effect execution within transaction
-export const UserRepository = class extends Context.Tag("UserRepository")<
+export const UserRepository = class extends Context.Tag('UserRepository')<
   UserRepository,
   {
-    readonly createWithRelated: (data: CreateUserData) =>
-      Effect.Effect<User, RepositoryError>
+    readonly createWithRelated: (
+      data: CreateUserData,
+    ) => Effect.Effect<User, RepositoryError>;
   }
 >() {
   static readonly Live = Layer.effect(
     this,
     Effect.gen(function* () {
-      const database = yield* DatabaseService
-      const runtime = yield* Effect.runtime()
+      const database = yield* DatabaseService;
+      const runtime = yield* Effect.runtime();
 
       return {
         createWithRelated: (data) =>
@@ -1826,17 +1900,17 @@ export const UserRepository = class extends Context.Tag("UserRepository")<
               // ✅ CORRECT: Preserve runtime for Effect execution within transaction
               return await Runtime.runPromise(runtime)(
                 Effect.gen(function* () {
-                  const user = yield* createUser(trx, data)
-                  const profile = yield* createProfile(trx, user.id)
-                  return { ...user, profile }
-                })
-              )
-            })
-          )
-      }
-    })
-  )
-}
+                  const user = yield* createUser(trx, data);
+                  const profile = yield* createProfile(trx, user.id);
+                  return { ...user, profile };
+                }),
+              );
+            }),
+          ),
+      };
+    }),
+  );
+};
 ```
 
 **Why this is critical**: The `createUser` and `createProfile` Effects may depend on services through the context. Capturing the runtime ensures they have access.
@@ -1847,80 +1921,84 @@ When creating an adapter around an SDK with callbacks:
 
 ```typescript
 // ✅ CORRECT - SDK adapter preserving runtime
-export class StripeWebhookService extends Context.Tag("StripeWebhookService")<
+export class StripeWebhookService extends Context.Tag('StripeWebhookService')<
   StripeWebhookService,
   {
-    readonly setupWebhookListener: () => Effect.Effect<void>
+    readonly setupWebhookListener: () => Effect.Effect<void>;
   }
 >() {
   static readonly Live = Layer.effect(
     this,
     Effect.gen(function* () {
-      const stripe = yield* StripeService
-      const logger = yield* LoggingService
-      const runtime = yield* Effect.runtime()
+      const stripe = yield* StripeService;
+      const logger = yield* LoggingService;
+      const runtime = yield* Effect.runtime();
 
       return {
         setupWebhookListener: () =>
           Effect.gen(function* () {
-            const runFork = Runtime.runFork(runtime)
+            const runFork = Runtime.runFork(runtime);
 
             // SDK provides callbacks, we need to preserve runtime
             stripe.webhooks.onEvent('payment_intent.succeeded', (event) => {
               runFork(
                 Effect.gen(function* () {
-                  yield* logger.info(`Webhook received: ${event.id}`)
-                  yield* handlePaymentSuccess(event)
-                })
-              )
-            })
-          })
-      }
-    })
-  )
+                  yield* logger.info(`Webhook received: ${event.id}`);
+                  yield* handlePaymentSuccess(event);
+                }),
+              );
+            });
+          }),
+      };
+    }),
+  );
 }
 ```
 
 ### Common Mistakes
 
 **Mistake 1: New runtime per callback**
+
 ```typescript
 // ❌ WRONG - Creates new runtime for each message
 websocket.on('message', (data) => {
-  Effect.runPromise(handleMessage(data))  // WRONG!
-})
+  Effect.runPromise(handleMessage(data)); // WRONG!
+});
 ```
 
 **Mistake 2: Using await instead of Runtime.runPromise**
+
 ```typescript
 // ❌ WRONG - Mixing async/await (different runtime)
 websocket.on('message', async (data) => {
-  await Effect.runPromise(handleMessage(data))  // WRONG!
-})
+  await Effect.runPromise(handleMessage(data)); // WRONG!
+});
 ```
 
 **Mistake 3: Forgetting runtime in nested callbacks**
+
 ```typescript
 // ❌ WRONG - Runtime lost in nested promise chain
-const runtime = yield* Effect.runtime()
+const runtime = yield * Effect.runtime();
 sdk.onEvent(() => {
   sdk.nested.callback(() => {
     // Runtime NOT available here - lost through callback chain
-  })
-})
+  });
+});
 ```
 
 **Correct approach for nested callbacks**:
+
 ```typescript
 // ✅ CORRECT - Preserve runtime through entire callback chain
-const runtime = yield* Effect.runtime()
-const runFork = Runtime.runFork(runtime)
+const runtime = yield * Effect.runtime();
+const runFork = Runtime.runFork(runtime);
 
 sdk.onEvent(() => {
   sdk.nested.callback(() => {
-    runFork(nestedEffect)  // Runtime available here
-  })
-})
+    runFork(nestedEffect); // Runtime available here
+  });
+});
 ```
 
 ### Testing Runtime Preservation
@@ -1928,31 +2006,31 @@ sdk.onEvent(() => {
 Use `@effect/vitest` to test runtime preservation:
 
 ```typescript
-import { it } from '@effect/vitest'
-import { Effect, Layer } from 'effect'
+import { it } from '@effect/vitest';
+import { Effect, Layer } from 'effect';
 
 describe('RuntimePreservation', () => {
   it('should preserve runtime in callbacks', () =>
     Effect.gen(function* () {
-      const runtime = yield* Effect.runtime()
-      const runFork = Runtime.runFork(runtime)
+      const runtime = yield* Effect.runtime();
+      const runFork = Runtime.runFork(runtime);
 
-      let called = false
+      let called = false;
       runFork(
         Effect.gen(function* () {
-          called = true
-        })
-      )
+          called = true;
+        }),
+      );
 
-      expect(called).toBe(true)
-    })
-  )
-})
+      expect(called).toBe(true);
+    }));
+});
 ```
 
 ### Effect 4.0 Compatibility
 
 ✅ **Runtime preservation is stable in Effect 3.0+**
+
 - `Effect.runtime()` API guaranteed stable
 - `Runtime.runFork()` API guaranteed stable
 - `FiberHandle` API guaranteed stable
@@ -1972,7 +2050,7 @@ describe('RuntimePreservation', () => {
 ### Fiber Basics
 
 ```typescript
-import { Effect, Fiber } from "effect";
+import { Effect, Fiber } from 'effect';
 
 // Fork background work
 const program = Effect.gen(function* () {
@@ -1991,19 +2069,25 @@ const program = Effect.gen(function* () {
 Auto-manages lifecycle of concurrent operations.
 
 ```typescript
-import { FiberSet } from "effect";
+import { FiberSet } from 'effect';
 
-export class JobProcessor extends Context.Tag("JobProcessor")<JobProcessor, {
-  readonly processJob: (job: Job) => Effect.Effect<void>;
-}>() {
-  static readonly Live = Layer.scoped(this, Effect.gen(function* () {
-    const fiberSet = yield* FiberSet.make();
+export class JobProcessor extends Context.Tag('JobProcessor')<
+  JobProcessor,
+  {
+    readonly processJob: (job: Job) => Effect.Effect<void>;
+  }
+>() {
+  static readonly Live = Layer.scoped(
+    this,
+    Effect.gen(function* () {
+      const fiberSet = yield* FiberSet.make();
 
-    return {
-      processJob: (job) => FiberSet.run(fiberSet, processJobLogic(job))
-      // FiberSet auto-cleaned up by Layer.scoped
-    };
-  }));
+      return {
+        processJob: (job) => FiberSet.run(fiberSet, processJobLogic(job)),
+        // FiberSet auto-cleaned up by Layer.scoped
+      };
+    }),
+  );
 }
 ```
 
@@ -2012,39 +2096,47 @@ export class JobProcessor extends Context.Tag("JobProcessor")<JobProcessor, {
 Prevents duplicate concurrent work for the same key.
 
 ```typescript
-import { FiberMap, Option } from "effect";
+import { FiberMap, Option } from 'effect';
 
-export class CacheRefresh extends Context.Tag("CacheRefresh")<CacheRefresh, {
-  readonly refresh: (key: string) => Effect.Effect<void>;
-}>() {
-  static readonly Live = Layer.scoped(this, Effect.gen(function* () {
-    const fiberMap = yield* FiberMap.make<string>();
+export class CacheRefresh extends Context.Tag('CacheRefresh')<
+  CacheRefresh,
+  {
+    readonly refresh: (key: string) => Effect.Effect<void>;
+  }
+>() {
+  static readonly Live = Layer.scoped(
+    this,
+    Effect.gen(function* () {
+      const fiberMap = yield* FiberMap.make<string>();
 
-    return {
-      refresh: (key) => Effect.gen(function* () {
-        // Check if already refreshing
-        const existing = yield* FiberMap.get(fiberMap, key);
-        if (Option.isSome(existing)) {
-          yield* Fiber.join(existing.value); // Wait for existing
-          return;
-        }
+      return {
+        refresh: (key) =>
+          Effect.gen(function* () {
+            // Check if already refreshing
+            const existing = yield* FiberMap.get(fiberMap, key);
+            if (Option.isSome(existing)) {
+              yield* Fiber.join(existing.value); // Wait for existing
+              return;
+            }
 
-        // Start new refresh
-        yield* FiberMap.run(fiberMap, key, refreshLogic(key));
-      })
-    };
-  }));
+            // Start new refresh
+            yield* FiberMap.run(fiberMap, key, refreshLogic(key));
+          }),
+      };
+    }),
+  );
 }
 ```
 
 ### When to Use Each
 
-| Pattern | Use Case | Example |
-|---------|----------|---------|
-| **Fiber** | Manual control | Background tasks with explicit join/interrupt |
-| **FiberSet** | Unkeyed concurrent work | Job processors, background workers |
-| **FiberMap** | Keyed work with dedup | Cache refresh, API request deduplication |
-| **Effect.all** | Simple parallelism | Parallel independent tasks (preferred for most cases)
+| Pattern        | Use Case                | Example                                               |
+| -------------- | ----------------------- | ----------------------------------------------------- |
+| **Fiber**      | Manual control          | Background tasks with explicit join/interrupt         |
+| **FiberSet**   | Unkeyed concurrent work | Job processors, background workers                    |
+| **FiberMap**   | Keyed work with dedup   | Cache refresh, API request deduplication              |
+| **Effect.all** | Simple parallelism      | Parallel independent tasks (preferred for most cases) |
+
 ## Parallel Operations
 
 ### Effect.all for Concurrent Execution
@@ -2053,10 +2145,10 @@ Effect.all supports both **array syntax** and **object syntax** for running effe
 
 #### Syntax Selection Guide
 
-| Syntax | Use When | Result Type | Destructuring |
-|--------|----------|-------------|---------------|
-| **Array** | Homogeneous data, similar operations | Tuple `[A, B, C]` | `[a, b, c]` positional |
-| **Object** | Heterogeneous data, named access | Object `{ a: A, b: B }` | `{ a, b }` by name |
+| Syntax     | Use When                             | Result Type             | Destructuring          |
+| ---------- | ------------------------------------ | ----------------------- | ---------------------- |
+| **Array**  | Homogeneous data, similar operations | Tuple `[A, B, C]`       | `[a, b, c]` positional |
+| **Object** | Heterogeneous data, named access     | Object `{ a: A, b: B }` | `{ a, b }` by name     |
 
 #### Array Syntax - Positional Results
 
@@ -2065,29 +2157,27 @@ Use for **homogeneous collections** or when order matters:
 ```typescript
 // ✅ Array syntax: Homogeneous data (all same type/purpose)
 const getUserData = (userId: string) =>
-  Effect.all([
-    getUserProfile(userId),
-    getUserOrders(userId),
-    getUserPreferences(userId)
-  ], { concurrency: "unbounded" }).pipe(
+  Effect.all(
+    [getUserProfile(userId), getUserOrders(userId), getUserPreferences(userId)],
+    { concurrency: 'unbounded' },
+  ).pipe(
     Effect.map(([profile, orders, preferences]) => ({
       ...profile,
       orders,
-      preferences
-    }))
-  )
+      preferences,
+    })),
+  );
 
 // ✅ Good for processing similar items
 const validateFields = (fields: string[]) =>
   Effect.all(
-    fields.map(field => validateField(field)),
-    { concurrency: "unbounded" }
-  ).pipe(
-    Effect.map(results => results.every(valid => valid))
-  )
+    fields.map((field) => validateField(field)),
+    { concurrency: 'unbounded' },
+  ).pipe(Effect.map((results) => results.every((valid) => valid)));
 ```
 
 **When to use**:
+
 - Similar operations on different inputs
 - Positional meaning (order matters)
 - Homogeneous result types
@@ -2102,34 +2192,41 @@ Use for **heterogeneous data** with semantic meaning:
 const getProductPage = (productId: string) =>
   Effect.gen(function* () {
     const {
-      product,        // Product entity
-      reviews,        // Review list
-      seller,         // Seller entity
-      viewCount,      // Number
-    } = yield* Effect.all({
-      product: productRepo.findById(productId),
-      reviews: reviewRepo.findByProduct(productId),
-      seller: Effect.gen(function* () {
-        const prod = yield* productRepo.findById(productId);
-        return yield* sellerRepo.findById(prod.sellerId);
-      }),
-      viewCount: analytics.getProductViews(productId),
-    }, { concurrency: "unbounded" });
+      product, // Product entity
+      reviews, // Review list
+      seller, // Seller entity
+      viewCount, // Number
+    } = yield* Effect.all(
+      {
+        product: productRepo.findById(productId),
+        reviews: reviewRepo.findByProduct(productId),
+        seller: Effect.gen(function* () {
+          const prod = yield* productRepo.findById(productId);
+          return yield* sellerRepo.findById(prod.sellerId);
+        }),
+        viewCount: analytics.getProductViews(productId),
+      },
+      { concurrency: 'unbounded' },
+    );
 
     return { product, reviews, seller, analytics: { viewCount } };
   });
 
 // ✅ Good for dashboard data aggregation
 const getDashboardData = (userId: string) =>
-  Effect.all({
-    user: fetchUser(userId),
-    stats: fetchUserStats(userId),
-    notifications: fetchNotifications(userId),
-    preferences: fetchPreferences(userId),
-  }, { concurrency: "unbounded" })
+  Effect.all(
+    {
+      user: fetchUser(userId),
+      stats: fetchUserStats(userId),
+      notifications: fetchNotifications(userId),
+      preferences: fetchPreferences(userId),
+    },
+    { concurrency: 'unbounded' },
+  );
 ```
 
 **When to use**:
+
 - Different types of data
 - Semantic field names improve readability
 - Fixed set of named results
@@ -2141,19 +2238,19 @@ Both syntaxes support the same options:
 
 ```typescript
 // ✅ Parallel with early exit on first error (default)
-Effect.all(effects, { concurrency: "unbounded", mode: "default" })
+Effect.all(effects, { concurrency: 'unbounded', mode: 'default' });
 
 // ✅ Collect all results, even with errors (Either)
-Effect.all(effects, { concurrency: "unbounded", mode: "either" })
+Effect.all(effects, { concurrency: 'unbounded', mode: 'either' });
 
 // ✅ Validate all, collecting all errors
-Effect.all(effects, { concurrency: "unbounded", mode: "validate" })
+Effect.all(effects, { concurrency: 'unbounded', mode: 'validate' });
 
 // ✅ Limited concurrency
-Effect.all(effects, { concurrency: 5 })  // Max 5 parallel operations
+Effect.all(effects, { concurrency: 5 }); // Max 5 parallel operations
 
 // ✅ Sequential execution
-Effect.all(effects, { concurrency: 1 })  // Same as sequential
+Effect.all(effects, { concurrency: 1 }); // Same as sequential
 ```
 
 #### Decision Matrix
@@ -2182,46 +2279,59 @@ const processBatch = (items: Item[]) =>
   Effect.forEach(
     items,
     (item) => processItem(item),
-    { concurrency: 5 }  // Process max 5 items at once
-  )
+    { concurrency: 5 }, // Process max 5 items at once
+  );
 
 // ✅ Race effects - first to complete wins
 const fetchWithTimeout = (url: string) =>
   Effect.race(
     fetchData(url),
-    Effect.sleep("5 seconds").pipe(
-      Effect.flatMap(() => Effect.fail(new TimeoutError()))
-    )
-  )
+    Effect.sleep('5 seconds').pipe(
+      Effect.flatMap(() => Effect.fail(new TimeoutError())),
+    ),
+  );
 
 // ✅ Collect errors with validate mode
 const validateAllFields = (data: FormData) =>
-  Effect.all({
-    name: validateName(data.name),
-    email: validateEmail(data.email),
-    age: validateAge(data.age),
-  }, {
-    concurrency: "unbounded",
-    mode: "validate"  // Collect all validation errors
-  })
+  Effect.all(
+    {
+      name: validateName(data.name),
+      email: validateEmail(data.email),
+      age: validateAge(data.age),
+    },
+    {
+      concurrency: 'unbounded',
+      mode: 'validate', // Collect all validation errors
+    },
+  );
 ```
 
 #### Migration Between Syntaxes
 
 ```typescript
 // Before: Array syntax
-const [product, reviews, seller] = yield* Effect.all([
-  productRepo.findById(id),
-  reviewRepo.findByProduct(id),
-  sellerRepo.findById(sellerId),
-], { concurrency: "unbounded" });
+const [product, reviews, seller] =
+  yield *
+  Effect.all(
+    [
+      productRepo.findById(id),
+      reviewRepo.findByProduct(id),
+      sellerRepo.findById(sellerId),
+    ],
+    { concurrency: 'unbounded' },
+  );
 
 // After: Object syntax (better readability)
-const { product, reviews, seller } = yield* Effect.all({
-  product: productRepo.findById(id),
-  reviews: reviewRepo.findByProduct(id),
-  seller: sellerRepo.findById(sellerId),
-}, { concurrency: "unbounded" });
+const { product, reviews, seller } =
+  yield *
+  Effect.all(
+    {
+      product: productRepo.findById(id),
+      reviews: reviewRepo.findByProduct(id),
+      seller: sellerRepo.findById(sellerId),
+    },
+    { concurrency: 'unbounded' },
+  );
 ```
 
 ### Effect 4.0 Compatibility Notes
@@ -2235,7 +2345,7 @@ const { product, reviews, seller } = yield* Effect.all({
 ### Live, Test, Dev, and Mock Layers
 
 ```typescript
-export class PaymentService extends Context.Tag("PaymentService")<
+export class PaymentService extends Context.Tag('PaymentService')<
   PaymentService,
   PaymentServiceInterface
 >() {
@@ -2243,26 +2353,30 @@ export class PaymentService extends Context.Tag("PaymentService")<
   static readonly Live = Layer.effect(
     this,
     Effect.gen(function* () {
-      const stripe = yield* StripeService
-      const db = yield* DatabaseService
-      const logger = yield* LoggingService
+      const stripe = yield* StripeService;
+      const db = yield* DatabaseService;
+      const logger = yield* LoggingService;
 
       return {
         processPayment: (amount) =>
           Effect.gen(function* () {
-            yield* logger.info(`Processing payment: ${amount}`)
+            yield* logger.info(`Processing payment: ${amount}`);
             const result = yield* Effect.tryPromise({
-              try: () => stripe.paymentIntents.create({ amount, currency: 'usd' }),
-              catch: (error) => new PaymentError({ cause: error })
-            })
+              try: () =>
+                stripe.paymentIntents.create({ amount, currency: 'usd' }),
+              catch: (error) => new PaymentError({ cause: error }),
+            });
             yield* db.query((db) =>
-              db.insertInto('payments').values({ amount, stripeId: result.id }).execute()
-            )
-            return result
-          })
-      }
-    })
-  )
+              db
+                .insertInto('payments')
+                .values({ amount, stripeId: result.id })
+                .execute(),
+            );
+            return result;
+          }),
+      };
+    }),
+  );
 
   // Test layer with deterministic results
   static readonly Test = Layer.succeed(this, {
@@ -2271,109 +2385,107 @@ export class PaymentService extends Context.Tag("PaymentService")<
         id: `test-${amount}`,
         status: 'success',
         amount,
-        created: 1234567890
+        created: 1234567890,
       }),
-    refundPayment: () => Effect.succeed(void 0)
-  })
+    refundPayment: () => Effect.succeed(void 0),
+  });
 
   // Dev layer with logging and delays for local development
   static readonly Dev = Layer.effect(
     this,
     Effect.gen(function* () {
-      const logger = yield* LoggingService
+      const logger = yield* LoggingService;
 
       return {
         processPayment: (amount) =>
           Effect.gen(function* () {
-            yield* logger.info(`[DEV] Processing payment: ${amount}`)
-            yield* Effect.sleep("100 millis")  // Simulate network delay
+            yield* logger.info(`[DEV] Processing payment: ${amount}`);
+            yield* Effect.sleep('100 millis'); // Simulate network delay
             return {
               id: `dev-${Date.now()}`,
               status: 'success' as const,
               amount,
-              created: Date.now()
-            }
+              created: Date.now(),
+            };
           }),
         refundPayment: (id) =>
           Effect.gen(function* () {
-            yield* logger.info(`[DEV] Refunding payment: ${id}`)
-            yield* Effect.sleep("50 millis")
-          })
-      }
-    })
-  )
+            yield* logger.info(`[DEV] Refunding payment: ${id}`);
+            yield* Effect.sleep('50 millis');
+          }),
+      };
+    }),
+  );
 
   // Configurable mock layer for specific test scenarios
   static readonly Mock = (overrides?: Partial<PaymentServiceInterface>) =>
     Layer.succeed(this, {
-      processPayment: overrides?.processPayment ??
-        ((amount) => Effect.succeed({
-          id: 'mock-123',
-          status: 'success',
-          amount,
-          created: Date.now()
-        })),
-      refundPayment: overrides?.refundPayment ??
-        (() => Effect.succeed(void 0))
-    })
+      processPayment:
+        overrides?.processPayment ??
+        ((amount) =>
+          Effect.succeed({
+            id: 'mock-123',
+            status: 'success',
+            amount,
+            created: Date.now(),
+          })),
+      refundPayment: overrides?.refundPayment ?? (() => Effect.succeed(void 0)),
+    });
 
   // Auto layer - selects appropriate layer based on environment
   static readonly Auto = Layer.unwrapEffect(
     Effect.gen(function* () {
-      const env = yield* Config.string("NODE_ENV").pipe(
-        Effect.orElse(() => Effect.succeed("production"))
-      )
+      const env = yield* Config.string('NODE_ENV').pipe(
+        Effect.orElse(() => Effect.succeed('production')),
+      );
 
       switch (env) {
-        case "test":
-          return PaymentService.Test
-        case "development":
-          return PaymentService.Dev
-        case "production":
+        case 'test':
+          return PaymentService.Test;
+        case 'development':
+          return PaymentService.Dev;
+        case 'production':
         default:
-          return PaymentService.Live
+          return PaymentService.Live;
       }
-    })
-  )
+    }),
+  );
 }
 
 // Usage in tests with specific scenarios
-describe("PaymentService", () => {
-  it("should handle payment failures", async () => {
+describe('PaymentService', () => {
+  it('should handle payment failures', async () => {
     const TestLayer = Layer.mergeAll(
       DatabaseService.Test,
       LoggingService.Test,
       PaymentService.Mock({
         processPayment: () =>
-          Effect.fail(new PaymentError({ message: "Card declined" }))
-      })
-    )
+          Effect.fail(new PaymentError({ message: 'Card declined' })),
+      }),
+    );
 
     const result = await Effect.runPromise(
-      processPayment(100).pipe(
-        Effect.either,
-        Effect.provide(TestLayer)
-      )
-    )
+      processPayment(100).pipe(Effect.either, Effect.provide(TestLayer)),
+    );
 
-    expect(Either.isLeft(result)).toBe(true)
-  })
+    expect(Either.isLeft(result)).toBe(true);
+  });
 
-  it("should process payment successfully", async () => {
+  it('should process payment successfully', async () => {
     const TestLayer = Layer.mergeAll(
       DatabaseService.Test,
       LoggingService.Test,
-      PaymentService.Test
-    )
+      PaymentService.Test,
+    );
 
     const result = await Effect.runPromise(
-      processPayment(100).pipe(Effect.provide(TestLayer))
-    )
+      processPayment(100).pipe(Effect.provide(TestLayer)),
+    );
 
-    expect(result.status).toBe("success")
-    expect(result.amount).toBe(100)
-  })
-})
+    expect(result.status).toBe('success');
+    expect(result.amount).toBe(100);
+  });
+});
 ```
 
 ## Layer Dependency Visualization
@@ -2426,39 +2538,36 @@ describe("PaymentService", () => {
 
 ```typescript
 // Infrastructure (no dependencies)
-const InfraLayer = Layer.mergeAll(
-  ConfigService.Live,
-  LoggingService.Live
-)
+const InfraLayer = Layer.mergeAll(ConfigService.Live, LoggingService.Live);
 
 // Providers (depend on infra)
 const ProviderLayer = Layer.mergeAll(
   DatabaseService.Live,
   CacheService.Live,
-  StripeService.Live
-).pipe(Layer.provide(InfraLayer))
+  StripeService.Live,
+).pipe(Layer.provide(InfraLayer));
 
 // Repositories (depend on providers)
 const RepositoryLayer = Layer.mergeAll(
   UserRepository.Live,
   ProductRepository.Live,
-  OrderRepository.Live
-).pipe(Layer.provide(ProviderLayer))
+  OrderRepository.Live,
+).pipe(Layer.provide(ProviderLayer));
 
 // Features (depend on repos and providers)
 const FeatureLayer = Layer.mergeAll(
   PaymentService.Live,
   EmailService.Live,
-  NotificationService.Live
-).pipe(Layer.provide(Layer.merge(RepositoryLayer, ProviderLayer)))
+  NotificationService.Live,
+).pipe(Layer.provide(Layer.merge(RepositoryLayer, ProviderLayer)));
 
 // Complete application layer
 export const AppLayer = Layer.mergeAll(
   InfraLayer,
   ProviderLayer,
   RepositoryLayer,
-  FeatureLayer
-)
+  FeatureLayer,
+);
 
 // For development
 export const DevLayer = Layer.mergeAll(
@@ -2472,8 +2581,8 @@ export const DevLayer = Layer.mergeAll(
   OrderRepository.Live,
   PaymentService.Dev,
   EmailService.Test,
-  NotificationService.Test
-)
+  NotificationService.Test,
+);
 
 // For testing
 export const TestLayer = Layer.mergeAll(
@@ -2487,8 +2596,8 @@ export const TestLayer = Layer.mergeAll(
   OrderRepository.Test,
   PaymentService.Test,
   EmailService.Test,
-  NotificationService.Test
-)
+  NotificationService.Test,
+);
 ```
 
 ## Common Anti-Patterns to Avoid
@@ -2498,11 +2607,11 @@ export const TestLayer = Layer.mergeAll(
 ```typescript
 // ❌ WRONG - Unnecessary
 export const PaymentService = Context.GenericTag<PaymentServiceInterface>(
-  "@feature/payment/PaymentService"
+  '@feature/payment/PaymentService',
 );
 
 // ✅ CORRECT - Use Context.Tag
-export class PaymentService extends Context.Tag("PaymentService")<
+export class PaymentService extends Context.Tag('PaymentService')<
   PaymentService,
   PaymentServiceInterface
 >() {}
@@ -2549,16 +2658,16 @@ export class PaymentService extends Context.Tag("PaymentService")<
 // ❌ WRONG - Library provides its own dependencies
 export const PaymentServiceLive = Layer.effect(
   PaymentService,
-  makePaymentService
+  makePaymentService,
 ).pipe(
-  Layer.provide(StripeServiceLive),  // ❌ Don't do this
-  Layer.provide(DatabaseServiceLive)  // ❌ Let app compose
+  Layer.provide(StripeServiceLive), // ❌ Don't do this
+  Layer.provide(DatabaseServiceLive), // ❌ Let app compose
 );
 
 // ✅ CORRECT - Let application compose dependencies
 export const PaymentServiceLive = Layer.effect(
   PaymentService,
-  makePaymentService
+  makePaymentService,
 );
 ```
 
@@ -2595,23 +2704,23 @@ const processPayment = () => paymentEffect;
 ```typescript
 // ❌ WRONG - Nested generators are unnecessary
 const processOrder = Effect.gen(function* () {
-  const order = yield* getOrder()
+  const order = yield* getOrder();
 
   // ❌ Nested gen is unnecessary
   const payment = yield* Effect.gen(function* () {
-    const amount = order.total
-    return yield* processPayment(amount)
-  })
+    const amount = order.total;
+    return yield* processPayment(amount);
+  });
 
-  return payment
-})
+  return payment;
+});
 
 // ✅ CORRECT - Flat structure
 const processOrder = Effect.gen(function* () {
-  const order = yield* getOrder()
-  const payment = yield* processPayment(order.total)
-  return payment
-})
+  const order = yield* getOrder();
+  const payment = yield* processPayment(order.total);
+  return payment;
+});
 ```
 
 ### ❌ Creating Runtime in Loops
@@ -2619,34 +2728,36 @@ const processOrder = Effect.gen(function* () {
 ```typescript
 // ❌ WRONG - Creates runtime per iteration
 for (const item of items) {
-  await Effect.runPromise(processItem(item).pipe(Effect.provide(AppLayer)))
+  await Effect.runPromise(processItem(item).pipe(Effect.provide(AppLayer)));
 }
 
 // ✅ CORRECT - Single runtime for all iterations
 await Effect.runPromise(
   Effect.all(
-    items.map(item => processItem(item)),
-    { concurrency: 5 }
-  ).pipe(Effect.provide(AppLayer))
-)
+    items.map((item) => processItem(item)),
+    { concurrency: 5 },
+  ).pipe(Effect.provide(AppLayer)),
+);
 ```
 
 ### ❌ Unnecessary Type Annotations with Effect
 
 ```typescript
 // ❌ WRONG - Redundant type annotation
-const getUser = (id: string): Effect.Effect<User, DatabaseError, DatabaseService> =>
+const getUser = (
+  id: string,
+): Effect.Effect<User, DatabaseError, DatabaseService> =>
   Effect.gen(function* () {
-    const db = yield* DatabaseService
-    return yield* db.query(/* ... */)
-  })
+    const db = yield* DatabaseService;
+    return yield* db.query(/* ... */);
+  });
 
 // ✅ CORRECT - Let TypeScript infer
 const getUser = (id: string) =>
   Effect.gen(function* () {
-    const db = yield* DatabaseService
-    return yield* db.query(/* ... */)
-  })
+    const db = yield* DatabaseService;
+    return yield* db.query(/* ... */);
+  });
 ```
 
 ## Type Safety & Inference Patterns
@@ -2657,18 +2768,20 @@ const getUser = (id: string) =>
 
 ```typescript
 // ❌ Over-annotated - unnecessary
-const processPayment = (amount: number): Effect.Effect<Payment, PaymentError, PaymentService> =>
+const processPayment = (
+  amount: number,
+): Effect.Effect<Payment, PaymentError, PaymentService> =>
   Effect.gen(function* () {
-    const service = yield* PaymentService
-    return yield* service.process(amount)
-  })
+    const service = yield* PaymentService;
+    return yield* service.process(amount);
+  });
 
 // ✅ Let inference work
 const processPayment = (amount: number) =>
   Effect.gen(function* () {
-    const service = yield* PaymentService
-    return yield* service.process(amount)
-  })
+    const service = yield* PaymentService;
+    return yield* service.process(amount);
+  });
 // TypeScript infers: Effect<Payment, PaymentError, PaymentService>
 ```
 
@@ -2680,17 +2793,17 @@ const processPayment = (amount: number) =>
 // Service automatically infers it needs PaymentService
 const handler = (amount: number) =>
   Effect.gen(function* () {
-    const service = yield* PaymentService
-    const result = yield* service.process(amount)
-    return result
-  })
+    const service = yield* PaymentService;
+    const result = yield* service.process(amount);
+    return result;
+  });
 // Effect infers: Effect<Payment, PaymentError, PaymentService>
 
 // Service composition automatically satisfies this:
-const layer = Layer.mergeAll(PaymentService.Live, OtherService.Live)
+const layer = Layer.mergeAll(PaymentService.Live, OtherService.Live);
 
 // All dependencies are automatically provided
-await Effect.runPromise(handler(100).pipe(Effect.provide(layer)))
+await Effect.runPromise(handler(100).pipe(Effect.provide(layer)));
 ```
 
 ### Rule 3: Error Type Inference
@@ -2699,21 +2812,23 @@ await Effect.runPromise(handler(100).pipe(Effect.provide(layer)))
 
 ```typescript
 // Domain error
-export class ProductNotFoundError extends Data.TaggedError("ProductNotFoundError")<{
-  readonly productId: string
+export class ProductNotFoundError extends Data.TaggedError(
+  'ProductNotFoundError',
+)<{
+  readonly productId: string;
 }> {}
 
 // Service error
-export class ServiceError extends Data.TaggedError("ServiceError")<{
-  readonly message: string
+export class ServiceError extends Data.TaggedError('ServiceError')<{
+  readonly message: string;
 }> {}
 
 // Effect automatically infers error union
 const getProduct = (id: string) =>
   Effect.gen(function* () {
-    const product = yield* findProduct(id)  // Effect<Product, ProductNotFoundError>
-    return yield* enrichProduct(product)    // Effect<EnrichedProduct, ServiceError>
-  })
+    const product = yield* findProduct(id); // Effect<Product, ProductNotFoundError>
+    return yield* enrichProduct(product); // Effect<EnrichedProduct, ServiceError>
+  });
 // TypeScript infers: Effect<EnrichedProduct, ProductNotFoundError | ServiceError>
 ```
 
@@ -2758,25 +2873,25 @@ export const UserRepositoryLive = Layer.effect(
 **Use schemas for runtime validation AND type safety:**
 
 ```typescript
-import { Schema } from 'effect'
+import { Schema } from 'effect';
 
 // ✅ Single source of truth for types
 export const UserSchema = Schema.Struct({
   id: Schema.String,
   email: Schema.String,
   name: Schema.String,
-  createdAt: Schema.DateTimeUtc
-})
+  createdAt: Schema.DateTimeUtc,
+});
 
 // Type is automatically derived from schema
-export type User = Schema.Schema.Type<typeof UserSchema>
+export type User = Schema.Schema.Type<typeof UserSchema>;
 
 // Validation is type-safe
 const parseUser = (data: unknown) =>
   Effect.try({
     try: () => Schema.decodeSync(UserSchema)(data),
-    catch: (error) => new ValidationError({ cause: error })
-  })
+    catch: (error) => new ValidationError({ cause: error }),
+  });
 ```
 
 ### Rule 6: Generic Service Type Safety
@@ -2786,30 +2901,30 @@ const parseUser = (data: unknown) =>
 ```typescript
 // ✅ Generic service with proper type constraints
 export const KyselyService = <DB>() =>
-  Context.Tag<KyselyServiceInterface<DB>>("KyselyService")
+  Context.Tag<KyselyServiceInterface<DB>>('KyselyService');
 
 // Usage maintains type safety
-const db = KyselyService<Database>()
+const db = KyselyService<Database>();
 
 const query = (sql: string) =>
   Effect.gen(function* () {
-    const service = yield* db
-    return yield* service.execute(sql)  // SQL type-checked for Database
-  })
+    const service = yield* db;
+    return yield* service.execute(sql); // SQL type-checked for Database
+  });
 ```
 
 ### Anti-Pattern: Type Assertions
 
 ```typescript
 // ❌ WRONG - Type assertion hides errors
-const user = data as User  // Compiler can't catch missing fields
+const user = data as User; // Compiler can't catch missing fields
 
 // ✅ CORRECT - Use schemas or proper typing
 const parseUser = (data: unknown): Effect.Effect<User, ValidationError> =>
   Effect.try({
     try: () => Schema.decodeSync(UserSchema)(data),
-    catch: (error) => new ValidationError({ cause: error })
-  })
+    catch: (error) => new ValidationError({ cause: error }),
+  });
 ```
 
 ### Type Safety Checklist
@@ -2824,29 +2939,29 @@ const parseUser = (data: unknown): Effect.Effect<User, ValidationError> =>
 
 ## Quick Lookup Table
 
-| Pattern | When to Use | Syntax |
-|---------|------------|--------|
-| Context.Tag | Non-generic services (90%) | `class Service extends Context.Tag()<Service, Interface>() {}` |
-| Effect.Service | Services with accessors | `class Service extends Effect.Service<Service>()("Service", {...})` |
-| Context.GenericTag | Generic services (1%) | `const Service = <T>() => Context.GenericTag<Interface<T>>()` |
-| Inline Interface | Services with <10 methods | `Context.Tag()<Service, { method: () => Effect }>()` |
-| Static Live | Production layer | `static readonly Live = Layer.effect(this, ...)` |
-| Static Test | Test layer | `static readonly Test = Layer.succeed(this, ...)` |
-| Static Dev | Development layer | `static readonly Dev = Layer.effect(this, ...)` |
-| Static Mock | Configurable mocks | `static readonly Mock = (overrides?) => Layer.succeed(...)` |
-| Static Auto | Environment-based | `static readonly Auto = Layer.unwrapEffect(...)` |
-| Layer.sync | Sync creation | `Layer.sync(this, () => implementation)` |
-| Layer.effect | Needs dependencies | `Layer.effect(this, Effect.gen(...))` |
-| Layer.scoped | Resource cleanup | `Layer.scoped(this, Effect.acquireRelease(...))` |
-| Layer.succeed | Test mocks | `Layer.succeed(this, mockImplementation)` |
-| Data.TaggedError | Runtime errors | `class Error extends Data.TaggedError()` |
-| Schema.TaggedError | RPC/serializable errors | `class Error extends Schema.TaggedError()()` |
-| Effect.gen | Sequential/complex | `Effect.gen(function* () {})` |
-| Combinators | Simple/parallel | `Effect.map`, `Effect.all`, etc. |
-| Effect.runtime | Preserve context | `const runtime = yield* Effect.runtime()` |
-| Effect.all | Parallel execution | `Effect.all([...], { concurrency: "unbounded" })` |
-| Effect.runPromise | Run in async context | `await Effect.runPromise(program)` |
-| NodeRuntime.runMain | CLI apps | `NodeRuntime.runMain(program)` |
+| Pattern             | When to Use                | Syntax                                                              |
+| ------------------- | -------------------------- | ------------------------------------------------------------------- |
+| Context.Tag         | Non-generic services (90%) | `class Service extends Context.Tag()<Service, Interface>() {}`      |
+| Effect.Service      | Services with accessors    | `class Service extends Effect.Service<Service>()("Service", {...})` |
+| Context.GenericTag  | Generic services (1%)      | `const Service = <T>() => Context.GenericTag<Interface<T>>()`       |
+| Inline Interface    | Services with <10 methods  | `Context.Tag()<Service, { method: () => Effect }>()`                |
+| Static Live         | Production layer           | `static readonly Live = Layer.effect(this, ...)`                    |
+| Static Test         | Test layer                 | `static readonly Test = Layer.succeed(this, ...)`                   |
+| Static Dev          | Development layer          | `static readonly Dev = Layer.effect(this, ...)`                     |
+| Static Mock         | Configurable mocks         | `static readonly Mock = (overrides?) => Layer.succeed(...)`         |
+| Static Auto         | Environment-based          | `static readonly Auto = Layer.unwrapEffect(...)`                    |
+| Layer.sync          | Sync creation              | `Layer.sync(this, () => implementation)`                            |
+| Layer.effect        | Needs dependencies         | `Layer.effect(this, Effect.gen(...))`                               |
+| Layer.scoped        | Resource cleanup           | `Layer.scoped(this, Effect.acquireRelease(...))`                    |
+| Layer.succeed       | Test mocks                 | `Layer.succeed(this, mockImplementation)`                           |
+| Data.TaggedError    | Runtime errors             | `class Error extends Data.TaggedError()`                            |
+| Schema.TaggedError  | RPC/serializable errors    | `class Error extends Schema.TaggedError()()`                        |
+| Effect.gen          | Sequential/complex         | `Effect.gen(function* () {})`                                       |
+| Combinators         | Simple/parallel            | `Effect.map`, `Effect.all`, etc.                                    |
+| Effect.runtime      | Preserve context           | `const runtime = yield* Effect.runtime()`                           |
+| Effect.all          | Parallel execution         | `Effect.all([...], { concurrency: "unbounded" })`                   |
+| Effect.runPromise   | Run in async context       | `await Effect.runPromise(program)`                                  |
+| NodeRuntime.runMain | CLI apps                   | `NodeRuntime.runMain(program)`                                      |
 
 **Note**: Both `Effect.Service` and `Context.Tag` are valid in Effect 3.0+. Choose based on your needs.
 
@@ -2856,12 +2971,11 @@ const parseUser = (data: unknown): Effect.Effect<User, ValidationError> =>
 
 ```typescript
 // Before
-export const MyService = Context.GenericTag<MyServiceInterface>(
-  "@app/MyService"
-);
+export const MyService =
+  Context.GenericTag<MyServiceInterface>('@app/MyService');
 
 // After
-export class MyService extends Context.Tag("MyService")<
+export class MyService extends Context.Tag('MyService')<
   MyService,
   MyServiceInterface
 >() {}
@@ -2871,50 +2985,58 @@ export class MyService extends Context.Tag("MyService")<
 
 ```typescript
 // ❌ OLD - Verbose pattern with factory methods
-export class PaymentService extends Context.Tag("PaymentService")<
+export class PaymentService extends Context.Tag('PaymentService')<
   PaymentService,
   PaymentServiceInterface
 >() {
-  static make(stripe: Stripe, database: DatabaseService): PaymentServiceInterface {
+  static make(
+    stripe: Stripe,
+    database: DatabaseService,
+  ): PaymentServiceInterface {
     return PaymentService.of({
-      processPayment: () => Effect.gen(function* () {
-        // implementation
-      })
-    })
+      processPayment: () =>
+        Effect.gen(function* () {
+          // implementation
+        }),
+    });
   }
 }
 
 export const PaymentServiceLive = Layer.effect(
   PaymentService,
   Effect.gen(function* () {
-    const stripe = yield* StripeService
-    const database = yield* DatabaseService
-    return PaymentService.make(stripe, database)
-  })
-)
+    const stripe = yield* StripeService;
+    const database = yield* DatabaseService;
+    return PaymentService.make(stripe, database);
+  }),
+);
 
 // ✅ NEW - Modern pattern with inline interface and static Live
-export class PaymentService extends Context.Tag("PaymentService")<
+export class PaymentService extends Context.Tag('PaymentService')<
   PaymentService,
   {
-    readonly processPayment: (amount: number) => Effect.Effect<Payment, PaymentError>
+    readonly processPayment: (
+      amount: number,
+    ) => Effect.Effect<Payment, PaymentError>;
   }
 >() {
   static readonly Live = Layer.effect(
     this,
     Effect.gen(function* () {
-      const stripe = yield* StripeService
-      const database = yield* DatabaseService
+      const stripe = yield* StripeService;
+      const database = yield* DatabaseService;
 
       // Direct object return - no factories
       return {
-        processPayment: (amount) => Effect.tryPromise({
-          try: () => stripe.paymentIntents.create({ amount, currency: 'usd' }),
-          catch: (error) => new PaymentError({ cause: error })
-        })
-      }
-    })
-  )
+        processPayment: (amount) =>
+          Effect.tryPromise({
+            try: () =>
+              stripe.paymentIntents.create({ amount, currency: 'usd' }),
+            catch: (error) => new PaymentError({ cause: error }),
+          }),
+      };
+    }),
+  );
 }
 ```
 
@@ -2929,53 +3051,51 @@ export class PaymentService extends Context.Tag("PaymentService")<
 
 ## Testing with @effect/vitest
 
-The Creative Toolkits monorepo uses **@effect/vitest** for testing Effect-based services. This library provides seamless integration between Vitest and Effect, with automatic TestContext injection, TestClock support, and native Effect test patterns.
+The monorepo uses **@effect/vitest** for testing Effect-based services. This library provides seamless integration between Vitest and Effect, with automatic TestContext injection, TestClock support, and native Effect test patterns.
 
 ### Basic Effect Test
 
 ```typescript
-import { it, expect } from '@effect/vitest'
-import { Effect } from 'effect'
-import { MyService } from './my-service'
-import { MyServiceLive } from './my-service'
+import { it, expect } from '@effect/vitest';
+import { Effect } from 'effect';
+import { MyService } from './my-service';
+import { MyServiceLive } from './my-service';
 
 describe('MyService', () => {
   it('should perform operation', () =>
     Effect.gen(function* () {
-      const service = yield* MyService
-      const result = yield* service.operation()
+      const service = yield* MyService;
+      const result = yield* service.operation();
 
-      expect(result).toBe(expectedValue)
-    }).pipe(Effect.provide(MyServiceLive))
-  )
-})
+      expect(result).toBe(expectedValue);
+    }).pipe(Effect.provide(MyServiceLive)));
+});
 ```
 
 ### Testing with Dependencies
 
 ```typescript
-import { it, expect } from '@effect/vitest'
-import { Effect, Layer } from 'effect'
+import { it, expect } from '@effect/vitest';
+import { Effect, Layer } from 'effect';
 
 describe('ServiceWithDependencies', () => {
   const TestLayer = Layer.mergeAll(
     TestDatabaseService,
     TestCacheService,
-    MyServiceLive
-  )
+    MyServiceLive,
+  );
 
   it('should use injected dependencies', () =>
     Effect.gen(function* () {
-      const service = yield* MyService
-      const db = yield* DatabaseService
-      const cache = yield* CacheService
+      const service = yield* MyService;
+      const db = yield* DatabaseService;
+      const cache = yield* CacheService;
 
-      const result = yield* service.operationWithDeps()
+      const result = yield* service.operationWithDeps();
 
-      expect(result).toBeDefined()
-    }).pipe(Effect.provide(TestLayer))
-  )
-})
+      expect(result).toBeDefined();
+    }).pipe(Effect.provide(TestLayer)));
+});
 ```
 
 ### Testing with TestClock
@@ -2983,25 +3103,24 @@ describe('ServiceWithDependencies', () => {
 @effect/vitest automatically provides a TestClock for simulating time in tests:
 
 ```typescript
-import { it, expect } from '@effect/vitest'
-import { Effect, TestClock } from 'effect'
+import { it, expect } from '@effect/vitest';
+import { Effect, TestClock } from 'effect';
 
 describe('TimeBasedOperations', () => {
   it('should handle time-based operations', () =>
     Effect.gen(function* () {
       // Start async operation
-      const fiber = yield* Effect.fork(delayedOperation())
+      const fiber = yield* Effect.fork(delayedOperation());
 
       // Advance test clock
-      yield* TestClock.adjust('1000 millis')
+      yield* TestClock.adjust('1000 millis');
 
       // Operation completes
-      const result = yield* Fiber.join(fiber)
+      const result = yield* Fiber.join(fiber);
 
-      expect(result).toBe(expectedValue)
-    }).pipe(Effect.provide(MyServiceLive))
-  )
-})
+      expect(result).toBe(expectedValue);
+    }).pipe(Effect.provide(MyServiceLive)));
+});
 ```
 
 ### Testing Scoped Resources
@@ -3009,20 +3128,20 @@ describe('TimeBasedOperations', () => {
 Use `it.scoped()` for Effects that require resource management:
 
 ```typescript
-import { it } from '@effect/vitest'
-import { Effect, Scope } from 'effect'
+import { it } from '@effect/vitest';
+import { Effect, Scope } from 'effect';
 
 describe('ResourceManagement', () => {
   it.scoped('should manage resources', () =>
     Effect.gen(function* () {
-      const resource = yield* acquireResource()
+      const resource = yield* acquireResource();
       // Resource is automatically cleaned up
-      const result = yield* useResource(resource)
+      const result = yield* useResource(resource);
 
-      expect(result).toBeDefined()
-    }).pipe(Effect.provide(MyServiceLive))
-  )
-})
+      expect(result).toBeDefined();
+    }).pipe(Effect.provide(MyServiceLive)),
+  );
+});
 ```
 
 ### Testing with Live Environment
@@ -3031,13 +3150,13 @@ Use `it.live()` to run tests with the real (live) Effect environment without Tes
 
 ```typescript
 it.live('should use real environment', () =>
-    Effect.gen(function* () {
-      // Uses real time, real services, etc.
-      const result = yield* realServiceCall()
+  Effect.gen(function* () {
+    // Uses real time, real services, etc.
+    const result = yield* realServiceCall();
 
-      expect(result).toBeDefined()
-    }).pipe(Effect.provide(MyServiceLive))
-  )
+    expect(result).toBeDefined();
+  }).pipe(Effect.provide(MyServiceLive)),
+);
 ```
 
 ### Testing Error Cases
@@ -3045,23 +3164,22 @@ it.live('should use real environment', () =>
 Capture errors using `Effect.exit()` to verify error handling:
 
 ```typescript
-import { it, expect } from '@effect/vitest'
-import { Effect, Exit } from 'effect'
+import { it, expect } from '@effect/vitest';
+import { Effect, Exit } from 'effect';
 
 describe('ErrorHandling', () => {
   it('should handle errors correctly', () =>
     Effect.gen(function* () {
-      const exit = yield* Effect.exit(failingOperation())
+      const exit = yield* Effect.exit(failingOperation());
 
-      expect(Exit.isFailure(exit)).toBe(true)
+      expect(Exit.isFailure(exit)).toBe(true);
       if (Exit.isFailure(exit)) {
         expect(exit.cause).toStrictEqual(
-          new MyError({ reason: 'ValidationFailed' })
-        )
+          new MyError({ reason: 'ValidationFailed' }),
+        );
       }
-    }).pipe(Effect.provide(MyServiceLive))
-  )
-})
+    }).pipe(Effect.provide(MyServiceLive)));
+});
 ```
 
 ### Test Control Modifiers
@@ -3069,22 +3187,28 @@ describe('ErrorHandling', () => {
 @effect/vitest provides modifiers for test control:
 
 ```typescript
-import { it } from '@effect/vitest'
+import { it } from '@effect/vitest';
 
 // Run only this test (skip all others)
 it.effect.only('focused test', () =>
-  Effect.gen(function* () { /* ... */ })
-)
+  Effect.gen(function* () {
+    /* ... */
+  }),
+);
 
 // Skip this test temporarily
 it.effect.skip('skipped test', () =>
-  Effect.gen(function* () { /* ... */ })
-)
+  Effect.gen(function* () {
+    /* ... */
+  }),
+);
 
 // Mark test as expected to fail
 it.effect.fails('known issue', () =>
-  Effect.gen(function* () { /* ... */ })
-)
+  Effect.gen(function* () {
+    /* ... */
+  }),
+);
 ```
 
 ### Test Layer Pattern
@@ -3093,49 +3217,48 @@ it.effect.fails('known issue', () =>
 
 ```typescript
 // my-service.ts
-import { Effect, Layer, Context } from 'effect'
-import { DatabaseService } from '@creativetoolkits/infra-database'
+import { Effect, Layer, Context } from 'effect';
+import { DatabaseService } from '@samuelho-dev/infra-database';
 
-export class MyService extends Context.Tag("MyService")<
+export class MyService extends Context.Tag('MyService')<
   MyService,
   MyServiceInterface
 >() {
   static readonly Live = Layer.effect(
     this,
     Effect.gen(function* () {
-      const db = yield* DatabaseService
+      const db = yield* DatabaseService;
       return {
-        operation: () => db.query(/* ... */)
-      }
-    })
-  )
+        operation: () => db.query(/* ... */),
+      };
+    }),
+  );
 
   // ✅ Pattern B: Test layer as static property
   static readonly Test = Layer.succeed(this, {
-    operation: () => Effect.succeed(mockResult)
-  })
+    operation: () => Effect.succeed(mockResult),
+  });
 }
 
 // my-service.spec.ts - Tests use static Test property
-import { Effect, Layer } from 'effect'
-import { MyService } from './my-service'
-import { DatabaseService } from '@creativetoolkits/infra-database'
+import { Effect, Layer } from 'effect';
+import { MyService } from './my-service';
+import { DatabaseService } from '@samuelho-dev/infra-database';
 
 // Compose test layers
 const TestLayer = Layer.mergeAll(
-  DatabaseService.Test,  // ✅ Use static Test property
-  MyService.Test         // ✅ Use static Test property
-)
+  DatabaseService.Test, // ✅ Use static Test property
+  MyService.Test, // ✅ Use static Test property
+);
 
 describe('MyService', () => {
   it('should work with test layer', () =>
     Effect.gen(function* () {
-      const service = yield* MyService
-      const result = yield* service.operation()
-      expect(result).toBeDefined()
-    }).pipe(Effect.provide(TestLayer))
-  )
-})
+      const service = yield* MyService;
+      const result = yield* service.operation();
+      expect(result).toBeDefined();
+    }).pipe(Effect.provide(TestLayer)));
+});
 ```
 
 **Alternative: Separate Test Export (Legacy)**
@@ -3144,59 +3267,56 @@ Only use when test layer must be in separate file:
 
 ```typescript
 // my-service.test-utils.ts (separate file)
-import { Layer } from 'effect'
-import { DatabaseService } from '@creativetoolkits/infra-database'
+import { Layer } from 'effect';
+import { DatabaseService } from '@samuelho-dev/infra-database';
 
 // ⚠️ Less discoverable - only when test must be separate
-export const TestDatabaseService = Layer.succeed(
-  DatabaseService,
-  {
-    query: () => Effect.succeed(mockData),
-    execute: () => Effect.succeed(undefined)
-  }
-)
+export const TestDatabaseService = Layer.succeed(DatabaseService, {
+  query: () => Effect.succeed(mockData),
+  execute: () => Effect.succeed(undefined),
+});
 ```
 
 ### Common Testing Patterns
 
 **Pattern 1: Verify Service Calls**
+
 ```typescript
 it('should call dependencies', () =>
   Effect.gen(function* () {
-    const service = yield* MyService
-    yield* service.operation()
+    const service = yield* MyService;
+    yield* service.operation();
 
     // Verify via mock/spy if needed
-    expect(mockDatabase.query).toHaveBeenCalled()
-  }).pipe(Effect.provide(TestLayer))
-)
+    expect(mockDatabase.query).toHaveBeenCalled();
+  }).pipe(Effect.provide(TestLayer)));
 ```
 
 **Pattern 2: Test Error Recovery**
+
 ```typescript
 it('should recover from errors', () =>
   Effect.gen(function* () {
     const result = yield* riskyOperation().pipe(
-      Effect.catchAll(() => Effect.succeed(fallbackValue))
-    )
+      Effect.catchAll(() => Effect.succeed(fallbackValue)),
+    );
 
-    expect(result).toBe(fallbackValue)
-  }).pipe(Effect.provide(TestLayer))
-)
+    expect(result).toBe(fallbackValue);
+  }).pipe(Effect.provide(TestLayer)));
 ```
 
 **Pattern 3: Test Concurrent Operations**
+
 ```typescript
 it('should handle concurrent operations', () =>
   Effect.gen(function* () {
     const results = yield* Effect.all(
       [operation1(), operation2(), operation3()],
-      { concurrency: 'unbounded' }
-    )
+      { concurrency: 'unbounded' },
+    );
 
-    expect(results).toHaveLength(3)
-  }).pipe(Effect.provide(TestLayer))
-)
+    expect(results).toHaveLength(3);
+  }).pipe(Effect.provide(TestLayer)));
 ```
 
 ### Configuration
@@ -3205,7 +3325,7 @@ Vitest configuration for Effect projects:
 
 ```typescript
 // vitest.config.ts
-import { defineConfig } from 'vitest/config'
+import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
@@ -3213,10 +3333,10 @@ export default defineConfig({
     environment: 'node',
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'json', 'html']
-    }
-  }
-})
+      reporter: ['text', 'json', 'html'],
+    },
+  },
+});
 ```
 
 ## Effect 4.0 Compatibility & Migration Guide
@@ -3228,6 +3348,7 @@ export default defineConfig({
 ✅ **Will remain stable in Effect 4.0**:
 
 **Core APIs**:
+
 - `Effect.gen` generator syntax
 - `Context.Tag` service definition
 - `Effect.Service` streamlined service creation (validated documentId 6206)
@@ -3236,17 +3357,20 @@ export default defineConfig({
 - `Effect.all` for parallel operations
 
 **Error Handling**:
+
 - `Data.TaggedError` for domain/runtime errors (validated documentId 5672)
 - `Schema.TaggedError` for RPC boundaries with serialization (validated documentId 9114)
 - `Effect.try*` family (`tryPromise`, `tryPromiseInterrupt`)
 - `Effect.catchAll`, `Effect.catchTag`, `Effect.catchTags`
 
 **Concurrency**:
+
 - `Fiber`, `FiberSet`, `FiberMap` APIs (validated documentId 6652, 6560)
 - `Ref`, `SynchronizedRef` for state management (Effect 3.0+)
 - `Effect.fork`, `Fiber.join`, `Fiber.interrupt`
 
 **Observability**:
+
 - Structured logging (`Effect.log*`, `Effect.annotateLogs`)
 - Telemetry (`Effect.withSpan`, `Effect.annotateCurrentSpan`)
 - OpenTelemetry integration patterns
@@ -3254,6 +3378,7 @@ export default defineConfig({
 ### Potential Changes in Effect 4.0
 
 ⚠️ **Monitor for changes** (verify with official docs when Effect 4.0 releases):
+
 - OpenTelemetry integration implementation details
 - RPC implementation specifics (Effect RPC is evolving)
 - Stream API improvements and optimizations
@@ -3274,6 +3399,7 @@ When Effect 4.0 is released:
 Follow these patterns to minimize migration effort when Effect 4.0 arrives:
 
 ✅ **Recommended Patterns**:
+
 ```typescript
 // ✅ Use Effect.gen instead of pipe chains (more stable)
 const program = Effect.gen(function* () {
@@ -3322,6 +3448,7 @@ yield* Effect.logInfo("Operation started").pipe(
 ### Validation Summary
 
 All patterns in this guide have been validated against Effect 3.0+ official documentation via Effect MCP server:
+
 - Effect.Service (documentId 6206) ✅
 - Context.Tag (documentId 5628) ✅
 - Data.TaggedError (documentId 5672) ✅

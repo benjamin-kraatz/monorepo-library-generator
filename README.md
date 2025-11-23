@@ -566,10 +566,17 @@ All libraries include:
 
 ## 📖 Documentation
 
+### Core Documentation
 - **[Architecture Overview](./docs/ARCHITECTURE_OVERVIEW.md)** - System architecture and design
-- **[Effect Patterns](./docs/EFFECT_PATTERNS.md)** - Effect-TS patterns used
+- **[Effect Patterns](./docs/EFFECT_PATTERNS.md)** - Effect-TS patterns and standardized layers ✨ UPDATED
 - **[Export Patterns](./docs/EXPORT_PATTERNS.md)** - Platform export conventions
 - **[Contract Libraries](./docs/CONTRACT.md)** - Contract generator guide
+- **[Examples](./docs/EXAMPLES.md)** - End-to-end examples ✨ UPDATED
+
+### Implementation & Migration (v2.0)
+- **[Implementation Complete](./IMPLEMENTATION_COMPLETE.md)** - Effect layer standardization summary ✨ NEW
+- **[Migration Guide](./MIGRATION_GUIDE.md)** - Upgrade guide for naming changes ✨ NEW
+- **[Layer Naming Standards](./docs/LAYER_NAMING_STANDARDS.md)** - Official naming conventions ✨ UPDATED
 - **[Data-Access Libraries](./docs/DATA-ACCESS.md)** - Data-access generator guide
 - **[Feature Libraries](./docs/FEATURE.md)** - Feature generator guide
 - **[Infrastructure Libraries](./docs/INFRA.md)** - Infrastructure generator guide
