@@ -48,7 +48,7 @@ export default async function dataAccessGenerator(
     "scope:shared",
     "platform:server"
   ]
-  const tags = parseTags(schema.tags, defaultTags)
+  const tags = parseTags(undefined, defaultTags)
 
   // 1. Generate base library files using centralized utility
   const libraryOptions = {

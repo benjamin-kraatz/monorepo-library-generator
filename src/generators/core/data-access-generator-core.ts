@@ -8,7 +8,7 @@
  */
 
 import { Effect } from "effect"
-import { calculateOffsetFromRoot, parseTags } from "../../utils/core-generator-utils"
+import { calculateOffsetFromRoot, parseTags } from "../../utils/generator-utils"
 import type { FileSystemAdapter, FileSystemErrors } from "../../utils/filesystem-adapter"
 import { generateInfrastructureFiles } from "../../utils/infrastructure-generator"
 import { createNamingVariants } from "../../utils/naming-utils"

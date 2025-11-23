@@ -52,11 +52,62 @@ export const ${className}ServiceTest = Layer.succeed(
 );`)
   builder.addBlankLine()
 
+  // Add Dev layer
+  builder.addRaw(`/**
+ * Dev layer for development environment
+ *
+ * Development layer with enhanced logging for debugging.
+ * Useful for local development to see operation flow.
+ *
+ * Uses Layer.effect for dependency injection without cleanup.
+ * If your service needs resource cleanup, switch to Layer.scoped.
+ */
+export const ${className}ServiceDev = Layer.effect(
+  ${className}Service,
+  Effect.gen(function* () {
+    // TODO: Inject dependencies as needed
+    // const userRepo = yield* UserRepository;
+    // const logger = yield* LoggingService;
+
+    console.log("[${className}] Development layer initialized");
+
+    return {
+      exampleOperation: () =>
+        Effect.gen(function* () {
+          console.log("[${className}] [DEV] exampleOperation starting");
+          const result = yield* Effect.void;
+          console.log("[${className}] [DEV] exampleOperation completed");
+          return result;
+        }),
+    };
+  })
+);`)
+  builder.addBlankLine()
+
   // Add Auto layer
   builder.addRaw(`/**
- * Auto layer - automatically selects based on environment
+ * Auto layer - automatically selects based on NODE_ENV
+ *
+ * Environment mapping:
+ * - test: Uses ${className}ServiceTest (mocks)
+ * - development: Uses ${className}ServiceDev (with logging)
+ * - production: Uses ${className}ServiceLive (production)
+ * - default: Uses ${className}ServiceLive
  */
-export const ${className}ServiceAuto = ${className}Service.Live;`)
+export const ${className}ServiceAuto = (() => {
+  const env = process.env["NODE_ENV"] || "production";
+
+  switch (env) {
+    case "test":
+      return ${className}ServiceTest;
+    case "development":
+      return ${className}ServiceDev;
+    case "production":
+      return ${className}ServiceLive;
+    default:
+      return ${className}ServiceLive;
+  }
+})();`)
   builder.addBlankLine()
 
   return builder.toString()

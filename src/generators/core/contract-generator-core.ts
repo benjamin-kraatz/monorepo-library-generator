@@ -8,7 +8,7 @@
  */
 
 import { Effect } from "effect"
-import { calculateOffsetFromRoot, parseTags } from "../../utils/core-generator-utils"
+import { calculateOffsetFromRoot, parseTags } from "../../utils/generator-utils"
 import type { FileSystemAdapter, FileSystemErrors } from "../../utils/filesystem-adapter"
 import { generateInfrastructureFiles } from "../../utils/infrastructure-generator"
 import { createNamingVariants } from "../../utils/naming-utils"
@@ -16,6 +16,9 @@ import type { ContractTemplateOptions } from "../../utils/shared/types"
 import { detectWorkspaceConfig } from "../../utils/workspace-detection"
 import { generateCommandsFile } from "../contract/templates/commands.template"
 import { generateEntitiesFile } from "../contract/templates/entities.template"
+import { generateEntityFile } from "../contract/templates/entity-file.template"
+import { generateEntityBarrelFile } from "../contract/templates/entity-barrel.template"
+import { generateTypesOnlyFile } from "../contract/templates/types-only.template"
 import { generateErrorsFile } from "../contract/templates/errors.template"
 import { generateEventsFile } from "../contract/templates/events.template"
 import { generateIndexFile } from "../contract/templates/index.template"
@@ -35,6 +38,7 @@ export interface ContractGeneratorCoreOptions {
   readonly tags?: string
   readonly includeCQRS?: boolean
   readonly includeRPC?: boolean
+  readonly entities?: ReadonlyArray<string> // Optional list of entity names for bundle optimization
   readonly workspaceRoot?: string // Optional, adapter provides default if not specified
   readonly directory?: string // Optional parent directory (e.g., "shared")
 }
@@ -91,7 +95,37 @@ export function generateContractCore(
       "platform:universal"
     ])
 
-    // 5. Generate infrastructure files (package.json, tsconfig, etc.)
+    // 5. Prepare entities list (needed for both infrastructure and templates)
+    // Default to single entity based on library name if entities not specified
+    const entities = options.entities && options.entities.length > 0
+      ? options.entities
+      : [nameVariants.className]
+
+    // Build granular package.json exports for tree-shaking
+    const entityExports: Record<string, { import: string; types: string }> = {}
+
+    // Add types-only export (zero runtime overhead)
+    entityExports["./types"] = {
+      import: "./src/types.ts",
+      types: "./src/types.ts"
+    }
+
+    // Add barrel export for all entities
+    entityExports["./entities"] = {
+      import: "./src/lib/entities/index.ts",
+      types: "./src/lib/entities/index.ts"
+    }
+
+    // Add granular export for each entity (tree-shakeable)
+    for (const entityName of entities) {
+      const fileName = entityNameToFileName(entityName)
+      entityExports[`./entities/${fileName}`] = {
+        import: `./src/lib/entities/${fileName}.ts`,
+        types: `./src/lib/entities/${fileName}.ts`
+      }
+    }
+
+    // 6. Generate infrastructure files (package.json, tsconfig, etc.)
     yield* generateInfrastructureFiles(adapter, {
       workspaceRoot,
       projectRoot,
@@ -99,10 +133,12 @@ export function generateContractCore(
       packageName,
       description: options.description ?? `Contract library for ${nameVariants.className}`,
       libraryType: "contract",
-      offsetFromRoot
+      offsetFromRoot,
+      additionalExports: entityExports
     })
 
-    // 6. Prepare template options for domain files
+    // 7. Prepare template options for domain files
+
     const templateOptions: ContractTemplateOptions = {
       // Naming variants
       name: options.name,
@@ -123,7 +159,10 @@ export function generateContractCore(
 
       // Feature flags
       includeCQRS: options.includeCQRS ?? false,
-      includeRPC: options.includeRPC ?? false
+      includeRPC: options.includeRPC ?? false,
+
+      // Bundle optimization
+      entities
     }
 
     // 7. Generate domain files
@@ -209,10 +248,9 @@ Effect.gen(function* () {
     // Create lib directory
     yield* adapter.makeDirectory(sourceLibPath)
 
-    // Generate core files (always)
+    // Generate core files (always) - excluding entities for now
     const coreFiles = [
       { path: "errors.ts", generator: generateErrorsFile },
-      { path: "entities.ts", generator: generateEntitiesFile },
       { path: "ports.ts", generator: generatePortsFile },
       { path: "events.ts", generator: generateEventsFile }
     ]
@@ -223,6 +261,42 @@ Effect.gen(function* () {
       yield* adapter.writeFile(filePath, content)
       files.push(filePath)
     }
+
+    // Generate entity files with bundle optimization
+    // Create entities directory
+    const entitiesPath = `${sourceLibPath}/entities`
+    yield* adapter.makeDirectory(entitiesPath)
+
+    // Generate separate entity file for each entity
+    for (const entityName of templateOptions.entities) {
+      const entityFileName = entityNameToFileName(entityName)
+      const entityFilePath = `${entitiesPath}/${entityFileName}.ts`
+      const entityContent = generateEntityFile({
+        entityName,
+        className: templateOptions.className,
+        packageName: templateOptions.packageName
+      })
+      yield* adapter.writeFile(entityFilePath, entityContent)
+      files.push(entityFilePath)
+    }
+
+    // Generate barrel file (entities/index.ts)
+    const barrelPath = `${entitiesPath}/index.ts`
+    const barrelContent = generateEntityBarrelFile({
+      entities: templateOptions.entities
+    })
+    yield* adapter.writeFile(barrelPath, barrelContent)
+    files.push(barrelPath)
+
+    // Generate types-only file (types.ts) for zero-runtime imports
+    const typesPath = `${workspaceRoot}/${sourceRoot}/types.ts`
+    const typesContent = generateTypesOnlyFile({
+      entities: templateOptions.entities,
+      includeCQRS: templateOptions.includeCQRS,
+      includeRPC: templateOptions.includeRPC
+    })
+    yield* adapter.writeFile(typesPath, typesContent)
+    files.push(typesPath)
 
     // Generate CQRS files (conditional)
     if (templateOptions.includeCQRS) {
@@ -256,4 +330,19 @@ Effect.gen(function* () {
 
     return files
   })
+}
+
+/**
+ * Convert entity name to file name
+ *
+ * Converts PascalCase entity names to kebab-case file names
+ *
+ * @example
+ * entityNameToFileName("Product") // "product"
+ * entityNameToFileName("ProductCategory") // "product-category"
+ */
+function entityNameToFileName(entityName: string): string {
+  return entityName
+    .replace(/([a-z])([A-Z])/g, "$1-$2")
+    .toLowerCase()
 }

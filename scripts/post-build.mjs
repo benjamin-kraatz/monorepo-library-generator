@@ -53,6 +53,15 @@ const updatedPackageJson = {
 }
 
 writeFileSync(distPackageJsonPath, JSON.stringify(updatedPackageJson, null, 2) + "\n")
+
+// Verify generators field was added
+const verifyPackageJson = JSON.parse(readFileSync(distPackageJsonPath, "utf-8"))
+if (verifyPackageJson.generators !== "./src/generators.json") {
+  console.error("❌ Failed to add generators field to package.json")
+  console.error(`   Expected: "./src/generators.json", Got: ${verifyPackageJson.generators}`)
+  process.exit(1)
+}
+
 console.log("✓ Added \"generators\" field and updated bin to dist/package.json")
 
 // 3. Copy compiled CJS generators to dist/src/generators/ for Nx
@@ -113,7 +122,21 @@ console.log("✓ Copied CJS utils from dist/cjs/utils/ to dist/src/utils/")
 // 5. Copy generators.json to dist/src/
 const generatorsJsonSource = join(process.cwd(), "src", "generators.json")
 const generatorsJsonDest = join(distDir, "src", "generators.json")
+
+// Ensure dist/src exists
+const distSrcDir = join(distDir, "src")
+if (!statSync(distSrcDir, { throwIfNoEntry: false })?.isDirectory()) {
+  mkdirSync(distSrcDir, { recursive: true })
+}
+
 cpSync(generatorsJsonSource, generatorsJsonDest)
+
+// Verify the copy succeeded
+if (!statSync(generatorsJsonDest, { throwIfNoEntry: false })?.isFile()) {
+  console.error("❌ Failed to copy generators.json")
+  process.exit(1)
+}
+
 console.log("✓ Copied generators.json to dist/src/")
 
 // 6. Create dist/bin/cli.mjs (ESM module)

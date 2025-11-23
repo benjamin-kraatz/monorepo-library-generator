@@ -29,6 +29,7 @@
   "bin": {
     "mlg": "./bin/cli.js"
   },
+  "generators": "./src/generators.json",
   "publishConfig": {
     "access": "public",
     "directory": "dist"

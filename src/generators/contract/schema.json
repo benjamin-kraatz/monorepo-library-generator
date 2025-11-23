@@ -34,6 +34,10 @@
       },
       "default": []
     },
+    "entities": {
+      "type": "string",
+      "description": "Comma-separated list of entity names for bundle optimization (e.g., 'Product,ProductCategory,ProductReview')"
+    },
     "includeCQRS": {
       "type": "boolean",
       "description": "Include CQRS pattern files (commands, queries, projections)",

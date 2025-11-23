@@ -100,6 +100,29 @@ export function generateLayersFile(options: ProviderTemplateOptions) {
   builder.addRaw(");")
   builder.addBlankLine()
 
+  // Test Layer
+  builder.addRaw("/**")
+  builder.addRaw(" * Test Layer - Testing environment")
+  builder.addRaw(" *")
+  builder.addRaw(" * Uses Layer.succeed for mock data")
+  builder.addRaw(" */")
+  builder.addRaw(`export const ${className}Test = Layer.succeed(`)
+  builder.addRaw(`  ${className},`)
+  builder.addRaw(`  ${className}.make(`)
+  builder.addRaw("    // Mock client")
+  builder.addRaw("    {")
+  builder.addRaw(
+    "      healthCheck: () => Promise.resolve({ status: \"healthy\" as const }),"
+  )
+  builder.addRaw("    },")
+  builder.addRaw("    {")
+  builder.addRaw("      apiKey: \"test_key\",")
+  builder.addRaw("      timeout: 1000,")
+  builder.addRaw("    },")
+  builder.addRaw("  ),")
+  builder.addRaw(");")
+  builder.addBlankLine()
+
   // Dev Layer
   builder.addRaw("/**")
   builder.addRaw(" * Dev Layer - Development environment")
@@ -133,36 +156,14 @@ export function generateLayersFile(options: ProviderTemplateOptions) {
   builder.addRaw(");")
   builder.addBlankLine()
 
-  // Test Layer
-  builder.addRaw("/**")
-  builder.addRaw(" * Test Layer - Testing environment")
-  builder.addRaw(" *")
-  builder.addRaw(" * Uses Layer.succeed for mock data")
-  builder.addRaw(" */")
-  builder.addRaw(`export const ${className}Test = Layer.succeed(`)
-  builder.addRaw(`  ${className},`)
-  builder.addRaw(`  ${className}.make(`)
-  builder.addRaw("    // Mock client")
-  builder.addRaw("    {")
-  builder.addRaw(
-    "      healthCheck: () => Promise.resolve({ status: \"healthy\" as const }),"
-  )
-  builder.addRaw("    },")
-  builder.addRaw("    {")
-  builder.addRaw("      apiKey: \"test_key\",")
-  builder.addRaw("      timeout: 1000,")
-  builder.addRaw("    },")
-  builder.addRaw("  ),")
-  builder.addRaw(");")
-  builder.addBlankLine()
-
   // Auto Layer
   builder.addRaw("/**")
   builder.addRaw(" * Auto Layer - Automatic environment detection")
   builder.addRaw(" *")
-  builder.addRaw(" * Selects appropriate layer based on NODE_ENV")
+  builder.addRaw(" * Selects appropriate layer based on NODE_ENV.")
+  builder.addRaw(" * Uses IIFE for immediate evaluation (not Layer.suspend).")
   builder.addRaw(" */")
-  builder.addRaw(`export const ${className}Auto = Layer.suspend(() => {`)
+  builder.addRaw(`export const ${className}Auto = (() => {`)
   builder.addRaw("  const nodeEnv = env.NODE_ENV;")
   builder.addBlankLine()
   builder.addRaw("  switch (nodeEnv) {")
@@ -175,7 +176,7 @@ export function generateLayersFile(options: ProviderTemplateOptions) {
   builder.addRaw("    default:")
   builder.addRaw(`      return ${className}Dev;`)
   builder.addRaw("  }")
-  builder.addRaw("});")
+  builder.addRaw("})();")
   builder.addBlankLine()
 
   // Custom layer factory

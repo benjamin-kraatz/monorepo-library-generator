@@ -240,6 +240,37 @@ nx build ${options.projectName}
 # Test
 nx test ${options.projectName}
 \`\`\`
+`,
+
+  util: (options) => `# ${options.packageName}
+
+${options.description}
+
+## Overview
+
+This utility library provides shared helper functions and utilities.
+
+## Contents
+
+- **Utilities**: Reusable helper functions
+- **Types**: Shared type definitions
+- **Constants**: Common constants
+
+## Usage
+
+\`\`\`typescript
+import { /* utilities */ } from '${options.packageName}';
+\`\`\`
+
+## Development
+
+\`\`\`bash
+# Build
+nx build ${options.projectName}
+
+# Test
+nx test ${options.projectName}
+\`\`\`
 `
 }
 

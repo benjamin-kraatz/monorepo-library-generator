@@ -478,7 +478,7 @@ function generateSourceFiles(
  */
 function generateIndexTemplate(
   options: LibraryGeneratorOptions,
-  nameVars: ReturnType<typeof names>
+  nameVars: ReturnType<typeof createNamingVariants>
 ) {
   const structure = LIBRARY_STRUCTURES[options.libraryType]
   const typesPath = getStructurePath(structure, "types") || "./lib/types"
@@ -510,7 +510,7 @@ export * from '${errorsPath}';
  */
 function generateServerTemplate(
   options: LibraryGeneratorOptions,
-  _nameVars: ReturnType<typeof names>
+  _nameVars: ReturnType<typeof createNamingVariants>
 ) {
   const structure = LIBRARY_STRUCTURES[options.libraryType]
   const servicePath = getStructurePath(structure, "service") || "./lib/service"
@@ -545,7 +545,7 @@ export * from '${layersPath}';
  */
 function generateClientTemplate(
   options: LibraryGeneratorOptions,
-  _nameVars: ReturnType<typeof names>
+  _nameVars: ReturnType<typeof createNamingVariants>
 ) {
   const structure = LIBRARY_STRUCTURES[options.libraryType]
   const typesPath = getStructurePath(structure, "types") || "./lib/types"
@@ -590,7 +590,7 @@ export type * from '${errorsPath}';
  */
 function generateEdgeTemplate(
   options: LibraryGeneratorOptions,
-  _nameVars: ReturnType<typeof names>
+  _nameVars: ReturnType<typeof createNamingVariants>
 ) {
   const structure = LIBRARY_STRUCTURES[options.libraryType]
   const middlewarePath = getStructurePath(structure, "middleware")
@@ -642,7 +642,7 @@ function generateDocumentation(
  */
 function generateReadmeTemplate(
   options: LibraryGeneratorOptions,
-  nameVars: ReturnType<typeof names>
+  nameVars: ReturnType<typeof createNamingVariants>
 ) {
   return `# @custom-repo/${options.projectName}
 
@@ -684,7 +684,7 @@ MIT
  */
 function generateClaudeTemplate(
   options: LibraryGeneratorOptions,
-  nameVars: ReturnType<typeof names>
+  nameVars: ReturnType<typeof createNamingVariants>
 ) {
   return `# @custom-repo/${options.projectName}
 

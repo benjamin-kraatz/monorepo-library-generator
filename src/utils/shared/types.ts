@@ -194,6 +194,12 @@ export interface PlatformExportsConfig {
  */
 export interface ContractTemplateOptions extends BaseTemplateOptions {
   /**
+   * List of entity names to generate
+   * Used for bundle optimization with separate entity files
+   */
+  readonly entities: ReadonlyArray<string>
+
+  /**
    * Whether to include CQRS patterns (commands, queries, projections)
    */
   readonly includeCQRS: boolean

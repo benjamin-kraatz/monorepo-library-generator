@@ -15,6 +15,7 @@ Generate production-ready TypeScript libraries for Effect-native monorepos with 
 - 🛡️ **Resource Safe**: Layer.scoped pattern prevents resource leaks
 - 📚 **Self-Documenting**: Comprehensive inline docs and CLAUDE.md files
 - 🏗️ **Best Practices**: Follows Effect-TS patterns and modern monorepo conventions
+- 🌳 **Bundle Optimized**: Tree-shakeable exports with granular subpath patterns for contract libraries
 
 ## 📦 Installation
 
@@ -44,16 +45,27 @@ npx nx g @samuelho-dev/monorepo-library-generator:contract product
 ### Generate a Contract Library
 
 ```bash
+# Generate with multiple entities (bundle-optimized)
+mlg contract product --entities Product,ProductCategory,ProductReview
+
+# Or generate with CQRS and RPC patterns
 mlg contract product --includeCQRS --includeRPC
 ```
 
 **Creates:**
-- Domain entities with Effect Schema
+- Domain entities with Effect Schema (separate files for tree-shaking)
 - Repository interfaces (ports) with Context.Tag
 - Domain errors with Data.TaggedError
 - Domain events
+- Type-only exports for zero-bundle-impact imports
 - Optional: CQRS commands/queries
 - Optional: RPC endpoint definitions
+
+**Bundle Optimization:**
+Contract libraries use separate entity files with granular package.json exports:
+- `import { Product } from '@repo/contract-product/entities/product'` - Tree-shakeable
+- `import type { Product } from '@repo/contract-product/types'` - Zero runtime overhead
+- `import { Product } from '@repo/contract-product'` - Convenience (all entities)
 
 **Purpose:** Define domain boundaries and interfaces (dependency inversion)
 

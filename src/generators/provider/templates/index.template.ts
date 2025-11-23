@@ -8,7 +8,7 @@
  * @see docs/NX_STANDARDS.md for export conventions
  */
 
-import type { ProviderTemplateOptions } from "../../shared/types"
+import type { ProviderTemplateOptions } from "../../../utils/shared/types"
 import { TypeScriptBuilder } from "../../../utils/code-generation/typescript-builder"
 import {
   generateStandardErrorExports,
@@ -35,19 +35,18 @@ export function generateIndexFile(options: ProviderTemplateOptions): string {
   // File header
   builder.addFileHeader({
     title: `${className} Provider Library`,
-    description: `External service adapter for ${className}`,
-    sections: [
-      `This library provides an Effect-based adapter for the ${className} external service.`,
-      "It wraps the external SDK in Effect types for composable error handling.",
-      "",
-      "Effect 3.0+ Pattern:",
-      `  - ${className}Service extends Context.Tag`,
-      `  - Access layers via static members: ${className}Service.Live, ${className}Service.Test`,
-      "",
-      "Usage:",
-      `  import { ${className}Service } from '${packageName}';`,
-      `  const layer = ${className}Service.Live;`
-    ]
+    description: `External service adapter for ${className}.
+
+This library provides an Effect-based adapter for the ${className} external service.
+It wraps the external SDK in Effect types for composable error handling.
+
+Effect 3.0+ Pattern:
+  - ${className}Service extends Context.Tag
+  - Access layers via static members: ${className}Service.Live, ${className}Service.Test
+
+Usage:
+  import { ${className}Service } from '${packageName}';
+  const layer = ${className}Service.Live;`
   })
 
   builder.addBlankLine()

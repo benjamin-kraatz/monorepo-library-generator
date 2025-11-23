@@ -11,7 +11,7 @@
  * @see docs/NX_STANDARDS.md for export conventions
  */
 
-import type { FeatureTemplateOptions } from "../../shared/types"
+import type { FeatureTemplateOptions } from "../../../utils/shared/types"
 import { TypeScriptBuilder } from "../../../utils/code-generation/typescript-builder"
 import { generateExportSections } from "../../../utils/code-generation/barrel-export-utils"
 import type { ExportSection } from "../../../utils/code-generation/barrel-export-utils"
@@ -35,19 +35,18 @@ export function generateIndexFile(options: FeatureTemplateOptions): string {
   // File header
   builder.addFileHeader({
     title: `${className} Feature Library`,
-    description: `Public API for ${className} feature`,
-    sections: [
-      "This is the main entry point for the feature library.",
-      "It exports only universal types and errors that are safe for all platforms.",
-      "",
-      "Platform-specific exports:",
-      "  - import { ... } from '@custom-repo/feature-{name}/server'  # Server-side service",
-      "  - import { ... } from '@custom-repo/feature-{name}/client'  # Client-side hooks/atoms",
-      "  - import { ... } from '@custom-repo/feature-{name}/edge'    # Edge middleware",
-      "",
-      "Best Practice: Use explicit platform imports to ensure proper tree-shaking",
-      "and avoid bundling server code in client bundles."
-    ]
+    description: `Public API for ${className} feature.
+
+This is the main entry point for the feature library.
+It exports only universal types and errors that are safe for all platforms.
+
+Platform-specific exports:
+  - import { ... } from '@custom-repo/feature-{name}/server'  # Server-side service
+  - import { ... } from '@custom-repo/feature-{name}/client'  # Client-side hooks/atoms
+  - import { ... } from '@custom-repo/feature-{name}/edge'    # Edge middleware
+
+Best Practice: Use explicit platform imports to ensure proper tree-shaking
+and avoid bundling server code in client bundles.`
   })
 
   builder.addBlankLine()

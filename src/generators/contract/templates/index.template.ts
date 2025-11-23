@@ -57,7 +57,10 @@ export function generateIndexFile(options: ContractTemplateOptions) {
       title: "Core Exports",
       items: [
         { comment: "Errors", exports: "export * from \"./lib/errors\";" },
-        { comment: "Entities", exports: "export * from \"./lib/entities\";" },
+        {
+          comment: "Entities (barrel export - use granular imports for tree-shaking)",
+          exports: "export * from \"./lib/entities\";"
+        },
         {
           comment: "Ports (Repository and Service interfaces)",
           exports: "export * from \"./lib/ports\";"

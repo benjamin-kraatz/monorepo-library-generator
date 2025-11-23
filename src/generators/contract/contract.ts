@@ -68,11 +68,24 @@ export default async function contractGenerator(
 
   // 2. Generate domain-specific files using shared core
   const adapter = createTreeAdapter(tree)
+
+  // Parse entities if provided (comma-separated string)
+  let entities: ReadonlyArray<string> | undefined
+  if (schema.entities) {
+    if (typeof schema.entities === 'string') {
+      // Split on comma and trim whitespace
+      entities = schema.entities.split(',').map(e => e.trim()).filter(e => e.length > 0)
+    } else {
+      entities = schema.entities
+    }
+  }
+
   const coreOptions: Parameters<typeof generateContractCore>[1] = {
     name: schema.name,
     ...(schema.description && { description: schema.description }),
     ...(schema.tags && { tags: schema.tags }),
     ...(schema.directory && { directory: schema.directory }),
+    ...(entities && { entities }),
     includeCQRS: schema.includeCQRS ?? false,
     includeRPC: schema.includeRPC ?? false,
     workspaceRoot: tree.root
@@ -88,12 +101,26 @@ export default async function contractGenerator(
 
   // 6. Return post-generation instructions
   return () => {
+    const entityCount = entities?.length ?? 1
+    const entityList = entities?.join(", ") ?? options.className
+
     console.log(`
 ✅ Contract library created: ${result.packageName}
 
 📁 Location: ${result.projectRoot}
 📦 Package: ${result.packageName}
 📂 Files generated: ${result.filesGenerated.length}
+🎯 Entities: ${entityCount} (${entityList})
+
+⚡ Bundle Optimization Features:
+   ✓ Separate entity files for tree-shaking
+   ✓ Granular package.json exports
+   ✓ Type-only imports (zero runtime overhead)
+
+   Import examples:
+   - Granular:  import { Product } from '${result.packageName}/entities/product'
+   - Barrel:    import { Product } from '${result.packageName}/entities'
+   - Type-only: import type { Product } from '${result.packageName}/types'
 
 🎯 IMPORTANT - Customization Required:
 This library was generated with minimal scaffolding.
@@ -101,10 +128,10 @@ Follow the TODO comments in each file to customize for your domain.
 
 🎯 Next Steps:
 1. Customize domain files (see TODO comments in each file):
-   - ${result.sourceRoot}/lib/entities.ts - Add your domain fields
-   - ${result.sourceRoot}/lib/errors.ts   - Add domain-specific errors
-   - ${result.sourceRoot}/lib/events.ts   - Add custom events
-   - ${result.sourceRoot}/lib/ports.ts    - Add repository/service methods
+   - ${result.sourceRoot}/lib/entities/* - Add your domain fields to each entity
+   - ${result.sourceRoot}/lib/errors.ts  - Add domain-specific errors
+   - ${result.sourceRoot}/lib/events.ts  - Add custom events
+   - ${result.sourceRoot}/lib/ports.ts   - Add repository/service methods
 
 2. Build and test:
    - pnpm exec nx build ${result.projectName} --batch

@@ -54,77 +54,65 @@ TODO: Customize this file:
 
   // Live Layer
   builder.addRaw(`/**
- * ${className} Data Access Live Layer
+ * ${className} Repository Live Layer
  *
- * Production environment layer using real database connections.
- * Provides ${className}Repository for data access operations.
+ * Production environment layer.
+ * Provides ${className}Repository with all required dependencies.
  *
- * TODO: Compose with infrastructure layers
- * Example:
- * \`\`\`typescript
- * export const ${className}DataAccessLive = Layer.mergeAll(
- *   ${className}Repository.Live,
- *   DatabaseLayer,
- *   CacheLayer,
- * ).pipe(Layer.provide(InfrastructureLayer));
- * \`\`\`
+ * If your repository implementation needs infrastructure services
+ * (like KyselyService or LoggingService), uncomment the dependencies
+ * in the repository.template.ts file and ensure they're provided when
+ * using this layer in your application.
  */
-export const ${className}DataAccessLive = Layer.mergeAll(
-  ${className}Repository.Live,
-  // TODO: Add infrastructure dependencies
-  // Example: DatabaseLayer, CacheLayer, LoggingLayer
-);`)
+export const ${className}RepositoryLive = ${className}Repository.Live;`)
   builder.addBlankLine()
 
   // Test Layer
   builder.addRaw(`/**
- * ${className} Data Access Test Layer
+ * ${className} Repository Test Layer
  *
  * Testing environment layer using in-memory storage.
  * Provides isolated ${className}Repository for test cases.
  *
+ * This layer is self-contained and requires no additional dependencies.
+ *
  * Usage in tests:
  * \`\`\`typescript
- * import { ${className}DataAccessTest } from "@custom-repo/data-access-${fileName}/server";
+ * import { ${className}RepositoryTest } from "@custom-repo/data-access-${fileName}/server";
  *
  * describe("${className} Repository", () => {
  *   it("should find entity by id", () =>
  *     Effect.gen(function* () {
  *       const repo = yield* ${className}Repository;
  *       // ... test operations
- *     }).pipe(Effect.provide(${className}DataAccessTest))
+ *     }).pipe(Effect.provide(${className}RepositoryTest))
  *   );
  * });
  * \`\`\`
  */
-export const ${className}DataAccessTest = Layer.mergeAll(
-  ${className}Repository.Test,
-  // TODO: Add test-specific layers if needed
-);`)
+export const ${className}RepositoryTest = ${className}Repository.Test;`)
   builder.addBlankLine()
 
   // Dev Layer
   builder.addRaw(`/**
- * ${className} Data Access Dev Layer
+ * ${className} Repository Dev Layer
  *
- * Development environment layer with logging and debugging.
+ * Development environment layer with enhanced logging and debugging.
  * Useful for local development and debugging repository operations.
  *
  * Features:
  * - Operation logging and timing
  * - Error details and stack traces
  * - Query inspection
+ *
+ * The Dev repository layer includes enhanced console logging for all operations.
  */
-export const ${className}DataAccessDev = Layer.mergeAll(
-  ${className}Repository.Dev,
-  // TODO: Add development-specific layers
-  // Example: DetailedLoggingLayer, PerformanceMonitoringLayer
-);`)
+export const ${className}RepositoryDev = ${className}Repository.Dev;`)
   builder.addBlankLine()
 
   // Auto Layer
   builder.addRaw(`/**
- * ${className} Data Access Auto Layer
+ * ${className} Repository Auto Layer
  *
  * Automatically selects appropriate layer based on NODE_ENV.
  * - test: Uses in-memory layer for test isolation
@@ -134,36 +122,23 @@ export const ${className}DataAccessDev = Layer.mergeAll(
  * Usage:
  * \`\`\`typescript
  * // Automatically picks correct layer based on environment
- * Effect.provide(${className}DataAccessAuto)
+ * Effect.provide(${className}RepositoryAuto)
  * \`\`\`
  */
-export const ${className}DataAccessAuto = (() => {
+export const ${className}RepositoryAuto = (() => {
   const env = process.env["NODE_ENV"] || "production";
 
   switch (env) {
     case "test":
-      return ${className}DataAccessTest;
+      return ${className}RepositoryTest;
     case "development":
-      return ${className}DataAccessDev;
+      return ${className}RepositoryDev;
     default:
-      return ${className}DataAccessLive;
+      return ${className}RepositoryLive;
   }
 })();`)
   builder.addBlankLine()
 
-  // Add TODO comment for additional layer compositions
-  builder.addRaw(`// TODO: Export specific composition for common scenarios
-//
-// export const ${className}DataAccessWithCache = Layer.mergeAll(
-//   ${className}DataAccessLive,
-//   CacheLayer,
-// );
-//
-// export const ${className}DataAccessWithTracing = Layer.mergeAll(
-//   ${className}DataAccessLive,
-//   DistributedTracingLayer,
-// );
-`)
 
   return builder.toString()
 }
