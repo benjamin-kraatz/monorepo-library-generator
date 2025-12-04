@@ -10,6 +10,7 @@
 import { Console, Effect } from "effect"
 import { generateContractCore, type GeneratorResult } from "../../generators/core/contract-generator-core"
 import { createEffectFsAdapter } from "../../utils/effect-fs-adapter"
+import { generateInfrastructureFiles } from "../../utils/infrastructure-generator"
 import { createNamingVariants } from "../../utils/naming-utils"
 
 /**
@@ -69,8 +70,20 @@ export function generateContract(options: ContractGeneratorOptions) {
     // 3. Compute metadata
     const metadata = computeCliMetadata(options.name, "contract", options.description)
 
-    // 4. Run core generator
+    // 4. Generate infrastructure files
     yield* Console.log(`Creating contract library: ${options.name}...`)
+
+    yield* generateInfrastructureFiles(adapter, {
+      workspaceRoot,
+      projectRoot: metadata.projectRoot,
+      projectName: metadata.projectName,
+      packageName: metadata.packageName,
+      description: metadata.description,
+      libraryType: "contract",
+      offsetFromRoot: metadata.offsetFromRoot
+    })
+
+    // 5. Generate domain files via core generator
 
     const result: GeneratorResult = yield* (
       generateContractCore(adapter, {
@@ -95,7 +108,7 @@ export function generateContract(options: ContractGeneratorOptions) {
       }) as Effect.Effect<GeneratorResult>
     )
 
-    // 5. CLI-specific output
+    // 6. CLI-specific output
     yield* Console.log("✨ Contract library created successfully!")
     yield* Console.log(`  Location: ${result.projectRoot}`)
     yield* Console.log(`  Package: ${result.packageName}`)

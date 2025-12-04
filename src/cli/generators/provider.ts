@@ -10,6 +10,7 @@
 import { Console, Effect } from "effect"
 import { generateProviderCore, type GeneratorResult } from "../../generators/core/provider-generator-core"
 import { createEffectFsAdapter } from "../../utils/effect-fs-adapter"
+import { generateInfrastructureFiles } from "../../utils/infrastructure-generator"
 import type { PlatformType } from "../../utils/platform-utils"
 
 /**
@@ -71,6 +72,19 @@ export function generateProvider(options: ProviderGeneratorOptions) {
       platform: options.platform || "node"
     }
 
+    // Generate infrastructure files
+    yield* generateInfrastructureFiles(adapter, {
+      workspaceRoot,
+      projectRoot,
+      projectName,
+      packageName,
+      description: options.description ||
+        `${nameVariants.className} provider for ${options.externalService}`,
+      libraryType: "provider",
+      offsetFromRoot: "../../.."
+    })
+
+    // Generate domain files via core generator
     const result: GeneratorResult = yield* (
       generateProviderCore(adapter, coreOptions) as Effect.Effect<GeneratorResult>
     )

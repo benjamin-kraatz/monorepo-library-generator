@@ -8,6 +8,7 @@
 import { Console, Effect } from "effect"
 import { generateDataAccessCore, type GeneratorResult } from "../../generators/core/data-access-generator-core"
 import { createEffectFsAdapter } from "../../utils/effect-fs-adapter"
+import { generateInfrastructureFiles } from "../../utils/infrastructure-generator"
 import { createNamingVariants } from "../../utils/naming-utils"
 
 /**
@@ -59,6 +60,18 @@ export function generateDataAccess(options: DataAccessGeneratorOptions) {
 
     yield* Console.log(`Creating data-access library: ${options.name}...`)
 
+    // Generate infrastructure files
+    yield* generateInfrastructureFiles(adapter, {
+      workspaceRoot,
+      projectRoot: metadata.projectRoot,
+      projectName: metadata.projectName,
+      packageName: metadata.packageName,
+      description: metadata.description,
+      libraryType: "data-access",
+      offsetFromRoot: metadata.offsetFromRoot
+    })
+
+    // Generate domain files via core generator
     const result: GeneratorResult = yield* (
       generateDataAccessCore(adapter, {
         // Pass pre-computed metadata

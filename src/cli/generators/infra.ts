@@ -10,6 +10,7 @@
 import { Console, Effect } from "effect"
 import { generateInfraCore, type GeneratorResult } from "../../generators/core/infra-generator-core"
 import { createEffectFsAdapter } from "../../utils/effect-fs-adapter"
+import { generateInfrastructureFiles } from "../../utils/infrastructure-generator"
 import type { PlatformType } from "../../utils/platform-utils"
 
 /**
@@ -71,6 +72,18 @@ export function generateInfra(options: InfraGeneratorOptions) {
       ...(options.includeEdge !== undefined && { includeEdge: options.includeEdge })
     }
 
+    // Generate infrastructure files
+    yield* generateInfrastructureFiles(adapter, {
+      workspaceRoot,
+      projectRoot,
+      projectName,
+      packageName,
+      description: options.description || `${nameVariants.className} infrastructure library`,
+      libraryType: "infra",
+      offsetFromRoot: "../../.."
+    })
+
+    // Generate domain files via core generator
     const result: GeneratorResult = yield* (
       generateInfraCore(adapter, coreOptions) as Effect.Effect<GeneratorResult>
     )

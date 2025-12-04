@@ -10,6 +10,7 @@
 import { Console, Effect } from "effect"
 import { generateFeatureCore, type GeneratorResult } from "../../generators/core/feature-generator-core"
 import { createEffectFsAdapter } from "../../utils/effect-fs-adapter"
+import { generateInfrastructureFiles } from "../../utils/infrastructure-generator"
 import type { PlatformType } from "../../utils/platform-utils"
 
 /**
@@ -77,6 +78,18 @@ export function generateFeature(options: FeatureGeneratorOptions) {
       ...(options.includeEdge !== undefined && { includeEdge: options.includeEdge })
     }
 
+    // Generate infrastructure files
+    yield* generateInfrastructureFiles(adapter, {
+      workspaceRoot,
+      projectRoot,
+      projectName,
+      packageName,
+      description: options.description || `${nameVariants.className} feature library`,
+      libraryType: "feature",
+      offsetFromRoot: "../../.."
+    })
+
+    // Generate domain files via core generator
     const result: GeneratorResult = yield* (
       generateFeatureCore(adapter, coreOptions) as Effect.Effect<GeneratorResult>
     )
