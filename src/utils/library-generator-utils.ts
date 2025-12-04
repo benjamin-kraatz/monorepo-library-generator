@@ -610,14 +610,16 @@ function generateDocumentation(
   options: LibraryGeneratorOptions
 ) {
   const nameVars = createNamingVariants(options.name)
+  const scope = extractPackageScopeFromTree(tree)
+  const packageName = `${scope}/${options.projectName}`
 
   // Generate README.md
-  const readmeContent = generateReadmeTemplate(options, nameVars)
+  const readmeContent = generateReadmeTemplate(options, nameVars, packageName)
   const readmePath = join(options.projectRoot, "README.md")
   tree.write(readmePath, readmeContent)
 
   // Generate CLAUDE.md
-  const claudeContent = generateClaudeTemplate(options, nameVars)
+  const claudeContent = generateClaudeTemplate(options, nameVars, packageName)
   const claudePath = join(options.projectRoot, "CLAUDE.md")
   tree.write(claudePath, claudeContent)
 
@@ -632,22 +634,23 @@ function generateDocumentation(
  */
 function generateReadmeTemplate(
   options: LibraryGeneratorOptions,
-  nameVars: ReturnType<typeof createNamingVariants>
+  nameVars: ReturnType<typeof createNamingVariants>,
+  packageName: string
 ) {
-  return `# @custom-repo/${options.projectName}
+  return `# ${packageName}
 
 ${options.description || `${nameVars.className} library`}
 
 ## Installation
 
 \`\`\`bash
-pnpm add @custom-repo/${options.projectName}
+pnpm add ${packageName}
 \`\`\`
 
 ## Usage
 
 \`\`\`typescript
-import { ${nameVars.className} } from '@custom-repo/${options.projectName}';
+import { ${nameVars.className} } from '${packageName}';
 \`\`\`
 
 ## Development
@@ -674,9 +677,10 @@ MIT
  */
 function generateClaudeTemplate(
   options: LibraryGeneratorOptions,
-  nameVars: ReturnType<typeof createNamingVariants>
+  nameVars: ReturnType<typeof createNamingVariants>,
+  packageName: string
 ) {
-  return `# @custom-repo/${options.projectName}
+  return `# ${packageName}
 
 > AI-optimized reference for ${nameVars.className}
 
@@ -690,7 +694,7 @@ function generateClaudeTemplate(
 
 \`\`\`typescript
 // Main exports
-import { ${nameVars.className} } from '@custom-repo/${options.projectName}';
+import { ${nameVars.className} } from '${packageName}';
 
 ${
     options.libraryType !== "data-access" &&
@@ -698,7 +702,7 @@ ${
       (options.includeClientServer ||
         options.platform === "node" ||
         options.platform === "universal")
-      ? `// Server exports\nimport { ${nameVars.className}Live } from '@custom-repo/${options.projectName}/server';\n`
+      ? `// Server exports\nimport { ${nameVars.className}Live } from '${packageName}/server';\n`
       : ""
   }
 ${
@@ -707,7 +711,7 @@ ${
       (options.includeClientServer ||
         options.platform === "browser" ||
         options.platform === "universal")
-      ? `// Client exports\nimport type { ${nameVars.className}Type } from '@custom-repo/${options.projectName}/client';\n`
+      ? `// Client exports\nimport type { ${nameVars.className}Type } from '${packageName}/client';\n`
       : ""
   }
 \`\`\`

@@ -368,7 +368,7 @@ describe("library-generator-utils", () => {
       })
 
       const readme = tree.read("libs/feature/auth/README.md", "utf-8")
-      expect(readme).toContain("# @custom-repo/feature-auth")
+      expect(readme).toContain("# @proj/feature-auth")
       expect(readme).toContain("Authentication feature")
     })
 
@@ -385,7 +385,7 @@ describe("library-generator-utils", () => {
       })
 
       const claude = tree.read("libs/feature/auth/CLAUDE.md", "utf-8")
-      expect(claude).toContain("# @custom-repo/feature-auth")
+      expect(claude).toContain("# @proj/feature-auth")
       expect(claude).toContain("AI-optimized reference")
       expect(claude).toContain("## Import Patterns")
     })
@@ -441,7 +441,7 @@ describe("library-generator-utils", () => {
       expect(packageJson).not.toBeNull()
       const pkg = JSON.parse(packageJson!)
 
-      expect(pkg.name).toBe("@custom-repo/feature-auth")
+      expect(pkg.name).toBe("@proj/feature-auth")
       expect(pkg.exports).toBeDefined()
       expect(pkg.exports["."]).toBeDefined()
       expect(pkg.exports["./server"]).toBeDefined()
