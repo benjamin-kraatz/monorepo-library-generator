@@ -1,8 +1,13 @@
 /**
  * Contract Generator for CLI (Effect Wrapper)
  *
- * Thin wrapper around the shared contract generator core.
- * Uses Effect FileSystem via EffectFsAdapter.
+ * Wrapper that integrates contract generator core with Effect-based CLI.
+ *
+ * Responsibilities:
+ * - Computes library metadata for standalone use
+ * - Generates infrastructure files via generateInfrastructureFiles()
+ * - Delegates domain file generation to core generator
+ * - Provides CLI-specific output and instructions
  *
  * @module monorepo-library-generator/cli/generators/contract
  */
@@ -14,7 +19,9 @@ import { generateInfrastructureFiles } from "../../utils/infrastructure-generato
 import { createNamingVariants } from "../../utils/naming-utils"
 
 /**
- * Contract Generator Options
+ * Contract Generator Options (CLI)
+ *
+ * @property entities - List of entity names for bundle optimization
  */
 export interface ContractGeneratorOptions {
   readonly name: string
@@ -27,6 +34,13 @@ export interface ContractGeneratorOptions {
 
 /**
  * Compute CLI metadata for library generation
+ *
+ * Simplified version of computeLibraryMetadata() for standalone CLI use.
+ *
+ * @param name - Library name
+ * @param libraryType - Type of library (contract, data-access, etc.)
+ * @param description - Optional description
+ * @returns Computed metadata including paths and naming variants
  */
 function computeCliMetadata(name: string, libraryType: string, description?: string) {
   const nameVariants = createNamingVariants(name)
@@ -35,7 +49,7 @@ function computeCliMetadata(name: string, libraryType: string, description?: str
   const projectRoot = `libs/${libraryType}/${fileName}`
   const sourceRoot = `${projectRoot}/src`
 
-  // Simple offset computation (count slashes)
+  // Compute offset from workspace root
   const depth = projectRoot.split("/").length
   const offsetFromRoot = "../".repeat(depth)
 
@@ -51,26 +65,29 @@ function computeCliMetadata(name: string, libraryType: string, description?: str
 }
 
 /**
- * Generate a contract library (CLI)
+ * Generate Contract Library (CLI)
  *
- * Generates a contract library following Effect-based architecture patterns.
- * Uses Effect-native FileSystem operations.
+ * Two-phase generation process:
+ * 1. Infrastructure Phase: Generates package.json, tsconfig, project.json via generateInfrastructureFiles()
+ * 2. Domain Phase: Generates domain-specific files via core generator
  *
- * @param options - Generator options
+ * Uses Effect-native FileSystem operations for cross-platform compatibility.
+ *
+ * @param options - User-provided generator options
  * @returns Effect that succeeds with GeneratorResult or fails with platform errors
  */
 export function generateContract(options: ContractGeneratorOptions) {
   return Effect.gen(function*() {
-    // 1. Get workspace root
+    // Get workspace root
     const workspaceRoot = yield* Effect.sync(() => process.cwd())
 
-    // 2. Create Effect FileSystem adapter (requires FileSystem and Path services)
+    // Create Effect FileSystem adapter
     const adapter = yield* createEffectFsAdapter(workspaceRoot)
 
-    // 3. Compute metadata
+    // Compute metadata
     const metadata = computeCliMetadata(options.name, "contract", options.description)
 
-    // 4. Generate infrastructure files
+    // Phase 1: Generate infrastructure files
     yield* Console.log(`Creating contract library: ${options.name}...`)
 
     yield* generateInfrastructureFiles(adapter, {
@@ -83,11 +100,10 @@ export function generateContract(options: ContractGeneratorOptions) {
       offsetFromRoot: metadata.offsetFromRoot
     })
 
-    // 5. Generate domain files via core generator
-
+    // Phase 2: Generate domain files via core generator
     const result: GeneratorResult = yield* (
       generateContractCore(adapter, {
-        // Pass pre-computed metadata
+        // Pre-computed metadata
         name: metadata.name,
         className: metadata.className,
         propertyName: metadata.propertyName,
@@ -101,14 +117,14 @@ export function generateContract(options: ContractGeneratorOptions) {
         description: metadata.description,
         tags: options.tags ?? "type:contract,platform:universal",
 
-        // Feature flags (only include if defined)
+        // Feature flags
         ...(options.includeCQRS !== undefined && { includeCQRS: options.includeCQRS }),
         ...(options.includeRPC !== undefined && { includeRPC: options.includeRPC }),
         ...(options.entities && { entities: options.entities })
       }) as Effect.Effect<GeneratorResult>
     )
 
-    // 6. CLI-specific output
+    // Display CLI output
     yield* Console.log("✨ Contract library created successfully!")
     yield* Console.log(`  Location: ${result.projectRoot}`)
     yield* Console.log(`  Package: ${result.packageName}`)

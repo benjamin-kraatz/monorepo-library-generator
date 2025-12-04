@@ -1,8 +1,13 @@
 /**
  * Data Access Library Generator (Nx Wrapper)
  *
- * Thin wrapper around the shared data-access generator core.
- * Uses Nx Tree API via TreeAdapter.
+ * Wrapper that integrates data-access generator core with Nx workspace.
+ *
+ * Responsibilities:
+ * - Computes library metadata via computeLibraryMetadata()
+ * - Generates infrastructure files (package.json, tsconfig, project.json)
+ * - Delegates domain file generation to core generator
+ * - Formats files and provides post-generation instructions
  */
 
 import type { Tree } from "@nx/devkit"
@@ -17,14 +22,15 @@ import { generateDataAccessCore, type GeneratorResult } from "../core/data-acces
 import type { DataAccessGeneratorSchema } from "./schema"
 
 /**
- * Data access generator for Nx workspaces
+ * Data Access Generator for Nx Workspaces
  *
- * Generates a data-access library following Effect-based repository patterns.
- * Creates repositories, queries, and data layers.
+ * Two-phase generation process:
+ * 1. Infrastructure Phase: Generates package.json, tsconfig, project.json via generateLibraryFiles()
+ * 2. Domain Phase: Generates domain-specific files via core generator
  *
- * @param tree - Nx Tree API for virtual file system
- * @param schema - Generator options from user
- * @returns Callback function for post-generation console output
+ * @param tree - Nx Tree API for virtual file system operations
+ * @param schema - User-provided generator options
+ * @returns Callback function that displays post-generation instructions
  */
 export default async function dataAccessGenerator(
   tree: Tree,
@@ -43,10 +49,10 @@ export default async function dataAccessGenerator(
     ["scope:shared", "platform:server"]
   )
 
-  // Parse tags from metadata (already includes defaults)
+  // Parse tags from metadata
   const tags = metadata.tags.split(",").map(t => t.trim())
 
-  // 1. Generate base library files using centralized utility
+  // Phase 1: Generate infrastructure files
   const libraryOptions: LibraryGeneratorOptions = {
     name: metadata.name,
     projectName: metadata.projectName,
@@ -60,10 +66,10 @@ export default async function dataAccessGenerator(
 
   await generateLibraryFiles(tree, libraryOptions)
 
-  // 2. Generate domain-specific files using shared core
+  // Phase 2: Generate domain-specific files via core generator
   const adapter = createTreeAdapter(tree)
   const coreOptions: Parameters<typeof generateDataAccessCore>[1] = {
-    // Pass pre-computed metadata from wrapper
+    // Pre-computed metadata
     name: metadata.name,
     className: metadata.className,
     propertyName: metadata.propertyName,
@@ -78,15 +84,15 @@ export default async function dataAccessGenerator(
     tags: metadata.tags
   }
 
-  // 3. Run core generator with Effect runtime
+  // Run core generator with Effect runtime
   const result = await Effect.runPromise(
     generateDataAccessCore(adapter, coreOptions) as Effect.Effect<GeneratorResult, FileSystemErrors, never>
   )
 
-  // 4. Format files
+  // Format generated files
   await formatFiles(tree)
 
-  // 5. Return post-generation instructions
+  // Return post-generation callback
   return () => {
     console.log(`
 ✅ Data Access library created: ${result.packageName}
@@ -114,6 +120,3 @@ export default async function dataAccessGenerator(
     `)
   }
 }
-
-// Forward-facing architecture: No wrapper function needed
-// computeLibraryMetadata() is called directly above

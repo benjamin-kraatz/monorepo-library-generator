@@ -1,8 +1,15 @@
 /**
  * Infrastructure Generator Core
  *
- * Shared core logic for infrastructure generation used by both Nx and CLI.
- * Uses FileSystemAdapter for portability across different file system implementations.
+ * Generates domain-specific files for infrastructure libraries.
+ * Works with both Nx Tree API and Effect FileSystem via FileSystemAdapter.
+ *
+ * Responsibilities:
+ * - Generates service interface and configuration files
+ * - Creates provider implementations (memory, live)
+ * - Generates layer compositions for different environments
+ * - Creates platform-specific exports (client, server, edge)
+ * - Infrastructure generation is handled by wrapper generators
  *
  * @module monorepo-library-generator/generators/core/infra-generator-core
  */
@@ -27,7 +34,17 @@ import {
 } from "../infra/templates/index"
 
 /**
- * Core options for infra generator
+ * Infrastructure Generator Core Options
+ *
+ * Receives pre-computed metadata from wrapper generators.
+ * Wrappers are responsible for:
+ * - Computing all paths via computeLibraryMetadata()
+ * - Generating infrastructure files (package.json, tsconfig, project.json)
+ * - Running this core function for domain file generation
+ *
+ * @property platform - Target platform (node, browser, edge, universal)
+ * @property includeClientServer - Generate client/server split exports
+ * @property includeEdge - Generate edge runtime support
  */
 export interface InfraGeneratorCoreOptions {
   readonly name: string
@@ -49,7 +66,9 @@ export interface InfraGeneratorCoreOptions {
 }
 
 /**
- * Result returned by infra generator
+ * Generator Result
+ *
+ * Metadata returned after successful generation.
  */
 export interface GeneratorResult {
   readonly projectName: string
@@ -60,13 +79,16 @@ export interface GeneratorResult {
 }
 
 /**
- * Generate infrastructure library domain files
+ * Generate Infrastructure Library Domain Files
  *
- * This is the core generation logic shared between Nx and CLI implementations.
- * Uses FileSystemAdapter to be portable across different file system implementations.
+ * Generates only domain-specific files for infrastructure libraries.
+ * Infrastructure files (package.json, tsconfig, project.json) are handled by wrappers.
  *
- * @param adapter - File system adapter (Tree or Effect FS)
- * @param options - Infra generator options
+ * This core function works with any FileSystemAdapter implementation,
+ * allowing both Nx and CLI wrappers to share the same domain generation logic.
+ *
+ * @param adapter - FileSystemAdapter implementation (Nx Tree or Effect FileSystem)
+ * @param options - Pre-computed metadata and feature flags from wrapper
  * @returns Effect that succeeds with GeneratorResult or fails with file system errors
  */
 export function generateInfraCore(
@@ -89,7 +111,7 @@ export function generateInfraCore(
 
     const { includeClientServer, includeEdge } = platformConfig
 
-    // Prepare template options
+    // Assemble template options from pre-computed metadata
     const templateOptions: InfraTemplateOptions = {
       name: options.name,
       className: options.className,
@@ -108,10 +130,10 @@ export function generateInfraCore(
       includeEdge
     }
 
-    // Generate domain files
+    // Generate all domain files
     const filesGenerated: Array<string> = []
 
-    // Compute paths
+    // Compute directory paths
     const sourceLibPath = `${options.sourceRoot}/lib`
     const serviceLibPath = `${sourceLibPath}/service`
     const layersLibPath = `${sourceLibPath}/layers`

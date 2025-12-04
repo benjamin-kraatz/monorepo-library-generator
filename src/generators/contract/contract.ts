@@ -1,8 +1,13 @@
 /**
  * Contract Library Generator (Nx Wrapper)
  *
- * Thin wrapper around the shared contract generator core.
- * Uses Nx Tree API via TreeAdapter.
+ * Wrapper that integrates contract generator core with Nx workspace.
+ *
+ * Responsibilities:
+ * - Computes library metadata via computeLibraryMetadata()
+ * - Generates infrastructure files (package.json, tsconfig, project.json)
+ * - Delegates domain file generation to core generator
+ * - Formats files and provides post-generation instructions
  */
 
 import type { Tree } from "@nx/devkit"
@@ -17,14 +22,15 @@ import { generateContractCore, type GeneratorResult } from "../core/contract-gen
 import type { ContractGeneratorSchema } from "./schema"
 
 /**
- * Contract generator for Nx workspaces
+ * Contract Generator for Nx Workspaces
  *
- * Generates a contract library following Effect-based architecture patterns.
- * Creates entities, errors, events, and ports for a domain.
+ * Two-phase generation process:
+ * 1. Infrastructure Phase: Generates package.json, tsconfig, project.json via generateLibraryFiles()
+ * 2. Domain Phase: Generates domain-specific files via core generator
  *
- * @param tree - Nx Tree API for virtual file system
- * @param schema - Generator options from user
- * @returns Callback function for post-generation console output
+ * @param tree - Nx Tree API for virtual file system operations
+ * @param schema - User-provided generator options
+ * @returns Callback function that displays post-generation instructions
  */
 export default async function contractGenerator(
   tree: Tree,
@@ -43,10 +49,10 @@ export default async function contractGenerator(
     ["platform:universal"]
   )
 
-  // Parse tags from metadata (already includes defaults)
+  // Parse tags from metadata
   const tags = metadata.tags.split(",").map(t => t.trim())
 
-  // 1. Generate base library files using centralized utility
+  // Phase 1: Generate infrastructure files (package.json, tsconfig, project.json)
   const libraryOptions: LibraryGeneratorOptions = {
     name: metadata.name,
     projectName: metadata.projectName,
@@ -60,14 +66,13 @@ export default async function contractGenerator(
 
   await generateLibraryFiles(tree, libraryOptions)
 
-  // 2. Generate domain-specific files using shared core
+  // Phase 2: Generate domain-specific files via core generator
   const adapter = createTreeAdapter(tree)
 
-  // Parse entities if provided (comma-separated string)
+  // Parse entities (supports comma-separated string or array)
   let entities: ReadonlyArray<string> | undefined
   if (schema.entities) {
     if (typeof schema.entities === "string") {
-      // Split on comma and trim whitespace
       entities = schema.entities.split(",").map((e) => e.trim()).filter((e) => e.length > 0)
     } else {
       entities = schema.entities
@@ -75,7 +80,7 @@ export default async function contractGenerator(
   }
 
   const coreOptions: Parameters<typeof generateContractCore>[1] = {
-    // Pass pre-computed metadata from wrapper
+    // Pre-computed metadata
     name: metadata.name,
     className: metadata.className,
     propertyName: metadata.propertyName,
@@ -95,15 +100,15 @@ export default async function contractGenerator(
     ...(entities && { entities })
   }
 
-  // 3. Run core generator with Effect runtime
+  // Run core generator with Effect runtime
   const result = await Effect.runPromise(
     generateContractCore(adapter, coreOptions) as Effect.Effect<GeneratorResult, FileSystemErrors, never>
   )
 
-  // 5. Format files
+  // Format generated files
   await formatFiles(tree)
 
-  // 6. Return post-generation instructions
+  // Return post-generation callback
   return () => {
     const entityCount = entities?.length ?? 1
     const entityList = entities?.join(", ") ?? metadata.className
@@ -150,6 +155,3 @@ Follow the TODO comments in each file to customize for your domain.
     `)
   }
 }
-
-// Forward-facing architecture: No wrapper function needed
-// computeLibraryMetadata() is called directly above

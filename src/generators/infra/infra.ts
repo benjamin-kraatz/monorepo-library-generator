@@ -1,8 +1,13 @@
 /**
- * Infrastructure Library Generator
+ * Infrastructure Library Generator (Nx Wrapper)
  *
- * Generates infrastructure libraries following Effect-based architecture patterns.
- * Creates services, configuration, layers, and providers for cross-cutting concerns.
+ * Wrapper that integrates infrastructure generator core with Nx workspace.
+ *
+ * Responsibilities:
+ * - Computes library metadata and platform configuration
+ * - Generates infrastructure files (package.json, tsconfig, project.json)
+ * - Delegates domain file generation to core generator
+ * - Formats files and provides post-generation instructions
  */
 
 import type { Tree } from "@nx/devkit"
@@ -17,7 +22,15 @@ import { generateInfraCore, type GeneratorResult } from "../core/infra-generator
 import type { InfraGeneratorSchema } from "./schema"
 
 /**
- * Main generator function
+ * Infrastructure Generator for Nx Workspaces
+ *
+ * Two-phase generation process:
+ * 1. Infrastructure Phase: Generates package.json, tsconfig, project.json via generateLibraryFiles()
+ * 2. Domain Phase: Generates domain-specific files via core generator
+ *
+ * @param tree - Nx Tree API for virtual file system operations
+ * @param schema - User-provided generator options
+ * @returns Callback function that displays post-generation instructions
  */
 export default async function infraGenerator(
   tree: Tree,
@@ -28,7 +41,7 @@ export default async function infraGenerator(
     throw new Error("Infra name is required and cannot be empty")
   }
 
-  // Use shared platform configuration helper
+  // Compute platform-specific configuration
   const platformConfig = computePlatformConfiguration(
     {
       ...(schema.platform !== undefined && { platform: schema.platform }),
@@ -58,7 +71,7 @@ export default async function infraGenerator(
     defaultTags
   )
 
-  // 1. Generate base library files (project.json, package.json, tsconfig, etc.)
+  // Phase 1: Generate infrastructure files
   const libraryOptions: LibraryGeneratorOptions = {
     name: metadata.name,
     projectName: metadata.projectName,
@@ -74,10 +87,10 @@ export default async function infraGenerator(
 
   await generateLibraryFiles(tree, libraryOptions)
 
-  // 2. Generate domain-specific files using shared core
+  // Phase 2: Generate domain-specific files via core generator
   const adapter = createTreeAdapter(tree)
   const coreOptions: Parameters<typeof generateInfraCore>[1] = {
-    // Pass pre-computed metadata from wrapper
+    // Pre-computed metadata
     name: metadata.name,
     className: metadata.className,
     propertyName: metadata.propertyName,
@@ -97,15 +110,15 @@ export default async function infraGenerator(
     ...(includeEdge !== undefined && { includeEdge })
   }
 
-  // 3. Run core generator with Effect runtime
+  // Run core generator with Effect runtime
   const result = await Effect.runPromise(
     generateInfraCore(adapter, coreOptions) as Effect.Effect<GeneratorResult, never>
   )
 
-  // 3. Format files
+  // Format generated files
   await formatFiles(tree)
 
-  // 4. Return post-generation instructions
+  // Return post-generation callback
   return () => {
     console.log(`
 ✅ Infrastructure library created: ${result.packageName}

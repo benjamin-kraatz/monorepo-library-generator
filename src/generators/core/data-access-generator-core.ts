@@ -1,8 +1,15 @@
 /**
  * Data Access Generator Core
  *
- * Shared core logic for generating data-access libraries.
+ * Generates domain-specific files for data-access libraries.
  * Works with both Nx Tree API and Effect FileSystem via FileSystemAdapter.
+ *
+ * Responsibilities:
+ * - Generates repository, queries, and data layer files
+ * - Creates shared types, errors, and validation
+ * - Generates server-side layer compositions
+ * - Creates CLAUDE.md documentation
+ * - Infrastructure generation is handled by wrapper generators
  *
  * @module monorepo-library-generator/generators/core/data-access-generator-core
  */
@@ -25,46 +32,68 @@ import type { GeneratorResult } from "./contract-generator-core"
 export type { GeneratorResult }
 
 /**
- * Data Access Generator Options
+ * Data Access Generator Core Options
  *
- * Accepts pre-computed metadata from wrapper generators.
+ * Receives pre-computed metadata from wrapper generators.
+ * Wrappers are responsible for:
+ * - Computing all paths via computeLibraryMetadata()
+ * - Generating infrastructure files (package.json, tsconfig, project.json)
+ * - Running this core function for domain file generation
+ *
+ * @property name - Base name in original format
+ * @property className - PascalCase variant for class names
+ * @property propertyName - camelCase variant for property names
+ * @property fileName - kebab-case variant for file names
+ * @property constantName - UPPER_SNAKE_CASE variant for constants
+ * @property projectName - Nx project name (e.g., "data-access-product")
+ * @property projectRoot - Relative path to project root
+ * @property sourceRoot - Relative path to source directory
+ * @property packageName - NPM package name (e.g., "@scope/data-access-product")
+ * @property offsetFromRoot - Relative path from project to workspace root
+ * @property description - Library description for documentation
+ * @property tags - Comma-separated tags for Nx project configuration
+ * @property includeCache - Enable caching layer in repository
+ * @property contractLibrary - Import path to contract library
  */
 export interface DataAccessGeneratorCoreOptions {
-  // Naming variants (pre-computed by wrapper)
   readonly name: string
   readonly className: string
   readonly propertyName: string
   readonly fileName: string
   readonly constantName: string
-
-  // Project metadata (pre-computed by wrapper)
   readonly projectName: string
   readonly projectRoot: string
   readonly sourceRoot: string
   readonly packageName: string
   readonly offsetFromRoot: string
-
-  // Optional metadata
   readonly description?: string
   readonly tags?: string
-
-  // Feature flags
   readonly includeCache?: boolean
   readonly contractLibrary?: string
 }
 
 /**
- * Generate Data Access Library (Core Logic)
+ * Generate Data Access Library Domain Files
+ *
+ * Generates only domain-specific files for data-access libraries.
+ * Infrastructure files (package.json, tsconfig, project.json) are handled by wrappers.
+ *
+ * This core function works with any FileSystemAdapter implementation,
+ * allowing both Nx and CLI wrappers to share the same domain generation logic.
+ *
+ * @param adapter - FileSystemAdapter implementation (Nx Tree or Effect FileSystem)
+ * @param options - Pre-computed metadata and feature flags from wrapper
+ * @returns Effect that succeeds with GeneratorResult or fails with FileSystemErrors
  */
 export function generateDataAccessCore(
   adapter: FileSystemAdapter,
   options: DataAccessGeneratorCoreOptions
 ) {
   return Effect.gen(function*() {
-    // 1. Parse tags (wrapper may have passed comma-separated string)
+    // Parse tags from comma-separated string
     const parsedTags = parseTags(options.tags, [])
 
-    // 2. Prepare template options
+    // Assemble template options from pre-computed metadata
     const templateOptions: DataAccessTemplateOptions = {
       name: options.name,
       className: options.className,
@@ -83,7 +112,7 @@ export function generateDataAccessCore(
       contractLibrary: options.contractLibrary ?? `@scope/contract-${options.fileName}`
     }
 
-    // 3. Generate domain files (infrastructure handled by wrapper)
+    // Generate all domain files
     const filesGenerated = yield* generateDomainFiles(adapter, options.sourceRoot, templateOptions)
 
     return {
@@ -98,6 +127,14 @@ export function generateDataAccessCore(
 
 /**
  * Generate domain-specific files
+ *
+ * Creates all data-access library files including repository implementation,
+ * query builders, shared types/errors/validation, and server-side layers.
+ *
+ * @param adapter - FileSystemAdapter for file operations
+ * @param sourceRoot - Relative path to source directory
+ * @param templateOptions - Template configuration with all metadata
+ * @returns Effect with list of generated file paths
  */
 function generateDomainFiles(
   adapter: FileSystemAdapter,

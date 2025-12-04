@@ -1,8 +1,15 @@
 /**
  * Provider Generator Core
  *
- * Shared core logic for provider generation used by both Nx and CLI.
- * Uses FileSystemAdapter for portability across different file system implementations.
+ * Generates domain-specific files for provider libraries.
+ * Works with both Nx Tree API and Effect FileSystem via FileSystemAdapter.
+ *
+ * Responsibilities:
+ * - Generates service implementation for external service integration
+ * - Creates types, validation, and error definitions
+ * - Generates layer compositions for different environments
+ * - Creates platform-specific exports (client, server, edge)
+ * - Infrastructure generation is handled by wrapper generators
  *
  * @module monorepo-library-generator/generators/core/provider-generator-core
  */
@@ -25,7 +32,16 @@ import {
 } from "../provider/templates/index"
 
 /**
- * Core options for provider generator
+ * Provider Generator Core Options
+ *
+ * Receives pre-computed metadata from wrapper generators.
+ * Wrappers are responsible for:
+ * - Computing all paths via computeLibraryMetadata()
+ * - Generating infrastructure files (package.json, tsconfig, project.json)
+ * - Running this core function for domain file generation
+ *
+ * @property externalService - Name of external service being integrated
+ * @property platform - Target platform (node, browser, edge, universal)
  */
 export interface ProviderGeneratorCoreOptions {
   readonly name: string
@@ -46,7 +62,9 @@ export interface ProviderGeneratorCoreOptions {
 }
 
 /**
- * Result returned by provider generator
+ * Generator Result
+ *
+ * Metadata returned after successful generation.
  */
 export interface GeneratorResult {
   readonly projectName: string
@@ -57,13 +75,16 @@ export interface GeneratorResult {
 }
 
 /**
- * Generate provider library domain files
+ * Generate Provider Library Domain Files
  *
- * This is the core generation logic shared between Nx and CLI implementations.
- * Uses FileSystemAdapter to be portable across different file system implementations.
+ * Generates only domain-specific files for provider libraries.
+ * Infrastructure files (package.json, tsconfig, project.json) are handled by wrappers.
  *
- * @param adapter - File system adapter (Tree or Effect FS)
- * @param options - Provider generator options
+ * This core function works with any FileSystemAdapter implementation,
+ * allowing both Nx and CLI wrappers to share the same domain generation logic.
+ *
+ * @param adapter - FileSystemAdapter implementation (Nx Tree or Effect FileSystem)
+ * @param options - Pre-computed metadata and feature flags from wrapper
  * @returns Effect that succeeds with GeneratorResult or fails with file system errors
  */
 export function generateProviderCore(
@@ -84,7 +105,7 @@ export function generateProviderCore(
 
     const { includeClientServer, includeEdge } = platformConfig
 
-    // Map PlatformType to Platform for template options
+    // Map PlatformType to Platform for template options (internal mapping)
     const platformMapping: Record<PlatformType, Platform> = {
       node: "server",
       browser: "client",
@@ -92,7 +113,7 @@ export function generateProviderCore(
       universal: "universal"
     }
 
-    // Prepare template options
+    // Assemble template options from pre-computed metadata
     const templateOptions: ProviderTemplateOptions = {
       name: options.name,
       className: options.className,
@@ -111,11 +132,11 @@ export function generateProviderCore(
       platforms: [platformMapping[options.platform]]
     }
 
-    // Generate domain files
+    // Generate all domain files
     const filesGenerated: Array<string> = []
     const sourceLibPath = `${options.sourceRoot}/lib`
 
-    // Generate main index.ts (barrel exports)
+    // Generate barrel exports
     yield* adapter.writeFile(`${options.sourceRoot}/index.ts`, generateIndexFile(templateOptions))
     filesGenerated.push(`${options.sourceRoot}/index.ts`)
 

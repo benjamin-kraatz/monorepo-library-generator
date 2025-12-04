@@ -1,8 +1,13 @@
 /**
  * Feature Generator for CLI (Effect Wrapper)
  *
- * Thin wrapper around the shared feature generator core.
- * Uses Effect FileSystem via EffectFsAdapter.
+ * Wrapper that integrates feature generator core with Effect-based CLI.
+ *
+ * Responsibilities:
+ * - Computes library metadata for standalone use
+ * - Generates infrastructure files via generateInfrastructureFiles()
+ * - Delegates domain file generation to core generator
+ * - Provides CLI-specific output and instructions
  *
  * @module monorepo-library-generator/cli/generators/feature
  */
@@ -14,7 +19,7 @@ import { generateInfrastructureFiles } from "../../utils/infrastructure-generato
 import type { PlatformType } from "../../utils/platform-utils"
 
 /**
- * Feature Generator Options
+ * Feature Generator Options (CLI)
  */
 export interface FeatureGeneratorOptions {
   readonly name: string
@@ -29,13 +34,13 @@ export interface FeatureGeneratorOptions {
 }
 
 /**
- * Generate a feature library (CLI)
+ * Generate Feature Library (CLI)
  *
- * Generates a feature library following Effect-based architecture patterns.
- * Uses Effect-native FileSystem operations.
+ * Two-phase generation process:
+ * 1. Infrastructure Phase: Generates package.json, tsconfig, project.json
+ * 2. Domain Phase: Generates domain-specific files via core generator
  *
- * @param options - Generator options
- * @returns Effect that succeeds with GeneratorResult or fails with platform errors
+ * Uses Effect-native FileSystem operations for cross-platform compatibility.
  */
 export function generateFeature(options: FeatureGeneratorOptions) {
   return Effect.gen(function*() {
@@ -44,7 +49,7 @@ export function generateFeature(options: FeatureGeneratorOptions) {
 
     yield* Console.log(`Creating feature library: ${options.name}...`)
 
-    // Import names from @nx/devkit for naming transformations
+    // Compute naming variants
     const { names } = yield* Effect.promise(() => import("@nx/devkit"))
     const nameVariants = names(options.name)
 
@@ -78,7 +83,7 @@ export function generateFeature(options: FeatureGeneratorOptions) {
       ...(options.includeEdge !== undefined && { includeEdge: options.includeEdge })
     }
 
-    // Generate infrastructure files
+    // Phase 1: Generate infrastructure files
     yield* generateInfrastructureFiles(adapter, {
       workspaceRoot,
       projectRoot,
@@ -89,12 +94,12 @@ export function generateFeature(options: FeatureGeneratorOptions) {
       offsetFromRoot: "../../.."
     })
 
-    // Generate domain files via core generator
+    // Phase 2: Generate domain files via core generator
     const result: GeneratorResult = yield* (
       generateFeatureCore(adapter, coreOptions) as Effect.Effect<GeneratorResult>
     )
 
-    // CLI-specific output
+    // Display CLI output
     yield* Console.log("✨ Feature library created successfully!")
     yield* Console.log(`  Location: ${result.projectRoot}`)
     yield* Console.log(`  Package: ${result.packageName}`)

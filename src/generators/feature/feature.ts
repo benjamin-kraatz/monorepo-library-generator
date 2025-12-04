@@ -1,8 +1,13 @@
 /**
- * Feature Library Generator
+ * Feature Library Generator (Nx Wrapper)
  *
- * Generates feature libraries following Effect-based architecture patterns.
- * Creates services, RPC routers, state management, and business logic orchestration.
+ * Wrapper that integrates feature generator core with Nx workspace.
+ *
+ * Responsibilities:
+ * - Computes library metadata and platform configuration
+ * - Generates infrastructure files (package.json, tsconfig, project.json)
+ * - Delegates domain file generation to core generator
+ * - Formats files and provides post-generation instructions
  */
 
 import type { Tree } from "@nx/devkit"
@@ -17,7 +22,15 @@ import { generateFeatureCore, type GeneratorResult } from "../core/feature-gener
 import type { FeatureGeneratorSchema } from "./schema"
 
 /**
- * Main generator function
+ * Feature Generator for Nx Workspaces
+ *
+ * Two-phase generation process:
+ * 1. Infrastructure Phase: Generates package.json, tsconfig, project.json via generateLibraryFiles()
+ * 2. Domain Phase: Generates domain-specific files via core generator
+ *
+ * @param tree - Nx Tree API for virtual file system operations
+ * @param schema - User-provided generator options
+ * @returns Callback function that displays post-generation instructions
  */
 export default async function featureGenerator(
   tree: Tree,
@@ -28,13 +41,11 @@ export default async function featureGenerator(
     throw new Error("Feature name is required and cannot be empty")
   }
 
-  // Feature flags
-  const includeClientServer = schema.includeClientServer // Keep undefined to allow platform defaults
+  // Compute platform-specific configuration
+  const includeClientServer = schema.includeClientServer
   const includeRPC = schema.includeRPC ?? false
   const includeCQRS = schema.includeCQRS ?? false
   const includeEdge = schema.includeEdge ?? false
-
-  // Use shared platform configuration helper
   const platformConfig = computePlatformConfiguration(
     {
       ...(schema.platform !== undefined && { platform: schema.platform }),
@@ -64,7 +75,7 @@ export default async function featureGenerator(
     defaultTags
   )
 
-  // 1. Generate base library files using centralized utility
+  // Phase 1: Generate infrastructure files
   const libraryOptions: LibraryGeneratorOptions = {
     name: metadata.name,
     projectName: metadata.projectName,
@@ -81,10 +92,10 @@ export default async function featureGenerator(
 
   await generateLibraryFiles(tree, libraryOptions)
 
-  // 2. Generate domain-specific files using shared core
+  // Phase 2: Generate domain-specific files via core generator
   const adapter = createTreeAdapter(tree)
   const coreOptions: Parameters<typeof generateFeatureCore>[1] = {
-    // Pass pre-computed metadata from wrapper
+    // Pre-computed metadata
     name: metadata.name,
     className: metadata.className,
     propertyName: metadata.propertyName,
@@ -107,15 +118,15 @@ export default async function featureGenerator(
     includeEdge
   }
 
-  // 3. Run core generator with Effect runtime
+  // Run core generator with Effect runtime
   const result = await Effect.runPromise(
     generateFeatureCore(adapter, coreOptions) as Effect.Effect<GeneratorResult, never>
   )
 
-  // 3. Format files
+  // Format generated files
   await formatFiles(tree)
 
-  // 4. Return post-generation instructions
+  // Return post-generation callback
   return () => {
     console.log(`
 ✅ Feature library created: ${result.packageName}

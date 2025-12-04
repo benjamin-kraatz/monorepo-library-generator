@@ -1,8 +1,13 @@
 /**
  * Infrastructure Generator for CLI (Effect Wrapper)
  *
- * Thin wrapper around the shared infrastructure generator core.
- * Uses Effect FileSystem via EffectFsAdapter.
+ * Wrapper that integrates infrastructure generator core with Effect-based CLI.
+ *
+ * Responsibilities:
+ * - Computes library metadata for standalone use
+ * - Generates infrastructure files via generateInfrastructureFiles()
+ * - Delegates domain file generation to core generator
+ * - Provides CLI-specific output and instructions
  *
  * @module monorepo-library-generator/cli/generators/infra
  */
@@ -14,7 +19,7 @@ import { generateInfrastructureFiles } from "../../utils/infrastructure-generato
 import type { PlatformType } from "../../utils/platform-utils"
 
 /**
- * Infrastructure Generator Options
+ * Infrastructure Generator Options (CLI)
  */
 export interface InfraGeneratorOptions {
   readonly name: string
@@ -26,13 +31,13 @@ export interface InfraGeneratorOptions {
 }
 
 /**
- * Generate an infrastructure library (CLI)
+ * Generate Infrastructure Library (CLI)
  *
- * Generates an infrastructure library following Effect-based architecture patterns.
- * Uses Effect-native FileSystem operations.
+ * Two-phase generation process:
+ * 1. Infrastructure Phase: Generates package.json, tsconfig, project.json
+ * 2. Domain Phase: Generates domain-specific files via core generator
  *
- * @param options - Generator options
- * @returns Effect that succeeds with GeneratorResult or fails with platform errors
+ * Uses Effect-native FileSystem operations for cross-platform compatibility.
  */
 export function generateInfra(options: InfraGeneratorOptions) {
   return Effect.gen(function*() {
@@ -41,7 +46,7 @@ export function generateInfra(options: InfraGeneratorOptions) {
 
     yield* Console.log(`Creating infrastructure library: ${options.name}...`)
 
-    // Import names from @nx/devkit for naming transformations
+    // Compute naming variants
     const { names } = yield* Effect.promise(() => import("@nx/devkit"))
     const nameVariants = names(options.name)
 
@@ -72,7 +77,7 @@ export function generateInfra(options: InfraGeneratorOptions) {
       ...(options.includeEdge !== undefined && { includeEdge: options.includeEdge })
     }
 
-    // Generate infrastructure files
+    // Phase 1: Generate infrastructure files
     yield* generateInfrastructureFiles(adapter, {
       workspaceRoot,
       projectRoot,
@@ -83,12 +88,12 @@ export function generateInfra(options: InfraGeneratorOptions) {
       offsetFromRoot: "../../.."
     })
 
-    // Generate domain files via core generator
+    // Phase 2: Generate domain files via core generator
     const result: GeneratorResult = yield* (
       generateInfraCore(adapter, coreOptions) as Effect.Effect<GeneratorResult>
     )
 
-    // CLI-specific output
+    // Display CLI output
     yield* Console.log("✨ Infrastructure library created successfully!")
     yield* Console.log(`  Location: ${result.projectRoot}`)
     yield* Console.log(`  Package: ${result.packageName}`)

@@ -1,8 +1,13 @@
 /**
  * Provider Generator for CLI (Effect Wrapper)
  *
- * Thin wrapper around the shared provider generator core.
- * Uses Effect FileSystem via EffectFsAdapter.
+ * Wrapper that integrates provider generator core with Effect-based CLI.
+ *
+ * Responsibilities:
+ * - Computes library metadata for standalone use
+ * - Generates infrastructure files via generateInfrastructureFiles()
+ * - Delegates domain file generation to core generator
+ * - Provides CLI-specific output and instructions
  *
  * @module monorepo-library-generator/cli/generators/provider
  */
@@ -14,7 +19,7 @@ import { generateInfrastructureFiles } from "../../utils/infrastructure-generato
 import type { PlatformType } from "../../utils/platform-utils"
 
 /**
- * Provider Generator Options
+ * Provider Generator Options (CLI)
  */
 export interface ProviderGeneratorOptions {
   readonly name: string
@@ -25,13 +30,13 @@ export interface ProviderGeneratorOptions {
 }
 
 /**
- * Generate a provider library (CLI)
+ * Generate Provider Library (CLI)
  *
- * Generates a provider library following Effect-based architecture patterns.
- * Uses Effect-native FileSystem operations.
+ * Two-phase generation process:
+ * 1. Infrastructure Phase: Generates package.json, tsconfig, project.json
+ * 2. Domain Phase: Generates domain-specific files via core generator
  *
- * @param options - Generator options
- * @returns Effect that succeeds with GeneratorResult or fails with platform errors
+ * Uses Effect-native FileSystem operations for cross-platform compatibility.
  */
 export function generateProvider(options: ProviderGeneratorOptions) {
   return Effect.gen(function*() {
@@ -40,7 +45,7 @@ export function generateProvider(options: ProviderGeneratorOptions) {
 
     yield* Console.log(`Creating provider library: ${options.name}...`)
 
-    // Import names from @nx/devkit for naming transformations
+    // Compute naming variants
     const { names } = yield* Effect.promise(() => import("@nx/devkit"))
     const nameVariants = names(options.name)
     const serviceNameVariants = names(options.externalService)
@@ -72,7 +77,7 @@ export function generateProvider(options: ProviderGeneratorOptions) {
       platform: options.platform || "node"
     }
 
-    // Generate infrastructure files
+    // Phase 1: Generate infrastructure files
     yield* generateInfrastructureFiles(adapter, {
       workspaceRoot,
       projectRoot,
@@ -84,12 +89,12 @@ export function generateProvider(options: ProviderGeneratorOptions) {
       offsetFromRoot: "../../.."
     })
 
-    // Generate domain files via core generator
+    // Phase 2: Generate domain files via core generator
     const result: GeneratorResult = yield* (
       generateProviderCore(adapter, coreOptions) as Effect.Effect<GeneratorResult>
     )
 
-    // CLI-specific output
+    // Display CLI output
     yield* Console.log("✨ Provider library created successfully!")
     yield* Console.log(`  Location: ${result.projectRoot}`)
     yield* Console.log(`  Package: ${result.packageName}`)

@@ -1,10 +1,13 @@
 /**
- * Provider Generator
+ * Provider Library Generator (Nx Wrapper)
  *
- * Generates a provider library following Effect-based architecture patterns
- * with standardized structure, configuration, and build setup.
+ * Wrapper that integrates provider generator core with Nx workspace.
  *
- * Uses centralized library generation utilities for consistency.
+ * Responsibilities:
+ * - Computes library metadata with provider-specific tags
+ * - Generates infrastructure files (package.json, tsconfig, project.json)
+ * - Delegates domain file generation to core generator
+ * - Formats files and provides post-generation instructions
  */
 
 import type { Tree } from "@nx/devkit"
@@ -19,10 +22,15 @@ import { generateProviderCore, type GeneratorResult } from "../core/provider-gen
 import type { ProviderGeneratorSchema } from "./schema"
 
 /**
- * Main provider generator function
+ * Provider Generator for Nx Workspaces
  *
- * Generates a provider library following Effect-based architecture patterns
- * with standardized structure, configuration, and build setup.
+ * Two-phase generation process:
+ * 1. Infrastructure Phase: Generates package.json, tsconfig, project.json via generateLibraryFiles()
+ * 2. Domain Phase: Generates domain-specific files via core generator
+ *
+ * @param tree - Nx Tree API for virtual file system operations
+ * @param schema - User-provided generator options
+ * @returns Callback function that displays post-generation instructions
  */
 export default async function providerGenerator(
   tree: Tree,
@@ -36,15 +44,15 @@ export default async function providerGenerator(
     throw new Error("External service name is required and cannot be empty")
   }
 
-  // Platform determination
+  // Compute platform configuration
   const platform = schema.platform || "node"
   const includeClientServer = platform === "universal" ? true : (schema.includeClientServer ?? false)
 
-  // Provider-specific tags: always use "scope:provider" instead of computed scope
+  // Build provider-specific tags (always use "scope:provider")
   const serviceTag = `service:${createNamingVariants(schema.externalService).fileName}`
   const defaultTags = [
     "type:provider",
-    "scope:provider", // Providers always use "provider" scope
+    "scope:provider",
     `platform:${platform}`,
     serviceTag
   ]
@@ -58,7 +66,7 @@ export default async function providerGenerator(
     defaultTags
   )
 
-  // 1. Generate base library files using centralized utility
+  // Phase 1: Generate infrastructure files
   const libraryOptions: LibraryGeneratorOptions = {
     name: metadata.name,
     projectName: metadata.projectName,
@@ -74,10 +82,10 @@ export default async function providerGenerator(
 
   await generateLibraryFiles(tree, libraryOptions)
 
-  // 2. Generate domain-specific files using shared core
+  // Phase 2: Generate domain-specific files via core generator
   const adapter = createTreeAdapter(tree)
   const coreOptions: Parameters<typeof generateProviderCore>[1] = {
-    // Pass pre-computed metadata from wrapper
+    // Pre-computed metadata
     name: metadata.name,
     className: metadata.className,
     propertyName: metadata.propertyName,
@@ -96,15 +104,15 @@ export default async function providerGenerator(
     platform
   }
 
-  // 3. Run core generator with Effect runtime
+  // Run core generator with Effect runtime
   const result = await Effect.runPromise(
     generateProviderCore(adapter, coreOptions) as Effect.Effect<GeneratorResult, never>
   )
 
-  // 4. Format files
+  // Format generated files
   await formatFiles(tree)
 
-  // 5. Return post-generation instructions
+  // Return post-generation callback
   return () => {
     console.log(`
 ✅ Provider library created: ${result.packageName}

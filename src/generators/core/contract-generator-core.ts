@@ -1,8 +1,14 @@
 /**
  * Contract Generator Core
  *
- * Shared core logic for generating contract libraries.
+ * Generates domain-specific files for contract libraries.
  * Works with both Nx Tree API and Effect FileSystem via FileSystemAdapter.
+ *
+ * Responsibilities:
+ * - Generates domain files (entities, errors, events, ports, CQRS, RPC)
+ * - Handles bundle optimization with separate entity files
+ * - Creates CLAUDE.md documentation
+ * - Infrastructure generation is handled by wrapper generators
  *
  * @module monorepo-library-generator/generators/core/contract-generator-core
  */
@@ -24,42 +30,58 @@ import { generateRpcFile } from "../contract/templates/rpc.template"
 import { generateTypesOnlyFile } from "../contract/templates/types-only.template"
 
 /**
- * Contract Generator Options
+ * Contract Generator Core Options
  *
- * Accepts pre-computed metadata from wrapper generators.
- * Wrapper is responsible for path computation via computeLibraryMetadata().
+ * Receives pre-computed metadata from wrapper generators.
+ * Wrappers are responsible for:
+ * - Computing all paths via computeLibraryMetadata()
+ * - Generating infrastructure files (package.json, tsconfig, project.json)
+ * - Running this core function for domain file generation
+ *
+ * @property name - Base name in original format
+ * @property className - PascalCase variant for class names
+ * @property propertyName - camelCase variant for property names
+ * @property fileName - kebab-case variant for file names
+ * @property constantName - UPPER_SNAKE_CASE variant for constants
+ * @property projectName - Nx project name (e.g., "contract-product")
+ * @property projectRoot - Relative path to project root
+ * @property sourceRoot - Relative path to source directory
+ * @property packageName - NPM package name (e.g., "@scope/contract-product")
+ * @property offsetFromRoot - Relative path from project to workspace root
+ * @property description - Library description for documentation
+ * @property tags - Comma-separated tags for Nx project configuration
+ * @property includeCQRS - Generate CQRS files (commands, queries, projections)
+ * @property includeRPC - Generate RPC endpoint definitions
+ * @property entities - List of entity names for bundle optimization
  */
 export interface ContractGeneratorCoreOptions {
-  // Naming variants (pre-computed by wrapper)
   readonly name: string
   readonly className: string
   readonly propertyName: string
   readonly fileName: string
   readonly constantName: string
-
-  // Project metadata (pre-computed by wrapper)
   readonly projectName: string
   readonly projectRoot: string
   readonly sourceRoot: string
   readonly packageName: string
   readonly offsetFromRoot: string
-
-  // Optional metadata
   readonly description?: string
   readonly tags?: string
-
-  // Feature flags
   readonly includeCQRS?: boolean
   readonly includeRPC?: boolean
-
-  // Bundle optimization
   readonly entities?: ReadonlyArray<string>
 }
 
 /**
  * Generator Result
  *
- * Metadata about the generated library
+ * Metadata returned after successful generation.
+ *
+ * @property projectName - Nx project name
+ * @property projectRoot - Relative path to project root
+ * @property packageName - NPM package name
+ * @property sourceRoot - Relative path to source directory
+ * @property filesGenerated - List of all generated file paths
  */
 export interface GeneratorResult {
   readonly projectName: string
@@ -70,13 +92,16 @@ export interface GeneratorResult {
 }
 
 /**
- * Generate Contract Library (Core Logic)
+ * Generate Contract Library Domain Files
  *
- * This is the shared core that works with any FileSystemAdapter.
- * Both Nx and CLI wrappers call this function.
+ * Generates only domain-specific files for contract libraries.
+ * Infrastructure files (package.json, tsconfig, project.json) are handled by wrappers.
  *
- * @param adapter - FileSystemAdapter implementation (Tree or Effect FS)
- * @param options - Generator options
+ * This core function works with any FileSystemAdapter implementation,
+ * allowing both Nx and CLI wrappers to share the same domain generation logic.
+ *
+ * @param adapter - FileSystemAdapter implementation (Nx Tree or Effect FileSystem)
+ * @param options - Pre-computed metadata and feature flags from wrapper
  * @returns Effect that succeeds with GeneratorResult or fails with FileSystemErrors
  */
 export function generateContractCore(
@@ -84,24 +109,21 @@ export function generateContractCore(
   options: ContractGeneratorCoreOptions
 ) {
   return Effect.gen(function*() {
-    // 1. Prepare entities list (default to single entity based on library name if not specified)
+    // Prepare entities list (defaults to single entity based on library name)
     const entities = options.entities && options.entities.length > 0
       ? options.entities
       : [options.className]
 
-    // 2. Parse tags (wrapper may have passed comma-separated string)
+    // Parse tags from comma-separated string
     const parsedTags = parseTags(options.tags, [])
 
-    // 3. Prepare template options for domain files
+    // Assemble template options from pre-computed metadata
     const templateOptions: ContractTemplateOptions = {
-      // Naming variants (from wrapper)
       name: options.name,
       className: options.className,
       propertyName: options.propertyName,
       fileName: options.fileName,
       constantName: options.constantName,
-
-      // Library metadata (from wrapper)
       libraryType: "contract",
       packageName: options.packageName,
       projectName: options.projectName,
@@ -110,19 +132,14 @@ export function generateContractCore(
       offsetFromRoot: options.offsetFromRoot,
       description: options.description ?? `Contract library for ${options.className}`,
       tags: parsedTags,
-
-      // Feature flags
       includeCQRS: options.includeCQRS ?? false,
       includeRPC: options.includeRPC ?? false,
-
-      // Bundle optimization
       entities
     }
 
-    // 4. Generate domain files only (infrastructure handled by wrapper)
+    // Generate all domain files
     const filesGenerated = yield* generateDomainFiles(adapter, options.sourceRoot, templateOptions)
 
-    // 5. Return result
     return {
       projectName: options.projectName,
       projectRoot: options.projectRoot,
@@ -134,7 +151,16 @@ export function generateContractCore(
 }
 
 /**
- * Generate domain-specific files using templates
+ * Generate domain-specific files
+ *
+ * Creates all contract library files including entities, errors, events, ports,
+ * and optional CQRS/RPC files. Implements bundle optimization with separate
+ * entity files for tree-shaking.
+ *
+ * @param adapter - FileSystemAdapter for file operations
+ * @param sourceRoot - Relative path to source directory
+ * @param templateOptions - Template configuration with all metadata
+ * @returns Effect with list of generated file paths
  */
 function generateDomainFiles(
   adapter: FileSystemAdapter,
@@ -202,7 +228,7 @@ Effect.gen(function* () {
     // Create lib directory
     yield* adapter.makeDirectory(sourceLibPath)
 
-    // Generate core files (always) - excluding entities for now
+    // Generate core domain files (always generated)
     const coreFiles = [
       { path: "errors.ts", generator: generateErrorsFile },
       { path: "ports.ts", generator: generatePortsFile },
@@ -289,7 +315,11 @@ Effect.gen(function* () {
 /**
  * Convert entity name to file name
  *
- * Converts PascalCase entity names to kebab-case file names
+ * Converts PascalCase entity names to kebab-case file names for consistency
+ * with naming conventions.
+ *
+ * @param entityName - Entity name in PascalCase
+ * @returns File name in kebab-case
  *
  * @example
  * entityNameToFileName("Product") // "product"
