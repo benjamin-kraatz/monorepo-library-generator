@@ -6,7 +6,7 @@
  * @module monorepo-library-generator/data-access/index-template
  */
 
-import { generateStandardErrorExports } from "../../../utils/code-generation/barrel-export-utils"
+import { generateStandardErrorExports } from "../../../utils/code-generation/barrel-exports"
 import { TypeScriptBuilder } from "../../../utils/code-generation/typescript-builder"
 import type { DataAccessTemplateOptions } from "../../../utils/shared/types"
 
@@ -38,7 +38,7 @@ Repository implements contract from @custom-repo/contract-${fileName}`,
   builder.addRaw(
     generateStandardErrorExports({
       className,
-      importPath: "./lib/shared/errors.js",
+      importPath: "./lib/shared/errors",
       unionTypeSuffix: "RepositoryError"
     })
   )
@@ -58,7 +58,7 @@ Repository implements contract from @custom-repo/contract-${fileName}`,
   PaginationOptions,
   QueryOptions,
   PaginatedResponse,
-} from "./lib/shared/types.js";`)
+} from "./lib/shared/types";`)
   builder.addBlankLine()
 
   // Validation Functions section
@@ -74,7 +74,7 @@ Repository implements contract from @custom-repo/contract-${fileName}`,
   is${className},
   isValid${className}CreateInput,
   isValid${className}UpdateInput,
-} from "./lib/shared/validation.js";`)
+} from "./lib/shared/validation";`)
   builder.addBlankLine()
 
   // Query Builders section
@@ -85,11 +85,11 @@ Repository implements contract from @custom-repo/contract-${fileName}`,
   buildFindAllQuery,
   buildFindByIdQuery,
   buildCountQuery,
-} from "./lib/queries.js";`)
+} from "./lib/queries";`)
   builder.addBlankLine()
 
   builder.addRaw(
-    `export type { ${className}QueryFilters, PaginationOptions as QueryPaginationOptions } from "./lib/queries.js";`
+    `export type { ${className}QueryFilters, PaginationOptions as QueryPaginationOptions } from "./lib/queries";`
   )
   builder.addBlankLine()
 
@@ -113,7 +113,7 @@ Repository implements contract from @custom-repo/contract-${fileName}`,
   builder.addComment(`     const layer = ${className}Repository.Live;`)
   builder.addBlankLine()
 
-  builder.addRaw(`export { ${className}Repository } from "./lib/repository.js";
+  builder.addRaw(`export { ${className}Repository } from "./lib/repository";
 `)
 
   return builder.toString()

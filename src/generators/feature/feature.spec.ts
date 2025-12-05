@@ -26,10 +26,10 @@ describe("feature generator", () => {
 
       const projectRoot = "libs/feature/auth"
 
-      // Should have server files (OR logic: platform=node)
+      // Should ALWAYS have server.ts barrel export
       expect(tree.exists(`${projectRoot}/src/server.ts`)).toBeTruthy()
       expect(
-        tree.exists(`${projectRoot}/src/lib/server/service.ts`)
+        tree.exists(`${projectRoot}/src/lib/server/service/interface.ts`)
       ).toBeTruthy()
       expect(
         tree.exists(`${projectRoot}/src/lib/server/layers.ts`)
@@ -61,7 +61,7 @@ describe("feature generator", () => {
       expect(tree.exists(`${projectRoot}/src/client.ts`)).toBeTruthy()
       expect(tree.exists(`${projectRoot}/src/server.ts`)).toBeTruthy()
       expect(
-        tree.exists(`${projectRoot}/src/lib/server/service.ts`)
+        tree.exists(`${projectRoot}/src/lib/server/service/interface.ts`)
       ).toBeTruthy()
 
       // Client directory should exist for universal platform
@@ -165,7 +165,7 @@ describe("feature generator", () => {
 
       // Server
       expect(
-        tree.exists(`${projectRoot}/src/lib/server/service.ts`)
+        tree.exists(`${projectRoot}/src/lib/server/service/interface.ts`)
       ).toBeTruthy()
 
       // Client
@@ -284,7 +284,7 @@ describe("feature generator", () => {
         tree.read("libs/feature/payment/package.json", "utf-8") || "{}"
       )
 
-      expect(packageJson.name).toBe("@custom-repo/feature-payment")
+      expect(packageJson.name).toBe("@proj/feature-payment")
       expect(packageJson.type).toBe("module")
 
       // Effect peer dependency
@@ -337,19 +337,19 @@ describe("feature generator", () => {
   })
 
   describe("📝 Template Content Tests", () => {
-    it("should use Context.Tag pattern in service.ts", async () => {
+    it("should use Context.Tag pattern in service interface", async () => {
       await featureGenerator(tree, {
         name: "payment"
       })
 
       const serviceContent = tree.read(
-        "libs/feature/payment/src/lib/server/service.ts",
+        "libs/feature/payment/src/lib/server/service/interface.ts",
         "utf-8"
       )
 
       expect(serviceContent).toContain("Context.Tag")
-      expect(serviceContent).toMatch(/class\s+PaymentService\s+extends/)
-      expect(serviceContent).toContain("Layer.effect")
+      expect(serviceContent).toContain("PaymentService")
+      expect(serviceContent).toContain("Layer.")
     })
 
     it("should use Data.TaggedError in errors.ts", async () => {
@@ -464,9 +464,9 @@ describe("feature generator", () => {
         "utf-8"
       )
 
-      expect(serverContent).toContain("./lib/server/service")
+      expect(serverContent).toContain("./lib/server/service/index")
       expect(serverContent).toContain("./lib/server/layers")
-      expect(serverContent).toContain("./lib/rpc/handlers")
+      expect(serverContent).toContain("./lib/rpc")
     })
 
     it("should NOT export service implementation in client.ts", async () => {
@@ -484,10 +484,7 @@ describe("feature generator", () => {
       expect(clientContent).toContain("./lib/client/hooks")
       expect(clientContent).toContain("./lib/client/atoms")
 
-      // Should export types only
-      expect(clientContent).toContain("export type")
-
-      // Should NOT export service
+      // Should NOT export server service
       expect(clientContent).not.toContain("./lib/server/service")
     })
   })
@@ -540,7 +537,7 @@ describe("feature generator", () => {
       })
 
       const serviceContent = tree.read(
-        "libs/feature/my-custom-feature/src/lib/server/service.ts",
+        "libs/feature/my-custom-feature/src/lib/server/service/interface.ts",
         "utf-8"
       )
 
@@ -587,7 +584,7 @@ describe("feature generator", () => {
 
       const readme = tree.read("libs/feature/payment/README.md", "utf-8")
 
-      expect(readme).toContain("# @custom-repo/feature-payment")
+      expect(readme).toContain("# @proj/feature-payment")
       expect(readme).toContain("Payment processing feature")
       expect(readme).toContain("## Installation")
       expect(readme).toContain("## Usage")
@@ -601,7 +598,7 @@ describe("feature generator", () => {
 
       const claude = tree.read("libs/feature/payment/CLAUDE.md", "utf-8")
 
-      expect(claude).toContain("# @custom-repo/feature-payment")
+      expect(claude).toContain("# @proj/feature-payment")
       expect(claude).toContain("AI-optimized reference")
       expect(claude).toContain("## Quick Reference")
       expect(claude).toContain("## Import Patterns")

@@ -53,7 +53,7 @@ describe("Infra Generator - Foundation", () => {
         "libs/infra/cache/package.json",
         "utf-8"
       )
-      expect(packageJsonContent).toContain("@custom-repo/infra-cache")
+      expect(packageJsonContent).toContain("@proj/infra-cache")
       expect(packageJsonContent).toContain("effect")
     })
 
@@ -189,11 +189,12 @@ describe("Infra Generator - Server-Only Structure", () => {
       expect(layersContent).toContain("CacheService.Test")
     })
 
-    it("should NOT generate client.ts or server.ts when no flags", async () => {
+    it("should ALWAYS generate client.ts and server.ts barrel exports", async () => {
       await infraGenerator(tree, { name: "cache" })
 
-      expect(tree.exists("libs/infra/cache/src/client.ts")).toBe(false)
-      expect(tree.exists("libs/infra/cache/src/server.ts")).toBe(false)
+      // Platform barrel exports are ALWAYS generated since they're in package.json exports
+      expect(tree.exists("libs/infra/cache/src/client.ts")).toBe(true)
+      expect(tree.exists("libs/infra/cache/src/server.ts")).toBe(true)
     })
 
     it("should NOT create client/ directory when no flags", async () => {
@@ -291,14 +292,16 @@ describe("Infra Generator - Client-Server Separation", () => {
       expect(serverContent).toContain("StorageServiceLive")
     })
 
-    it("should NOT generate client/server files when includeClientServer=false", async () => {
+    it("should ALWAYS generate client.ts and server.ts barrel exports even when includeClientServer=false", async () => {
       await infraGenerator(tree, {
         name: "cache",
         includeClientServer: false
       })
 
-      expect(tree.exists("libs/infra/cache/src/client.ts")).toBe(false)
-      expect(tree.exists("libs/infra/cache/src/server.ts")).toBe(false)
+      // Platform barrel exports are ALWAYS generated since they're in package.json exports
+      expect(tree.exists("libs/infra/cache/src/client.ts")).toBe(true)
+      expect(tree.exists("libs/infra/cache/src/server.ts")).toBe(true)
+      // But client directory should NOT exist when includeClientServer=false
       expect(tree.exists("libs/infra/cache/src/lib/client")).toBe(false)
     })
   })
@@ -365,16 +368,17 @@ describe("Infra Generator - File Cleanup", () => {
   })
 
   describe("Conditional File Removal", () => {
-    it("should remove client/server files when includeClientServer=false", async () => {
+    it("should ALWAYS generate barrel exports but remove client implementation when includeClientServer=false", async () => {
       // First generate with flag
       await infraGenerator(tree, {
         name: "storage",
         includeClientServer: true
       })
 
-      // Verify they exist
+      // Verify barrel exports and client implementation exist
       expect(tree.exists("libs/infra/storage/src/client.ts")).toBe(true)
       expect(tree.exists("libs/infra/storage/src/server.ts")).toBe(true)
+      expect(tree.exists("libs/infra/storage/src/lib/client")).toBe(true)
 
       // Generate without flag
       const tree2 = createTreeWithEmptyWorkspace()
@@ -383,9 +387,11 @@ describe("Infra Generator - File Cleanup", () => {
         includeClientServer: false
       })
 
-      // Verify they don't exist
-      expect(tree2.exists("libs/infra/storage/src/client.ts")).toBe(false)
-      expect(tree2.exists("libs/infra/storage/src/server.ts")).toBe(false)
+      // Barrel exports should still exist
+      expect(tree2.exists("libs/infra/storage/src/client.ts")).toBe(true)
+      expect(tree2.exists("libs/infra/storage/src/server.ts")).toBe(true)
+      // But client implementation directory should not exist
+      expect(tree2.exists("libs/infra/storage/src/lib/client")).toBe(false)
     })
 
     it("should remove edge files when includeEdge=false", async () => {

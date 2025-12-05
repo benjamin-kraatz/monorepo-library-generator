@@ -96,16 +96,13 @@ function detectEffectNative(tree: Tree) {
 /**
  * Detect package manager from lock files
  */
-function detectPackageManager(
-  tree: Tree
-): "npm" | "yarn" | "pnpm" {
-  if (tree.exists("pnpm-lock.yaml")) {
-    return "pnpm"
-  }
-  if (tree.exists("yarn.lock")) {
-    return "yarn"
-  }
-  return "npm"
+function detectPackageManager(tree: Tree) {
+  const manager: "npm" | "yarn" | "pnpm" = tree.exists("pnpm-lock.yaml") ?
+    "pnpm" :
+    tree.exists("yarn.lock") ?
+    "yarn" :
+    "npm"
+  return manager
 }
 
 /**

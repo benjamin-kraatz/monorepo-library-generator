@@ -6,7 +6,7 @@
  * @module monorepo-library-generator/infra-templates
  */
 
-import { generateStandardErrorExports } from "../../../utils/code-generation/barrel-export-utils"
+import { generateStandardErrorExports } from "../../../utils/code-generation/barrel-exports"
 import { TypeScriptBuilder } from "../../../utils/code-generation/typescript-builder"
 import type { InfraTemplateOptions } from "../../../utils/shared/types"
 

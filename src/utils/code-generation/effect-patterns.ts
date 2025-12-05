@@ -12,7 +12,7 @@
  * @module monorepo-library-generator/effect-patterns
  */
 
-import type { ClassConfig, MethodConfig, ParameterConfig } from "./typescript-builder"
+import type { MethodConfig, ParameterConfig } from "./typescript-builder"
 
 export interface TaggedErrorField {
   name: string
@@ -89,7 +89,7 @@ export class EffectPatterns {
    * }
    * ```
    */
-  static createTaggedError(config: TaggedErrorConfig): ClassConfig {
+  static createTaggedError(config: TaggedErrorConfig) {
     // Build the type literal for the error fields
     const fieldTypes = config.fields
       .map((field) => {

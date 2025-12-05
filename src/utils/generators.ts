@@ -8,7 +8,7 @@
  */
 
 import type { Tree } from "@nx/devkit"
-import type { LibraryType, PlatformType } from "./build-config-utils"
+import type { LibraryType, PlatformType } from "./build-config"
 
 /**
  * Calculate relative path from project root to workspace root

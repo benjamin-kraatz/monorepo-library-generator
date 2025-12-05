@@ -11,8 +11,8 @@
  * @see docs/NX_STANDARDS.md for export conventions
  */
 
-import { generateExportSections } from "../../../utils/code-generation/barrel-export-utils"
-import type { ExportSection } from "../../../utils/code-generation/barrel-export-utils"
+import { generateExportSections } from "../../../utils/code-generation/barrel-exports"
+import type { ExportSection } from "../../../utils/code-generation/barrel-exports"
 import { TypeScriptBuilder } from "../../../utils/code-generation/typescript-builder"
 import type { FeatureTemplateOptions } from "../../../utils/shared/types"
 

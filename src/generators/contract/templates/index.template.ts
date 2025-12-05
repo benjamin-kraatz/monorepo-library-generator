@@ -12,7 +12,7 @@ import {
   type ConditionalExport,
   type ExportSection,
   generateExportSections
-} from "../../../utils/code-generation/barrel-export-utils"
+} from "../../../utils/code-generation/barrel-exports"
 import { TypeScriptBuilder } from "../../../utils/code-generation/typescript-builder"
 import type { ContractTemplateOptions } from "../../../utils/shared/types"
 

@@ -138,10 +138,10 @@ export const cqrsDirectories = [
   "server/queries",
   "server/operations",
   "server/projections"
-] as const
+]
 
 /**
  * Directory placeholders for client components
  * These directories are created with .gitkeep files when includeClient is true
  */
-export const clientDirectories = ["client/components"] as const
+export const clientDirectories = ["client/components"]

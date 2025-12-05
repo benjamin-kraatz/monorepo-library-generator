@@ -9,7 +9,7 @@
 
 import type { Tree } from "@nx/devkit"
 import * as path from "path"
-import { createNamingVariants } from "./naming-utils"
+import { createNamingVariants } from "./naming"
 import type { LibraryType } from "./shared/types"
 
 /**

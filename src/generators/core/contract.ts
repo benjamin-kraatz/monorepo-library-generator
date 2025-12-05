@@ -14,8 +14,8 @@
  */
 
 import { Effect } from "effect"
-import type { FileSystemAdapter, FileSystemErrors } from "../../utils/filesystem-adapter"
-import { parseTags } from "../../utils/generator-utils"
+import type { FileSystemAdapter } from "../../utils/filesystem-adapter"
+import { parseTags } from "../../utils/generators"
 import type { ContractTemplateOptions } from "../../utils/shared/types"
 import { generateCommandsFile } from "../contract/templates/commands.template"
 import { generateEntityBarrelFile } from "../contract/templates/entity-barrel.template"
@@ -54,7 +54,7 @@ import { generateTypesOnlyFile } from "../contract/templates/types-only.template
  * @property includeRPC - Generate RPC endpoint definitions
  * @property entities - List of entity names for bundle optimization
  */
-export interface ContractGeneratorCoreOptions {
+export interface ContractCoreOptions {
   readonly name: string
   readonly className: string
   readonly propertyName: string
@@ -106,7 +106,7 @@ export interface GeneratorResult {
  */
 export function generateContractCore(
   adapter: FileSystemAdapter,
-  options: ContractGeneratorCoreOptions
+  options: ContractCoreOptions
 ) {
   return Effect.gen(function*() {
     // Prepare entities list (defaults to single entity based on library name)
@@ -166,7 +166,7 @@ function generateDomainFiles(
   adapter: FileSystemAdapter,
   sourceRoot: string,
   templateOptions: ContractTemplateOptions
-): Effect.Effect<ReadonlyArray<string>, FileSystemErrors, unknown> {
+) {
   return Effect.gen(function*() {
     const workspaceRoot = adapter.getWorkspaceRoot()
     const sourceLibPath = `${workspaceRoot}/${sourceRoot}/lib`

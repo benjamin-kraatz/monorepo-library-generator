@@ -39,9 +39,8 @@ export const ContractGeneratorConfig: GeneratorConfig<ContractTemplateOptions> =
 
   /**
    * Template functions are imported directly in the orchestrator
-   * This field is kept for documentation purposes
+   * This field is kept for documentation purposes and is not used
    */
-  templates: {} as any,
 
   /**
    * Contract libraries are universal - no platform-specific exports

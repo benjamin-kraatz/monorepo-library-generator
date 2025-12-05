@@ -15,8 +15,8 @@
  */
 
 import { Effect } from "effect"
-import type { FileSystemAdapter, FileSystemErrors } from "../../utils/filesystem-adapter"
-import { parseTags } from "../../utils/generator-utils"
+import type { FileSystemAdapter } from "../../utils/filesystem-adapter"
+import { parseTags } from "../../utils/generators"
 import type { DataAccessTemplateOptions } from "../../utils/shared/types"
 import { generateErrorsFile } from "../data-access/templates/errors.template"
 import { generateIndexFile } from "../data-access/templates/index.template"
@@ -24,10 +24,24 @@ import { generateLayersSpecFile } from "../data-access/templates/layers-spec.tem
 import { generateLayersFile } from "../data-access/templates/layers.template"
 import { generateQueriesFile } from "../data-access/templates/queries.template"
 import { generateRepositorySpecFile } from "../data-access/templates/repository-spec.template"
-import { generateRepositoryFile } from "../data-access/templates/repository.template"
 import { generateTypesFile } from "../data-access/templates/types.template"
 import { generateValidationFile } from "../data-access/templates/validation.template"
-import type { GeneratorResult } from "./contract-generator-core"
+import type { GeneratorResult } from "./contract"
+
+// Import new granular repository templates
+import {
+  generateRepositoryAggregateOperationFile,
+  generateRepositoryCreateOperationFile,
+  generateRepositoryDeleteOperationFile,
+  generateRepositoryIndexFile,
+  generateRepositoryInterfaceFile,
+  generateRepositoryOperationsIndexFile,
+  generateRepositoryReadOperationFile,
+  generateRepositoryUpdateOperationFile
+} from "../data-access/templates/repository"
+
+// Import type-only exports template
+import { generateTypesOnlyFile, type TypesOnlyExportOptions } from "../../utils/templates/types-only-exports.template"
 
 export type { GeneratorResult }
 
@@ -55,7 +69,7 @@ export type { GeneratorResult }
  * @property includeCache - Enable caching layer in repository
  * @property contractLibrary - Import path to contract library
  */
-export interface DataAccessGeneratorCoreOptions {
+export interface DataAccessCoreOptions {
   readonly name: string
   readonly className: string
   readonly propertyName: string
@@ -87,7 +101,7 @@ export interface DataAccessGeneratorCoreOptions {
  */
 export function generateDataAccessCore(
   adapter: FileSystemAdapter,
-  options: DataAccessGeneratorCoreOptions
+  options: DataAccessCoreOptions
 ) {
   return Effect.gen(function*() {
     // Parse tags from comma-separated string
@@ -140,7 +154,7 @@ function generateDomainFiles(
   adapter: FileSystemAdapter,
   sourceRoot: string,
   templateOptions: DataAccessTemplateOptions
-): Effect.Effect<ReadonlyArray<string>, FileSystemErrors, unknown> {
+) {
   return Effect.gen(function*() {
     const workspaceRoot = adapter.getWorkspaceRoot()
     const sourceLibPath = `${workspaceRoot}/${sourceRoot}/lib`
@@ -155,18 +169,46 @@ ${templateOptions.description}
 
 ## AI Agent Reference
 
-This is a data-access library following Effect-based repository patterns.
+This is a data-access library following Effect-based repository patterns with granular bundle optimization.
 
-### Structure
+### Structure (Optimized for Tree-Shaking)
 
+- **types.ts**: Type-only exports (zero runtime overhead)
 - **lib/shared/**: Shared types, errors, and validation
   - \`errors.ts\`: Data.TaggedError-based error types
   - \`types.ts\`: Entity types, filters, pagination
   - \`validation.ts\`: Input validation helpers
 
-- **lib/repository.ts**: Repository implementation with CRUD operations
+- **lib/repository/**: Granular repository implementation
+  - \`interface.ts\`: Context.Tag with static layers
+  - \`operations/create.ts\`: Create operations (~4 KB)
+  - \`operations/read.ts\`: Read/query operations (~5 KB)
+  - \`operations/update.ts\`: Update operations (~3 KB)
+  - \`operations/delete.ts\`: Delete operations (~3 KB)
+  - \`operations/aggregate.ts\`: Count/exists operations (~3 KB)
+  - \`index.ts\`: Barrel export for convenience
+
 - **lib/queries.ts**: Kysely query builders
 - **lib/server/layers.ts**: Server-side Layer compositions (Live, Test, Dev, Auto)
+
+### Import Patterns (Most to Least Optimized)
+
+\`\`\`typescript
+// 1. Granular operation import (smallest bundle ~4-5 KB)
+import { createOperations } from '${templateOptions.packageName}/repository/operations/create';
+
+// 2. Type-only import (zero runtime ~0.3 KB)
+import type { ${templateOptions.className}, ${templateOptions.className}CreateInput } from '${templateOptions.packageName}/types';
+
+// 3. Operation category (~8-12 KB)
+import { createOperations, readOperations } from '${templateOptions.packageName}/repository/operations';
+
+// 4. Full repository (~15-20 KB)
+import { ${templateOptions.className}Repository } from '${templateOptions.packageName}/repository';
+
+// 5. Package barrel (largest ~25-30 KB)
+import { ${templateOptions.className}Repository } from '${templateOptions.packageName}';
+\`\`\`
 
 ### Customization Guide
 
@@ -175,10 +217,11 @@ This is a data-access library following Effect-based repository patterns.
    - Add custom filter types
    - Update pagination options
 
-2. **Implement Repository** (\`lib/repository.ts\`):
-   - Customize CRUD methods
-   - Add domain-specific queries
-   - Implement business logic
+2. **Implement Repository Operations**:
+   - \`lib/repository/operations/create.ts\`: Customize create logic
+   - \`lib/repository/operations/read.ts\`: Add domain-specific queries
+   - \`lib/repository/operations/update.ts\`: Implement update validation
+   - Each operation can be implemented independently
 
 3. **Configure Layers** (\`lib/server/layers.ts\`):
    - Wire up dependencies (database, cache, etc.)
@@ -188,9 +231,21 @@ This is a data-access library following Effect-based repository patterns.
 ### Usage Example
 
 \`\`\`typescript
+// Granular import for optimal bundle size
+import { createOperations } from '${templateOptions.packageName}/repository/operations/create';
+import type { ${templateOptions.className}CreateInput } from '${templateOptions.packageName}/types';
+
+// Use directly without full repository
+const program = Effect.gen(function* () {
+  const created = yield* createOperations.create({
+    // ...entity data
+  } as ${templateOptions.className}CreateInput);
+  return created;
+});
+
+// Traditional approach (still works)
 import { ${templateOptions.className}Repository } from '${templateOptions.packageName}';
 
-// Use in your Effect program
 Effect.gen(function* () {
   const repo = yield* ${templateOptions.className}Repository;
   const result = yield* repo.findById("id-123");
@@ -219,18 +274,53 @@ Effect.gen(function* () {
       files.push(path)
     }
 
-    // Generate repository files
-    const repoFiles = [
-      { path: `${sourceLibPath}/queries.ts`, generator: generateQueriesFile },
-      { path: `${sourceLibPath}/repository.ts`, generator: generateRepositoryFile },
-      { path: `${sourceLibPath}/repository.spec.ts`, generator: generateRepositorySpecFile }
+    // Generate repository files with granular structure for bundle optimization
+    const repositoryPath = `${sourceLibPath}/repository`
+    const operationsPath = `${repositoryPath}/operations`
+
+    // Create repository directories
+    yield* adapter.makeDirectory(repositoryPath)
+    yield* adapter.makeDirectory(operationsPath)
+
+    // Generate repository interface
+    const interfaceContent = generateRepositoryInterfaceFile(templateOptions)
+    yield* adapter.writeFile(`${repositoryPath}/interface.ts`, interfaceContent)
+    files.push(`${repositoryPath}/interface.ts`)
+
+    // Generate operation files (split for optimal tree-shaking)
+    const operationFiles = [
+      { path: `${operationsPath}/create.ts`, generator: generateRepositoryCreateOperationFile },
+      { path: `${operationsPath}/read.ts`, generator: generateRepositoryReadOperationFile },
+      { path: `${operationsPath}/update.ts`, generator: generateRepositoryUpdateOperationFile },
+      { path: `${operationsPath}/delete.ts`, generator: generateRepositoryDeleteOperationFile },
+      { path: `${operationsPath}/aggregate.ts`, generator: generateRepositoryAggregateOperationFile }
     ]
 
-    for (const { generator, path } of repoFiles) {
+    for (const { generator, path } of operationFiles) {
       const content = generator(templateOptions)
       yield* adapter.writeFile(path, content)
       files.push(path)
     }
+
+    // Generate operations index (barrel)
+    const operationsIndexContent = generateRepositoryOperationsIndexFile(templateOptions)
+    yield* adapter.writeFile(`${operationsPath}/index.ts`, operationsIndexContent)
+    files.push(`${operationsPath}/index.ts`)
+
+    // Generate repository index (barrel)
+    const repositoryIndexContent = generateRepositoryIndexFile(templateOptions)
+    yield* adapter.writeFile(`${repositoryPath}/index.ts`, repositoryIndexContent)
+    files.push(`${repositoryPath}/index.ts`)
+
+    // Generate repository spec (updated to use new structure)
+    const repoSpecContent = generateRepositorySpecFile(templateOptions)
+    yield* adapter.writeFile(`${sourceLibPath}/repository.spec.ts`, repoSpecContent)
+    files.push(`${sourceLibPath}/repository.spec.ts`)
+
+    // Generate queries file
+    const queriesContent = generateQueriesFile(templateOptions)
+    yield* adapter.writeFile(`${sourceLibPath}/queries.ts`, queriesContent)
+    files.push(`${sourceLibPath}/queries.ts`)
 
     // Generate server files
     yield* adapter.writeFile(
@@ -244,6 +334,19 @@ Effect.gen(function* () {
       generateLayersSpecFile(templateOptions)
     )
     files.push(`${sourceLibPath}/layers.spec.ts`)
+
+    // Generate type-only exports file for zero-runtime imports
+    const typesOnlyOptions: TypesOnlyExportOptions = {
+      libraryType: "data-access",
+      className: templateOptions.className,
+      fileName: templateOptions.fileName,
+      packageName: templateOptions.packageName,
+      platform: "server"
+    }
+    const typesOnlyContent = generateTypesOnlyFile(typesOnlyOptions)
+    const typesOnlyPath = `${workspaceRoot}/${sourceRoot}/types.ts`
+    yield* adapter.writeFile(typesOnlyPath, typesOnlyContent)
+    files.push(typesOnlyPath)
 
     // Generate index
     const indexPath = `${workspaceRoot}/${sourceRoot}/index.ts`

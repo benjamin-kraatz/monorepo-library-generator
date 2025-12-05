@@ -6,7 +6,7 @@
  * @module monorepo-library-generator/infra-templates
  */
 
-import { createErrorUnionType } from "../../../utils/code-generation/error-template-utils"
+import { createErrorUnionType } from "../../../utils/code-generation/error-templates"
 import { TypeScriptBuilder } from "../../../utils/code-generation/typescript-builder"
 import type { InfraTemplateOptions } from "../../../utils/shared/types"
 

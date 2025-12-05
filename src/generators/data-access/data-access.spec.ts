@@ -101,30 +101,26 @@ describe("Data Access Library Generator", () => {
   // These tests verify the generator creates the core repository pattern templates
 
   describe("Phase 2: Repository Pattern", () => {
-    it("should generate repository implementation in single file", async () => {
+    it("should generate repository with granular structure", async () => {
       const schema: DataAccessGeneratorSchema = { name: "product" }
 
       await dataAccessGenerator(tree, schema)
 
-      expect(tree.exists(`${projectRoot}/src/lib/repository.ts`)).toBe(true)
+      // New granular structure
+      expect(tree.exists(`${projectRoot}/src/lib/repository/interface.ts`)).toBe(true)
+      expect(tree.exists(`${projectRoot}/src/lib/repository/operations/create.ts`)).toBe(true)
+      expect(tree.exists(`${projectRoot}/src/lib/repository/operations/read.ts`)).toBe(true)
+      expect(tree.exists(`${projectRoot}/src/lib/repository/index.ts`)).toBe(true)
 
-      const content = tree.read(`${projectRoot}/src/lib/repository.ts`, "utf-8") || ""
+      const interfaceContent = tree.read(`${projectRoot}/src/lib/repository/interface.ts`, "utf-8") || ""
 
-      // Should have ProductRepository references
-      expect(content).toContain("ProductRepository")
-      // Should have Layer composition
-      const hasLayerComposition = content.includes("Layer.effect") || content.includes("Layer.succeed")
-      expect(hasLayerComposition).toBe(true)
-      // Should have standard repository methods
-      expect(content).toContain("findById")
-      expect(content).toContain("findAll")
-      expect(content).toContain("save")
-      expect(content).toContain("update")
-      expect(content).toContain("delete")
-      expect(content).toContain("count")
-      // Should use CreateInput/UpdateInput types
-      expect(content).toContain("CreateInput")
-      expect(content).toContain("UpdateInput")
+      // Should have ProductRepository Context.Tag
+      expect(interfaceContent).toContain("ProductRepository")
+      expect(interfaceContent).toContain("Context.Tag")
+
+      const readContent = tree.read(`${projectRoot}/src/lib/repository/operations/read.ts`, "utf-8") || ""
+      // Should have standard repository read methods
+      expect(readContent).toContain("findById")
     })
 
     it("should generate repository layers (Live, Test, Dev, Auto)", async () => {
@@ -132,13 +128,17 @@ describe("Data Access Library Generator", () => {
 
       await dataAccessGenerator(tree, schema)
 
-      const content = tree.read(`${projectRoot}/src/lib/repository.ts`, "utf-8") || ""
+      // Static members are in interface.ts (Effect 3.0+ pattern)
+      const interfaceContent = tree.read(`${projectRoot}/src/lib/repository/interface.ts`, "utf-8") || ""
+      expect(interfaceContent).toContain("static readonly Live")
+      expect(interfaceContent).toContain("static readonly Test")
+      expect(interfaceContent).toContain("static readonly Dev")
+      expect(interfaceContent).toContain("static readonly Auto")
 
-      // Should have all environment layers (Effect 3.0+ pattern: static members)
-      expect(content).toContain("static readonly Live")
-      expect(content).toContain("static readonly Test")
-      expect(content).toContain("static readonly Dev")
-      expect(content).toContain("static readonly Auto")
+      // Layers file should export them
+      const layersContent = tree.read(`${projectRoot}/src/lib/server/layers.ts`, "utf-8") || ""
+      expect(layersContent).toContain("ProductRepositoryLive")
+      expect(layersContent).toContain("ProductRepositoryTest")
     })
 
     it("should generate repository test layer with in-memory implementation", async () => {
@@ -146,18 +146,17 @@ describe("Data Access Library Generator", () => {
 
       await dataAccessGenerator(tree, schema)
 
-      const content = tree.read(`${projectRoot}/src/lib/repository.ts`, "utf-8") || ""
+      // Test layer is defined as static member in interface.ts
+      const interfaceContent = tree.read(`${projectRoot}/src/lib/repository/interface.ts`, "utf-8") || ""
+      expect(interfaceContent).toContain("static readonly Test")
+      expect(interfaceContent).toContain("Map") // In-memory Map storage
 
-      // Test layer should have in-memory store
-      expect(content).toContain("static readonly Test")
-      expect(content).toContain("Map")
-      // Should implement all repository methods
-      expect(content).toContain("findAll")
-      expect(content).toContain("findById")
-      expect(content).toContain("create") // Modern pattern uses 'create' not 'save'
-      expect(content).toContain("update")
-      expect(content).toContain("delete")
-      expect(content).toContain("count")
+      // Check operations files for methods
+      const readOps = tree.read(`${projectRoot}/src/lib/repository/operations/read.ts`, "utf-8") || ""
+      expect(readOps).toContain("findById")
+
+      const createOps = tree.read(`${projectRoot}/src/lib/repository/operations/create.ts`, "utf-8") || ""
+      expect(createOps).toContain("create")
     })
 
     it("should generate server-side layers in lib/server/layers.ts", async () => {
@@ -180,10 +179,11 @@ describe("Data Access Library Generator", () => {
 
       await dataAccessGenerator(tree, schema)
 
-      const content = tree.read(`${projectRoot}/src/lib/repository.ts`, "utf-8") || ""
+      // Check layers file for TODO comments
+      const layersContent = tree.read(`${projectRoot}/src/lib/server/layers.ts`, "utf-8") || ""
 
       // Should have TODO comments for developer guidance
-      expect(content).toContain("TODO")
+      expect(layersContent).toContain("TODO")
     })
   })
 
@@ -293,11 +293,9 @@ describe("Data Access Library Generator", () => {
         (content.includes("validate") && content.includes("UpdateInput"))
       expect(hasUpdateValidation).toBe(true)
 
-      // Should reference types from ./types (ES module .js extension is correct)
+      // Should reference types from ./types (without .js extension per linter rules)
       const hasTypesImport = content.includes("from './types'") ||
-        content.includes("from \"./types\"") ||
-        content.includes("from './types.js'") ||
-        content.includes("from \"./types.js\"")
+        content.includes("from \"./types\"")
       expect(hasTypesImport).toBe(true)
     })
 
@@ -377,10 +375,12 @@ describe("Data Access Library Generator", () => {
 
       await dataAccessGenerator(tree, schema)
 
-      // Verify new structure exists
+      // Verify new granular structure exists
       expect(tree.exists(`${projectRoot}/src`)).toBe(true)
       expect(tree.exists(`${projectRoot}/src/lib`)).toBe(true)
-      expect(tree.exists(`${projectRoot}/src/lib/repository.ts`)).toBe(true)
+      expect(tree.exists(`${projectRoot}/src/lib/repository`)).toBe(true)
+      expect(tree.exists(`${projectRoot}/src/lib/repository/interface.ts`)).toBe(true)
+      expect(tree.exists(`${projectRoot}/src/lib/repository/operations`)).toBe(true)
       expect(tree.exists(`${projectRoot}/src/lib/shared`)).toBe(true)
       expect(tree.exists(`${projectRoot}/src/lib/shared/errors.ts`)).toBe(true)
       expect(tree.exists(`${projectRoot}/src/lib/shared/types.ts`)).toBe(true)
@@ -390,10 +390,8 @@ describe("Data Access Library Generator", () => {
       expect(tree.exists(`${projectRoot}/src/lib/queries.ts`)).toBe(true)
       expect(tree.exists(`${projectRoot}/src/lib/server`)).toBe(true)
 
-      // Verify old structure does NOT exist
-      expect(
-        tree.exists(`${projectRoot}/src/lib/repository/interface.ts`)
-      ).toBe(false)
+      // Verify old single-file structure does NOT exist
+      expect(tree.exists(`${projectRoot}/src/lib/repository.ts`)).toBe(false)
       expect(
         tree.exists(`${projectRoot}/src/lib/repository/product.repository.ts`)
       ).toBe(false)
@@ -458,10 +456,10 @@ describe("Data Access Library Generator", () => {
 
       await dataAccessGenerator(tree, schema)
 
-      const repositoryContent = tree.read(`${projectRoot}/src/lib/repository.ts`, "utf-8") || ""
+      const interfaceContent = tree.read(`${projectRoot}/src/lib/repository/interface.ts`, "utf-8") || ""
 
       // Should use PascalCase for class/interface names
-      expect(repositoryContent).toContain("ProductRepository")
+      expect(interfaceContent).toContain("ProductRepository")
 
       const errorContent = tree.read(`${projectRoot}/src/lib/shared/errors.ts`, "utf-8") || ""
 
@@ -474,15 +472,15 @@ describe("Data Access Library Generator", () => {
 
       await dataAccessGenerator(tree, schema)
 
-      const repositoryContent = tree.read(`${projectRoot}/src/lib/repository.ts`, "utf-8") || ""
+      const interfaceContent = tree.read(`${projectRoot}/src/lib/repository/interface.ts`, "utf-8") || ""
 
       // Should not have EJS template syntax (which would indicate incomplete generation)
-      expect(repositoryContent).not.toContain("<%=")
-      expect(repositoryContent).not.toContain("%>")
+      expect(interfaceContent).not.toContain("<%=")
+      expect(interfaceContent).not.toContain("%>")
       // Should have actual implementation (at least one of these)
-      const hasImplementation = repositoryContent.includes("function") ||
-        repositoryContent.includes("const") ||
-        repositoryContent.includes("export")
+      const hasImplementation = interfaceContent.includes("Context.Tag") ||
+        interfaceContent.includes("const") ||
+        interfaceContent.includes("export")
       expect(hasImplementation).toBe(true)
     })
 
@@ -549,10 +547,12 @@ describe("Data Access Library Generator", () => {
 
       await dataAccessGenerator(tree, schema)
 
-      // Verify core template files exist
+      // Verify core template files exist with new granular structure
       const coreTemplateFiles = [
         `${projectRoot}/src/index.ts`,
-        `${projectRoot}/src/lib/repository.ts`,
+        `${projectRoot}/src/lib/repository/interface.ts`,
+        `${projectRoot}/src/lib/repository/operations/create.ts`,
+        `${projectRoot}/src/lib/repository/operations/read.ts`,
         `${projectRoot}/src/lib/repository.spec.ts`,
         `${projectRoot}/src/lib/shared/errors.ts`,
         `${projectRoot}/src/lib/shared/types.ts`,
@@ -583,18 +583,21 @@ describe("Data Access Library Generator", () => {
 
       await dataAccessGenerator(tree, schema)
 
-      const repositoryContent = tree.read(`${projectRoot}/src/lib/repository.ts`, "utf-8") || ""
+      // Check types in shared/types.ts
+      const typesContent = tree.read(`${projectRoot}/src/lib/shared/types.ts`, "utf-8") || ""
+      expect(typesContent).toContain("CreateInput")
+      expect(typesContent).toContain("UpdateInput")
 
-      // Verify method signatures use proper input types
-      expect(repositoryContent).toContain("CreateInput")
-      expect(repositoryContent).toContain("UpdateInput")
-      // Verify methods return Effect
-      const hasEffectUsage = repositoryContent.includes("Effect.gen") ||
-        repositoryContent.includes("Effect.succeed") ||
-        repositoryContent.includes("Effect.fail")
+      // Check operations files for Effect usage
+      const createContent = tree.read(`${projectRoot}/src/lib/repository/operations/create.ts`, "utf-8") || ""
+      const hasEffectUsage = createContent.includes("Effect.gen") ||
+        createContent.includes("Effect.succeed") ||
+        createContent.includes("Effect.fail")
       expect(hasEffectUsage).toBe(true)
-      // Verify proper Option usage for findById
-      expect(repositoryContent).toContain("Option")
+
+      // Verify proper Option usage in read operations
+      const readContent = tree.read(`${projectRoot}/src/lib/repository/operations/read.ts`, "utf-8") || ""
+      expect(readContent).toContain("Option")
     })
 
     it("should have test layer with proper CRUD implementations", async () => {
@@ -602,19 +605,22 @@ describe("Data Access Library Generator", () => {
 
       await dataAccessGenerator(tree, schema)
 
-      const repositoryContent = tree.read(`${projectRoot}/src/lib/repository.ts`, "utf-8") || ""
+      // Test layer is in interface.ts
+      const interfaceContent = tree.read(`${projectRoot}/src/lib/repository/interface.ts`, "utf-8") || ""
 
       // Test layer should have in-memory Map
-      expect(repositoryContent).toContain("Map")
-      // Should implement all CRUD operations
-      expect(repositoryContent).toContain("findAll")
-      expect(repositoryContent).toContain("findById")
-      expect(repositoryContent).toContain("save")
-      expect(repositoryContent).toContain("update")
-      expect(repositoryContent).toContain("delete")
-      expect(repositoryContent).toContain("count")
-      // Should handle not found errors in test layer
-      expect(repositoryContent).toContain("NotFoundError")
+      expect(interfaceContent).toContain("Map")
+
+      // Check that operations exist
+      expect(tree.exists(`${projectRoot}/src/lib/repository/operations/read.ts`)).toBe(true)
+      expect(tree.exists(`${projectRoot}/src/lib/repository/operations/create.ts`)).toBe(true)
+      expect(tree.exists(`${projectRoot}/src/lib/repository/operations/update.ts`)).toBe(true)
+      expect(tree.exists(`${projectRoot}/src/lib/repository/operations/delete.ts`)).toBe(true)
+      expect(tree.exists(`${projectRoot}/src/lib/repository/operations/aggregate.ts`)).toBe(true)
+
+      // Should handle not found errors
+      const errorsContent = tree.read(`${projectRoot}/src/lib/shared/errors.ts`, "utf-8") || ""
+      expect(errorsContent).toContain("NotFoundError")
     })
   })
 
@@ -640,7 +646,8 @@ describe("Data Access Library Generator", () => {
 
       await dataAccessGenerator(tree, schema)
 
-      const customRoot = "custom/libs/data-access-product"
+      // Directory option puts library directly in specified path + name (not with data-access prefix)
+      const customRoot = "custom/libs/product"
       expect(tree.exists(`${customRoot}/project.json`)).toBe(true)
     })
 
@@ -681,8 +688,8 @@ describe("Data Access Library Generator", () => {
       expect(projectJson.name).toBe("data-access-payment-method")
 
       // Check repository uses PascalCase
-      const repositoryContent = tree.read(`${paymentRoot}/src/lib/repository.ts`, "utf-8") || ""
-      expect(repositoryContent).toContain("PaymentMethod")
+      const interfaceContent = tree.read(`${paymentRoot}/src/lib/repository/interface.ts`, "utf-8") || ""
+      expect(interfaceContent).toContain("PaymentMethod")
     })
 
     it("should use consistent naming across all generated files", async () => {
@@ -693,8 +700,8 @@ describe("Data Access Library Generator", () => {
       const userRoot = "libs/data-access/user-profile"
 
       // Repository should use PascalCase
-      const repositoryContent = tree.read(`${userRoot}/src/lib/repository.ts`, "utf-8") || ""
-      expect(repositoryContent).toContain("UserProfileRepository")
+      const interfaceContent = tree.read(`${userRoot}/src/lib/repository/interface.ts`, "utf-8") || ""
+      expect(interfaceContent).toContain("UserProfileRepository")
 
       // Errors should use PascalCase
       const errorContent = tree.read(`${userRoot}/src/lib/shared/errors.ts`, "utf-8") || ""

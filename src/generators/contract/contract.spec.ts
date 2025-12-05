@@ -19,7 +19,11 @@ describe("Contract Generator - Foundation", () => {
     it("should generate all base files", async () => {
       await contractGenerator(tree, { name: "product" })
 
-      expect(tree.exists("libs/contract/product/src/lib/entities.ts")).toBe(
+      // Granular entities structure
+      expect(tree.exists("libs/contract/product/src/lib/entities/product.ts")).toBe(
+        true
+      )
+      expect(tree.exists("libs/contract/product/src/lib/entities/index.ts")).toBe(
         true
       )
       expect(tree.exists("libs/contract/product/src/lib/errors.ts")).toBe(
@@ -225,8 +229,8 @@ describe("Contract Generator - Exports", () => {
       const indexContent = tree.read("libs/contract/product/src/index.ts", "utf-8")
       expect(indexContent).toContain("from './lib/entities'")
 
-      // Verify parse/encode functions exist in entities.ts
-      const entitiesContent = tree.read("libs/contract/product/src/lib/entities.ts", "utf-8")
+      // Verify parse/encode functions exist in entities/product.ts
+      const entitiesContent = tree.read("libs/contract/product/src/lib/entities/product.ts", "utf-8")
       expect(entitiesContent).toContain("parseProduct")
       expect(entitiesContent).toContain("encodeProduct")
     })

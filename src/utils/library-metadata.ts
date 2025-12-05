@@ -11,7 +11,7 @@
 import type { Tree } from "@nx/devkit"
 import { joinPathFragments, offsetFromRoot as computeOffsetFromRoot } from "@nx/devkit"
 import { Effect } from "effect"
-import { createNamingVariants } from "./naming-utils"
+import { createNamingVariants } from "./naming"
 import type { LibraryType } from "./shared/types"
 import { createTreeAdapter } from "./tree-adapter"
 import { detectWorkspaceConfig, type WorkspaceConfig } from "./workspace-detection"

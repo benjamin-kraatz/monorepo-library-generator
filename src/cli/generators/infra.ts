@@ -3,20 +3,25 @@
  *
  * Wrapper that integrates infrastructure generator core with Effect-based CLI.
  *
- * Responsibilities:
- * - Computes library metadata for standalone use
- * - Generates infrastructure files via generateInfrastructureFiles()
- * - Delegates domain file generation to core generator
- * - Provides CLI-specific output and instructions
+ * Two-Phase Generation:
+ * 1. **Infrastructure Phase**: Uses infrastructure.ts to generate
+ *    all infrastructure files (package.json, tsconfig files, vitest.config.ts, etc.)
+ * 2. **Domain Phase**: Delegates to infra-generator-core.ts for domain-specific
+ *    files (service, providers, configuration, etc.)
+ *
+ * The infrastructure generator ensures:
+ * - Complete infrastructure (7 files)
+ * - Consistent behavior with Nx generators
+ * - Platform-aware exports (client/server/edge)
  *
  * @module monorepo-library-generator/cli/generators/infra
  */
 
 import { Console, Effect } from "effect"
-import { generateInfraCore, type GeneratorResult } from "../../generators/core/infra-generator-core"
+import { generateInfraCore, type GeneratorResult } from "../../generators/core/infra"
 import { createEffectFsAdapter } from "../../utils/effect-fs-adapter"
-import { generateInfrastructureFiles } from "../../utils/infrastructure-generator"
-import type { PlatformType } from "../../utils/platform-utils"
+import { generateLibraryInfrastructure } from "../../utils/infrastructure"
+import type { PlatformType } from "../../utils/platforms"
 
 /**
  * Infrastructure Generator Options (CLI)
@@ -55,6 +60,27 @@ export function generateInfra(options: InfraGeneratorOptions) {
     const projectRoot = `libs/infra/${nameVariants.fileName}`
     const sourceRoot = `${projectRoot}/src`
     const packageName = `@custom-repo/${projectName}`
+    const description = options.description || `${nameVariants.className} infrastructure library`
+    const platform = options.platform || "node"
+
+    // Parse tags
+    const tagsString = options.tags || `type:infra,scope:shared,platform:${platform}`
+    const tags = tagsString.split(",").map(t => t.trim())
+
+    // Phase 1: Generate infrastructure files using infrastructure generator
+    yield* generateLibraryInfrastructure(adapter, {
+      projectName,
+      projectRoot,
+      sourceRoot,
+      packageName,
+      description,
+      libraryType: "infra",
+      platform,
+      offsetFromRoot: "../../..",
+      tags,
+      ...(options.includeClientServer !== undefined && { includeClientServer: options.includeClientServer }),
+      ...(options.includeEdge !== undefined && { includeEdgeExports: options.includeEdge })
+    })
 
     // Prepare core options
     const coreOptions = {
@@ -67,31 +93,17 @@ export function generateInfra(options: InfraGeneratorOptions) {
       projectRoot,
       sourceRoot,
       packageName,
-      description: options.description || `${nameVariants.className} infrastructure library`,
-      tags: options.tags ||
-        `type:infra,scope:shared,platform:${options.platform || "node"}`,
+      description,
+      tags: tagsString,
       offsetFromRoot: "../../..",
       workspaceRoot,
-      platform: options.platform || "node",
+      platform,
       ...(options.includeClientServer !== undefined && { includeClientServer: options.includeClientServer }),
       ...(options.includeEdge !== undefined && { includeEdge: options.includeEdge })
     }
 
-    // Phase 1: Generate infrastructure files
-    yield* generateInfrastructureFiles(adapter, {
-      workspaceRoot,
-      projectRoot,
-      projectName,
-      packageName,
-      description: options.description || `${nameVariants.className} infrastructure library`,
-      libraryType: "infra",
-      offsetFromRoot: "../../.."
-    })
-
     // Phase 2: Generate domain files via core generator
-    const result: GeneratorResult = yield* (
-      generateInfraCore(adapter, coreOptions) as Effect.Effect<GeneratorResult>
-    )
+    const result: GeneratorResult = yield* generateInfraCore(adapter, coreOptions)
 
     // Display CLI output
     yield* Console.log("✨ Infrastructure library created successfully!")

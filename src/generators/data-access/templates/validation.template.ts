@@ -44,7 +44,7 @@ TODO: Customize this file:
   // Add imports
   builder.addImports([
     {
-      from: "./types.js",
+      from: "./types",
       imports: [
         `${className}Filter`,
         `${className}CreateInput`,

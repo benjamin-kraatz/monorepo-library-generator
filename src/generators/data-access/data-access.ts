@@ -3,22 +3,25 @@
  *
  * Wrapper that integrates data-access generator core with Nx workspace.
  *
- * Responsibilities:
- * - Computes library metadata via computeLibraryMetadata()
- * - Generates infrastructure files (package.json, tsconfig, project.json)
- * - Delegates domain file generation to core generator
- * - Formats files and provides post-generation instructions
+ * Two-Phase Generation:
+ * 1. **Infrastructure Phase**: Uses infrastructure.ts to generate
+ *    all infrastructure files (package.json, tsconfig files, vitest.config.ts, etc.)
+ * 2. **Domain Phase**: Delegates to data-access-generator-core.ts for domain-specific
+ *    files (repository, queries, validation, etc.)
+ *
+ * The infrastructure generator ensures:
+ * - Complete infrastructure (7 files)
+ * - Consistent behavior with CLI generators
+ * - Mode-aware generation (registers project.json with Nx)
  */
 
 import type { Tree } from "@nx/devkit"
-import { formatFiles } from "@nx/devkit"
+import { addProjectConfiguration, formatFiles } from "@nx/devkit"
 import { Effect } from "effect"
-import type { FileSystemErrors } from "../../utils/filesystem-adapter"
-import { parseTags } from "../../utils/generator-utils"
-import { generateLibraryFiles, type LibraryGeneratorOptions } from "../../utils/library-generator-utils"
 import { computeLibraryMetadata } from "../../utils/library-metadata"
 import { createTreeAdapter } from "../../utils/tree-adapter"
-import { generateDataAccessCore, type GeneratorResult } from "../core/data-access-generator-core"
+import { generateLibraryInfrastructure } from "../../utils/infrastructure"
+import { generateDataAccessCore } from "../core/data-access"
 import type { DataAccessGeneratorSchema } from "./schema"
 
 /**
@@ -50,24 +53,32 @@ export default async function dataAccessGenerator(
   )
 
   // Parse tags from metadata
-  const tags = metadata.tags.split(",").map(t => t.trim())
+  const tags = metadata.tags.split(",").map((t) => t.trim())
 
-  // Phase 1: Generate infrastructure files
-  const libraryOptions: LibraryGeneratorOptions = {
-    name: metadata.name,
-    projectName: metadata.projectName,
-    projectRoot: metadata.projectRoot,
-    offsetFromRoot: metadata.offsetFromRoot,
-    libraryType: "data-access",
-    platform: "node",
-    description: metadata.description,
-    tags
+  // Create TreeAdapter for Nx integration
+  const adapter = createTreeAdapter(tree)
+
+  // Phase 1: Generate infrastructure files using infrastructure generator
+  const infraResult = await Effect.runPromise(
+    generateLibraryInfrastructure(adapter, {
+      projectName: metadata.projectName,
+      projectRoot: metadata.projectRoot,
+      sourceRoot: metadata.sourceRoot,
+      packageName: metadata.packageName,
+      description: metadata.description,
+      libraryType: "data-access",
+      platform: "node",
+      offsetFromRoot: metadata.offsetFromRoot,
+      tags
+    })
+  )
+
+  // Register project with Nx (if project configuration was returned)
+  if (infraResult.requiresNxRegistration && infraResult.projectConfig) {
+    addProjectConfiguration(tree, metadata.projectName, infraResult.projectConfig)
   }
 
-  await generateLibraryFiles(tree, libraryOptions)
-
   // Phase 2: Generate domain-specific files via core generator
-  const adapter = createTreeAdapter(tree)
   const coreOptions: Parameters<typeof generateDataAccessCore>[1] = {
     // Pre-computed metadata
     name: metadata.name,
@@ -86,7 +97,7 @@ export default async function dataAccessGenerator(
 
   // Run core generator with Effect runtime
   const result = await Effect.runPromise(
-    generateDataAccessCore(adapter, coreOptions) as Effect.Effect<GeneratorResult, FileSystemErrors, never>
+    generateDataAccessCore(adapter, coreOptions)
   )
 
   // Format generated files

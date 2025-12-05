@@ -10,7 +10,7 @@ import {
   addPaginatedResponse,
   addPaginationOptions,
   addSortDirection
-} from "../../../utils/code-generation/type-template-utils"
+} from "../../../utils/code-generation/type-templates"
 import { TypeScriptBuilder } from "../../../utils/code-generation/typescript-builder"
 import type { DataAccessTemplateOptions } from "../../../utils/shared/types"
 

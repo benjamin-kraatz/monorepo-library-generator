@@ -6,7 +6,7 @@
  */
 
 import type { TargetConfiguration } from "@nx/devkit"
-import { type PlatformType, resolvePlatformExports } from "./platform-utils"
+import { type PlatformType, resolvePlatformExports } from "./platforms"
 
 export type { PlatformType }
 export type LibraryType =
@@ -82,7 +82,7 @@ function getAdditionalEntryPoints(options: BuildConfigOptions) {
 /**
  * Create unified build target configuration using TypeScript compiler
  */
-export function createUnifiedBuildTarget(options: BuildConfigOptions) {
+export function createBuildTarget(options: BuildConfigOptions) {
   const additionalEntryPoints = getAdditionalEntryPoints(options)
 
   return {
@@ -151,7 +151,7 @@ export function createTypecheckTarget(projectRoot: string) {
  */
 export function createStandardTargets(options: BuildConfigOptions) {
   const targets: Record<string, TargetConfiguration> = {
-    build: createUnifiedBuildTarget(options),
+    build: createBuildTarget(options),
     lint: createLintTarget(options.projectRoot),
     typecheck: createTypecheckTarget(options.projectRoot)
   }

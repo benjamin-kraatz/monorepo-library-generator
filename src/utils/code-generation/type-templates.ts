@@ -7,7 +7,7 @@
  * @module monorepo-library-generator/type-template-utils
  */
 
-import type { TypeScriptBuilder } from "../template-utils"
+import type { TypeScriptBuilder } from "../templates"
 
 /**
  * Pagination options configuration

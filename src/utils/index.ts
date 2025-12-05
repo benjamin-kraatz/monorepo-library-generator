@@ -1,29 +1,26 @@
 // Generator utilities
-export * from "./generator-utils"
-export * from "./library-generator-utils"
-export * from "./naming-utils"
+export * from "./generators"
+export * from "./library-metadata"
+export * from "./naming"
 
 // Infrastructure generation
-export * from "./infrastructure-generator"
+export * from "./infrastructure"
 export * from "./workspace-detection"
 
 // Template utilities
-export * from "./template-utils"
+export * from "./templates"
 
 // TypeScript configuration utilities
-export * from "./tsconfig-utils"
+export * from "./tsconfig"
 
 // Build configuration utilities
-export * from "./build-config-utils"
-
-// Library metadata utilities
-export * from "./library-metadata"
+export * from "./build-config"
 
 // Dependency utilities
-export * from "./dependency-utils"
+export * from "./dependencies"
 
 // Platform utilities
-export * from "./platform-utils"
+export * from "./platforms"
 
 // Filesystem adapters
 export * from "./effect-fs-adapter"
@@ -31,10 +28,10 @@ export * from "./filesystem-adapter"
 export * from "./tree-adapter"
 
 // Code generation utilities
-export * from "./code-generation/barrel-export-utils"
-export * from "./code-generation/error-template-utils"
-export * from "./code-generation/type-template-utils"
-// Note: effect-patterns not exported to avoid TaggedErrorConfig naming conflict with error-template-utils
+export * from "./code-generation/barrel-exports"
+export * from "./code-generation/error-templates"
+export * from "./code-generation/type-templates"
+// Note: effect-patterns not exported to avoid TaggedErrorConfig naming conflict with error-templates
 
 // Shared types
 export * from "./shared/types"

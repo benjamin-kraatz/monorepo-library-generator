@@ -12,7 +12,7 @@
 import type { Tree } from "@nx/devkit"
 import { createProjectGraphAsync, readProjectConfiguration } from "@nx/devkit"
 import { join, relative } from "path"
-import type { LibraryType, PlatformType } from "./build-config-utils"
+import type { LibraryType, PlatformType } from "./build-config"
 
 export interface TsConfigOptions {
   projectRoot: string
@@ -56,10 +56,7 @@ interface DependencyInfo {
 export async function computeProjectReferences(
   tree: Tree,
   projectName: string
-): Promise<{
-  references: Array<ProjectReference>
-  dependencies: Array<DependencyInfo>
-}> {
+) {
   try {
     // Try to use Nx project graph
     const graph = await createProjectGraphAsync()
@@ -176,7 +173,7 @@ function detectCircularReferences(
   projectName: string,
   visited: Set<string>,
   path: Array<string> = []
-): Array<string> | undefined {
+) {
   if (visited.has(projectName)) {
     // Found a cycle - return the path
     const cycleStart = path.indexOf(projectName)
@@ -196,7 +193,7 @@ function detectCircularReferences(
       continue
     }
 
-    const cycle = detectCircularReferences(
+    const cycle: Array<string> = detectCircularReferences(
       graph,
       dep.target,
       new Set(visited),

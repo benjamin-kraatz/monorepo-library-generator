@@ -3,20 +3,25 @@
  *
  * Wrapper that integrates contract generator core with Effect-based CLI.
  *
- * Responsibilities:
- * - Computes library metadata for standalone use
- * - Generates infrastructure files via generateInfrastructureFiles()
- * - Delegates domain file generation to core generator
- * - Provides CLI-specific output and instructions
+ * Two-Phase Generation:
+ * 1. **Infrastructure Phase**: Uses infrastructure.ts to generate
+ *    all infrastructure files (package.json, tsconfig files, vitest.config.ts, etc.)
+ * 2. **Domain Phase**: Delegates to contract-generator-core.ts for domain-specific
+ *    files (entities, errors, ports, events, etc.)
+ *
+ * The infrastructure generator ensures:
+ * - Complete infrastructure (7 files including CLAUDE.md)
+ * - Consistent behavior with Nx generators
+ * - Proper granular exports for bundle optimization
  *
  * @module monorepo-library-generator/cli/generators/contract
  */
 
 import { Console, Effect } from "effect"
-import { generateContractCore, type GeneratorResult } from "../../generators/core/contract-generator-core"
+import { generateContractCore, type GeneratorResult } from "../../generators/core/contract"
 import { createEffectFsAdapter } from "../../utils/effect-fs-adapter"
-import { generateInfrastructureFiles } from "../../utils/infrastructure-generator"
-import { createNamingVariants } from "../../utils/naming-utils"
+import { generateLibraryInfrastructure } from "../../utils/infrastructure"
+import { createNamingVariants } from "../../utils/naming"
 
 /**
  * Contract Generator Options (CLI)
@@ -87,42 +92,48 @@ export function generateContract(options: ContractGeneratorOptions) {
     // Compute metadata
     const metadata = computeCliMetadata(options.name, "contract", options.description)
 
-    // Phase 1: Generate infrastructure files
+    // Phase 1: Generate infrastructure files using unified generator
     yield* Console.log(`Creating contract library: ${options.name}...`)
 
-    yield* generateInfrastructureFiles(adapter, {
-      workspaceRoot,
+    // Parse tags
+    const tagsString = options.tags ?? "type:contract,platform:universal"
+    const tags = tagsString.split(",").map(t => t.trim())
+
+    yield* generateLibraryInfrastructure(adapter, {
       projectRoot: metadata.projectRoot,
+      sourceRoot: metadata.sourceRoot,
       projectName: metadata.projectName,
       packageName: metadata.packageName,
       description: metadata.description,
       libraryType: "contract",
-      offsetFromRoot: metadata.offsetFromRoot
+      offsetFromRoot: metadata.offsetFromRoot,
+      platform: "universal",
+      tags,
+      ...(options.includeRPC !== undefined && { includeRPC: options.includeRPC }),
+      ...(options.entities !== undefined && { entities: options.entities })
     })
 
     // Phase 2: Generate domain files via core generator
-    const result: GeneratorResult = yield* (
-      generateContractCore(adapter, {
-        // Pre-computed metadata
-        name: metadata.name,
-        className: metadata.className,
-        propertyName: metadata.propertyName,
-        fileName: metadata.fileName,
-        constantName: metadata.constantName,
-        projectName: metadata.projectName,
-        projectRoot: metadata.projectRoot,
-        sourceRoot: metadata.sourceRoot,
-        packageName: metadata.packageName,
-        offsetFromRoot: metadata.offsetFromRoot,
-        description: metadata.description,
-        tags: options.tags ?? "type:contract,platform:universal",
+    const result: GeneratorResult = yield* generateContractCore(adapter, {
+      // Pre-computed metadata
+      name: metadata.name,
+      className: metadata.className,
+      propertyName: metadata.propertyName,
+      fileName: metadata.fileName,
+      constantName: metadata.constantName,
+      projectName: metadata.projectName,
+      projectRoot: metadata.projectRoot,
+      sourceRoot: metadata.sourceRoot,
+      packageName: metadata.packageName,
+      offsetFromRoot: metadata.offsetFromRoot,
+      description: metadata.description,
+      tags: options.tags ?? "type:contract,platform:universal",
 
-        // Feature flags
-        ...(options.includeCQRS !== undefined && { includeCQRS: options.includeCQRS }),
-        ...(options.includeRPC !== undefined && { includeRPC: options.includeRPC }),
-        ...(options.entities && { entities: options.entities })
-      }) as Effect.Effect<GeneratorResult>
-    )
+      // Feature flags
+      ...(options.includeCQRS !== undefined && { includeCQRS: options.includeCQRS }),
+      ...(options.includeRPC !== undefined && { includeRPC: options.includeRPC }),
+      ...(options.entities && { entities: options.entities })
+    })
 
     // Display CLI output
     yield* Console.log("✨ Contract library created successfully!")

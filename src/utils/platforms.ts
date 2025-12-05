@@ -85,7 +85,7 @@ export interface PlatformExports {
  */
 export function resolvePlatformExports(
   options: PlatformExportOptions
-): PlatformExports {
+) {
   // Library types that don't support platform-specific exports
   const supportsPlatformExports = options.libraryType !== "data-access" &&
     options.libraryType !== "contract"
@@ -192,7 +192,7 @@ export function computePlatformConfiguration(
     readonly defaultPlatform: PlatformType
     readonly libraryType: LibraryType
   }
-): PlatformConfiguration {
+) {
   // Use provided platform or default
   const platform = input.platform ?? defaults.defaultPlatform
 

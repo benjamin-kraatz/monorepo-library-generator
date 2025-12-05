@@ -17,8 +17,9 @@
 
 import { Effect } from "effect"
 import type { FileSystemAdapter } from "../../utils/filesystem-adapter"
-import { computePlatformConfiguration, type PlatformType } from "../../utils/platform-utils"
+import { computePlatformConfiguration, type PlatformType } from "../../utils/platforms"
 import type { FeatureTemplateOptions } from "../../utils/shared/types"
+import { generateTypesOnlyFile, type TypesOnlyExportOptions } from "../../utils/templates/types-only-exports.template"
 import {
   generateAtomsFile,
   generateAtomsIndexFile,
@@ -32,10 +33,13 @@ import {
   generateRpcFile,
   generateRpcHandlersFile,
   generateSchemasFile,
-  generateServiceFile,
   generateServiceSpecFile,
   generateTypesFile
 } from "../feature/templates/index"
+import {
+  generateFeatureServiceIndexFile,
+  generateFeatureServiceInterfaceFile
+} from "../feature/templates/service/index"
 
 /**
  * Feature Generator Core Options
@@ -52,7 +56,7 @@ import {
  * @property includeCQRS - Generate CQRS structure with placeholders
  * @property includeEdge - Generate edge middleware
  */
-export interface FeatureGeneratorCoreOptions {
+export interface FeatureCoreOptions {
   readonly name: string
   readonly className: string
   readonly propertyName: string
@@ -102,7 +106,7 @@ export interface GeneratorResult {
  */
 export function generateFeatureCore(
   adapter: FileSystemAdapter,
-  options: FeatureGeneratorCoreOptions
+  options: FeatureCoreOptions
 ) {
   return Effect.gen(function*() {
     // Compute platform-specific configuration
@@ -161,6 +165,169 @@ export function generateFeatureCore(
     yield* adapter.writeFile(`${options.sourceRoot}/index.ts`, generateIndexFile(templateOptions))
     filesGenerated.push(`${options.sourceRoot}/index.ts`)
 
+    // Generate types.ts for type-only exports (zero runtime overhead)
+    const typesOnlyOptions: TypesOnlyExportOptions = {
+      libraryType: "feature",
+      className: options.className,
+      fileName: options.fileName,
+      packageName: options.packageName,
+      platform: "server"
+    }
+    const typesOnlyContent = generateTypesOnlyFile(typesOnlyOptions)
+    const workspaceRoot = adapter.getWorkspaceRoot()
+    yield* adapter.writeFile(`${workspaceRoot}/${options.sourceRoot}/types.ts`, typesOnlyContent)
+    filesGenerated.push(`${options.sourceRoot}/types.ts`)
+
+    // Generate CLAUDE.md with bundle optimization guidance
+    const claudeDoc = `# ${templateOptions.packageName}
+
+${templateOptions.description}
+
+## Quick Reference
+
+This is an AI-optimized reference for ${templateOptions.packageName}, a feature library following Effect-based service patterns with granular bundle optimization.
+
+### Structure (Optimized for Tree-Shaking)
+
+- **types.ts**: Type-only exports (zero runtime overhead)
+- **lib/shared/**: Shared types, errors, and schemas
+  - \`errors.ts\`: Data.TaggedError-based error types
+  - \`types.ts\`: Domain types, configs, and results
+  - \`schemas.ts\`: Schema validation
+
+- **lib/server/**: Server-side business logic
+  - \`service/interface.ts\`: Context.Tag with static layers (~5 KB)
+  - \`service/index.ts\`: Service barrel export
+  - \`layers.ts\`: Layer compositions (Live, Test, Dev, Auto)
+  - \`service.spec.ts\`: Service tests
+${
+      includeRPC ?
+        `
+- **lib/rpc/**: RPC layer
+  - \`rpc.ts\`: RPC router definition
+  - \`handlers.ts\`: RPC handlers (~4-8 KB)
+  - \`errors.ts\`: RPC-specific errors
+` :
+        ""
+    }${
+      shouldIncludeClientServer ?
+        `
+- **lib/client/**: Client-side state management
+  - \`hooks/\`: React hooks
+  - \`atoms/\`: Jotai atoms
+  - \`components/\`: UI components
+` :
+        ""
+    }${
+      shouldIncludeEdge ?
+        `
+- **lib/edge/**: Edge middleware
+  - \`middleware.ts\`: Edge runtime middleware
+` :
+        ""
+    }
+### Import Patterns (Most to Least Optimized)
+
+\`\`\`typescript
+// 1. Service interface import (smallest bundle ~5 KB)
+import { ${templateOptions.className}Service } from '${templateOptions.packageName}/server/service';
+
+// 2. Type-only import (zero runtime ~0.3 KB)
+import type { ${templateOptions.className}Config, ${templateOptions.className}Result } from '${templateOptions.packageName}/types';
+
+// 3. Server barrel (~10-15 KB)
+import { ${templateOptions.className}Service, ${templateOptions.className}ServiceLayers } from '${templateOptions.packageName}/server';
+${
+      includeRPC ?
+        `
+// 4. RPC handlers (~8-12 KB)
+import { ${templateOptions.fileName}Handlers } from '${templateOptions.packageName}/rpc/handlers';
+` :
+        ""
+    }
+// 5. Package barrel (largest ~20-40 KB depending on features)
+import { ${templateOptions.className}Service } from '${templateOptions.packageName}';
+\`\`\`
+
+### Customization Guide
+
+1. **Define Service Interface** (\`lib/server/service/interface.ts\`):
+   - Add your business logic methods
+   - Configure Live layer with dependencies
+   - Update Test layer for testing
+
+2. **Implement Business Logic**:
+   - Service methods use Effect.gen for composition
+   - Yield dependencies via Context.Tag pattern
+   - Return Effect types for composability
+
+3. **Configure Layers** (\`lib/server/layers.ts\`):
+   - Wire up service dependencies
+   - Configure Live layer with actual implementations
+   - Customize Test layer for testing
+${
+      includeRPC ?
+        `
+4. **Add RPC Endpoints** (\`lib/rpc/\`):
+   - Define routes in \`rpc.ts\`
+   - Implement handlers in \`handlers.ts\`
+   - Keep handlers lightweight (delegate to service)
+` :
+        ""
+    }
+### Usage Example
+
+\`\`\`typescript
+// Granular import for optimal bundle size
+import { ${templateOptions.className}Service } from '${templateOptions.packageName}/server/service';
+import type { ${templateOptions.className}Result } from '${templateOptions.packageName}/types';
+
+// Use service in your application
+const program = Effect.gen(function* () {
+  const service = yield* ${templateOptions.className}Service;
+  const result: ${templateOptions.className}Result = yield* service.exampleOperation();
+  return result;
+});
+
+// Provide layer at application level
+const runnable = program.pipe(
+  Effect.provide(${templateOptions.className}Service.Live)
+);
+\`\`\`
+${
+      includeRPC ?
+        `
+### RPC Usage
+
+\`\`\`typescript
+import { ${templateOptions.fileName}Handlers } from '${templateOptions.packageName}/rpc/handlers';
+import { ${templateOptions.className}Service } from '${templateOptions.packageName}/server/service';
+
+// Compose with RPC server
+const rpcLayer = Layer.mergeAll(
+  ${templateOptions.className}Service.Live,
+  // ... other dependencies
+);
+
+const server = ${templateOptions.fileName}Handlers.pipe(
+  Effect.provide(rpcLayer)
+);
+\`\`\`
+` :
+        ""
+    }
+### Bundle Optimization Notes
+
+- **Always use granular imports** for production builds
+- **Use type-only imports** when you only need types
+- Service interface is lightweight (~5 KB vs ~40 KB for full barrel)
+- Each module can be imported independently for optimal tree-shaking
+- RPC handlers are separate files for lazy loading
+`
+
+    yield* adapter.writeFile(`${workspaceRoot}/${templateOptions.projectRoot}/CLAUDE.md`, claudeDoc)
+    filesGenerated.push(`${templateOptions.projectRoot}/CLAUDE.md`)
+
     // Always generate shared layer
     yield* adapter.writeFile(`${sharedPath}/errors.ts`, generateErrorsFile(templateOptions))
     filesGenerated.push(`${sharedPath}/errors.ts`)
@@ -172,8 +339,17 @@ export function generateFeatureCore(
     filesGenerated.push(`${sharedPath}/schemas.ts`)
 
     // Generate server layer (always generated for features)
-    yield* adapter.writeFile(`${serverPath}/service.ts`, generateServiceFile(templateOptions))
-    filesGenerated.push(`${serverPath}/service.ts`)
+    // Create server/service directory for granular service imports
+    const servicePath = `${serverPath}/service`
+    yield* adapter.makeDirectory(servicePath)
+
+    // Generate service interface (lightweight Context.Tag with static layers)
+    yield* adapter.writeFile(`${servicePath}/interface.ts`, generateFeatureServiceInterfaceFile(templateOptions))
+    filesGenerated.push(`${servicePath}/interface.ts`)
+
+    // Generate service index (barrel export for service)
+    yield* adapter.writeFile(`${servicePath}/index.ts`, generateFeatureServiceIndexFile(templateOptions))
+    filesGenerated.push(`${servicePath}/index.ts`)
 
     yield* adapter.writeFile(`${serverPath}/layers.ts`, generateLayersFile(templateOptions))
     filesGenerated.push(`${serverPath}/layers.ts`)
@@ -230,6 +406,54 @@ export function generateFeatureCore(
     if (shouldIncludeEdge) {
       yield* adapter.writeFile(`${edgePath}/middleware.ts`, generateMiddlewareFile(templateOptions))
       filesGenerated.push(`${edgePath}/middleware.ts`)
+    }
+
+    // Generate platform barrel exports (server.ts and client.ts)
+    // These provide convenient entry points for platform-specific imports
+
+    // Always generate server.ts barrel export
+    const serverBarrelExport = `/**
+ * Server-side exports for ${templateOptions.className}
+ *
+ * Bundle optimization: Import from this file for server-only code.
+ * This keeps server-side code out of client bundles.
+ */
+
+export * from "./lib/server/service/index"
+export * from "./lib/server/layers"
+${includeRPC ? "export * from \"./lib/rpc/rpc\"\nexport * from \"./lib/rpc/handlers\"" : ""}
+`
+    yield* adapter.writeFile(`${options.sourceRoot}/server.ts`, serverBarrelExport)
+    filesGenerated.push(`${options.sourceRoot}/server.ts`)
+
+    // Generate client.ts barrel export if client features are included
+    if (shouldIncludeClientServer) {
+      const clientBarrelExport = `/**
+ * Client-side exports for ${templateOptions.className}
+ *
+ * Bundle optimization: Import from this file for client-only code.
+ * This keeps client-side code out of server bundles.
+ */
+
+export * from "./lib/client/hooks/index"
+export * from "./lib/client/atoms/index"
+`
+      yield* adapter.writeFile(`${options.sourceRoot}/client.ts`, clientBarrelExport)
+      filesGenerated.push(`${options.sourceRoot}/client.ts`)
+    }
+
+    // Generate edge.ts barrel export if edge features are included
+    if (shouldIncludeEdge) {
+      const edgeBarrelExport = `/**
+ * Edge Runtime Exports
+ *
+ * Edge-compatible middleware and utilities.
+ * Optimized for edge compute environments (Cloudflare Workers, Vercel Edge, etc.)
+ */
+export * from "./lib/edge/middleware"
+`
+      yield* adapter.writeFile(`${options.sourceRoot}/edge.ts`, edgeBarrelExport)
+      filesGenerated.push(`${options.sourceRoot}/edge.ts`)
     }
 
     return {

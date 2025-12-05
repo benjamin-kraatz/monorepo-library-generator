@@ -7,7 +7,7 @@
  * @module monorepo-library-generator/barrel-export-utils
  */
 
-import type { TypeScriptBuilder } from "../template-utils"
+import type { TypeScriptBuilder } from "../templates"
 
 /**
  * Configuration for standard error exports
@@ -20,7 +20,7 @@ export interface StandardErrorExportConfig {
 
   /**
    * Import path for error exports
-   * @example "./lib/shared/errors.js"
+   * @example "./lib/shared/errors"
    */
   readonly importPath: string
 
@@ -50,7 +50,7 @@ export interface StandardErrorExportConfig {
  * ```typescript
  * const errorExports = generateStandardErrorExports({
  *   className: 'User',
- *   importPath: './lib/shared/errors.js',
+ *   importPath: './lib/shared/errors',
  *   unionTypeSuffix: 'RepositoryError'
  * });
  * builder.addRaw(errorExports);
@@ -125,14 +125,14 @@ export interface ExportSection {
  *   {
  *     title: 'Core Exports',
  *     items: [
- *       { comment: 'Errors', exports: 'export * from "./lib/errors.js";' },
- *       { comment: 'Entities', exports: 'export * from "./lib/entities.js";' }
+ *       { comment: 'Errors', exports: 'export * from "./lib/errors";' },
+ *       { comment: 'Entities', exports: 'export * from "./lib/entities";' }
  *     ]
  *   },
  *   {
  *     title: 'Service Exports',
  *     items: [
- *       { exports: 'export { MyService } from "./lib/service.js";' }
+ *       { exports: 'export { MyService } from "./lib/service";' }
  *     ]
  *   }
  * ];
@@ -200,15 +200,15 @@ export interface ConditionalExport {
  *     condition: includeCQRS,
  *     sectionTitle: 'CQRS Exports',
  *     exports: [
- *       { comment: 'Commands', exports: 'export * from "./lib/commands.js";' },
- *       { comment: 'Queries', exports: 'export * from "./lib/queries.js";' }
+ *       { comment: 'Commands', exports: 'export * from "./lib/commands";' },
+ *       { comment: 'Queries', exports: 'export * from "./lib/queries";' }
  *     ]
  *   },
  *   {
  *     condition: includeRPC,
  *     sectionTitle: 'RPC Exports',
  *     exports: [
- *       { exports: 'export * from "./lib/rpc.js";' }
+ *       { exports: 'export * from "./lib/rpc";' }
  *     ]
  *   }
  * ]);

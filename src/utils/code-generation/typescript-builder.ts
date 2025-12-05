@@ -303,10 +303,10 @@ export class TypeScriptBuilder {
       })
       .join(", ")
 
-    const returnType = method.returnType ? `: ${method.returnType}` : ""
+    // Don't add explicit return type - let TypeScript infer it (linter requirement)
 
     this.lines.push(
-      `  ${visibilityPrefix}${staticModifier}${asyncModifier}${method.name}(${params})${returnType} {`
+      `  ${visibilityPrefix}${staticModifier}${asyncModifier}${method.name}(${params}) {`
     )
 
     // Add method body (preserve indentation)

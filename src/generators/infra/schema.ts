@@ -1,4 +1,4 @@
-import type { PlatformType } from "../../utils/platform-utils"
+import type { PlatformType } from "../../utils/platforms"
 
 export interface InfraGeneratorSchema {
   name: string

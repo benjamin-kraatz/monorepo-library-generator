@@ -3,20 +3,25 @@
  *
  * Wrapper that integrates provider generator core with Effect-based CLI.
  *
- * Responsibilities:
- * - Computes library metadata for standalone use
- * - Generates infrastructure files via generateInfrastructureFiles()
- * - Delegates domain file generation to core generator
- * - Provides CLI-specific output and instructions
+ * Two-Phase Generation:
+ * 1. **Infrastructure Phase**: Uses infrastructure.ts to generate
+ *    all infrastructure files (package.json, tsconfig files, vitest.config.ts, etc.)
+ * 2. **Domain Phase**: Delegates to provider-generator-core.ts for domain-specific
+ *    files (service wrapper, layers, types, validation, etc.)
+ *
+ * The infrastructure generator ensures:
+ * - Complete infrastructure (7 files)
+ * - Consistent behavior with Nx generators
+ * - External service SDK integration patterns
  *
  * @module monorepo-library-generator/cli/generators/provider
  */
 
 import { Console, Effect } from "effect"
-import { generateProviderCore, type GeneratorResult } from "../../generators/core/provider-generator-core"
+import { generateProviderCore, type GeneratorResult } from "../../generators/core/provider"
 import { createEffectFsAdapter } from "../../utils/effect-fs-adapter"
-import { generateInfrastructureFiles } from "../../utils/infrastructure-generator"
-import type { PlatformType } from "../../utils/platform-utils"
+import { generateLibraryInfrastructure } from "../../utils/infrastructure"
+import type { PlatformType } from "../../utils/platforms"
 
 /**
  * Provider Generator Options (CLI)
@@ -55,6 +60,27 @@ export function generateProvider(options: ProviderGeneratorOptions) {
     const projectRoot = `libs/provider/${nameVariants.fileName}`
     const sourceRoot = `${projectRoot}/src`
     const packageName = `@custom-repo/${projectName}`
+    const description = options.description ||
+      `${nameVariants.className} provider for ${options.externalService}`
+    const platform = options.platform || "node"
+
+    // Parse tags
+    const tagsString = options.tags ||
+      `type:provider,scope:provider,platform:${platform},service:${serviceNameVariants.fileName}`
+    const tags = tagsString.split(",").map(t => t.trim())
+
+    // Phase 1: Generate infrastructure files using infrastructure generator
+    yield* generateLibraryInfrastructure(adapter, {
+      projectName,
+      projectRoot,
+      sourceRoot,
+      packageName,
+      description,
+      libraryType: "provider",
+      platform,
+      offsetFromRoot: "../../..",
+      tags
+    })
 
     // Prepare core options
     const coreOptions = {
@@ -67,32 +93,16 @@ export function generateProvider(options: ProviderGeneratorOptions) {
       projectRoot,
       sourceRoot,
       packageName,
-      description: options.description ||
-        `${nameVariants.className} provider for ${options.externalService}`,
-      tags: options.tags ||
-        `type:provider,scope:provider,platform:${options.platform || "node"},service:${serviceNameVariants.fileName}`,
+      description,
+      tags: tagsString,
       offsetFromRoot: "../../..",
       workspaceRoot,
       externalService: options.externalService,
-      platform: options.platform || "node"
+      platform
     }
 
-    // Phase 1: Generate infrastructure files
-    yield* generateInfrastructureFiles(adapter, {
-      workspaceRoot,
-      projectRoot,
-      projectName,
-      packageName,
-      description: options.description ||
-        `${nameVariants.className} provider for ${options.externalService}`,
-      libraryType: "provider",
-      offsetFromRoot: "../../.."
-    })
-
     // Phase 2: Generate domain files via core generator
-    const result: GeneratorResult = yield* (
-      generateProviderCore(adapter, coreOptions) as Effect.Effect<GeneratorResult>
-    )
+    const result: GeneratorResult = yield* generateProviderCore(adapter, coreOptions)
 
     // Display CLI output
     yield* Console.log("✨ Provider library created successfully!")

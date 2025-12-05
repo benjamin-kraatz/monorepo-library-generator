@@ -83,14 +83,17 @@ function exec(command: string, cwd = WORKSPACE_ROOT) {
       stdio: "pipe"
     })
   } catch (error) {
-    if (error instanceof Error && "stdout" in error && "stderr" in error) {
-      const execError = error as unknown as {
-        stdout: string
-        stderr: string
-        message: string
-      }
+    if (
+      error instanceof Error &&
+      "stdout" in error &&
+      "stderr" in error &&
+      error.stdout !== undefined &&
+      error.stderr !== undefined
+    ) {
+      const stdout = String(error.stdout)
+      const stderr = String(error.stderr)
       throw new Error(
-        `Command failed: ${command}\n${execError.stdout}\n${execError.stderr}`
+        `Command failed: ${command}\n${stdout}\n${stderr}`
       )
     }
     throw error
@@ -134,7 +137,8 @@ function validateGenerator(test: GeneratorTest) {
     exec(test.buildCommand)
 
     console.log(`\n✅ ${test.name} validation PASSED\n`)
-    return { name: test.name, success: true, stage: "build" as const }
+    const stage: "cleanup" | "generate" | "build" = "build"
+    return { name: test.name, success: true, stage }
   } catch (error) {
     const stage: "cleanup" | "generate" | "build" = error instanceof Error && error.message.includes("Build")
       ? "build"

@@ -7,7 +7,7 @@
  * @module monorepo-library-generator/shared-types
  */
 
-import type { LibraryType } from "../build-config-utils"
+import type { LibraryType } from "../build-config"
 
 /**
  * Library types supported by the generator
@@ -156,7 +156,7 @@ export interface GeneratorConfig<TOptions = BaseTemplateOptions> {
   /**
    * Template functions for each file
    */
-  readonly templates: Readonly<Record<string, TemplateFunction<TOptions>>>
+  readonly templates?: Readonly<Record<string, TemplateFunction<TOptions>>>
 
   /**
    * Platform exports configuration

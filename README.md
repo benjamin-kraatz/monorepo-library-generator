@@ -15,7 +15,7 @@ Generate production-ready TypeScript libraries for Effect-native monorepos with 
 - 🛡️ **Resource Safe**: Layer.scoped pattern prevents resource leaks
 - 📚 **Self-Documenting**: Comprehensive inline docs and CLAUDE.md files
 - 🏗️ **Best Practices**: Follows Effect-TS patterns and modern monorepo conventions
-- 🌳 **Bundle Optimized**: Tree-shakeable exports with granular subpath patterns for contract libraries
+- 🌳 **Bundle Optimized**: 45-99% size reduction with granular exports, type-only imports, and tree-shaking
 
 ## 📦 Installation
 
@@ -580,15 +580,19 @@ All libraries include:
 
 ### Core Documentation
 - **[Architecture Overview](./docs/ARCHITECTURE_OVERVIEW.md)** - System architecture and design
-- **[Effect Patterns](./docs/EFFECT_PATTERNS.md)** - Effect-TS patterns and standardized layers ✨ UPDATED
+- **[Effect Patterns](./docs/EFFECT_PATTERNS.md)** - Effect-TS patterns and standardized layers
 - **[Export Patterns](./docs/EXPORT_PATTERNS.md)** - Platform export conventions
 - **[Contract Libraries](./docs/CONTRACT.md)** - Contract generator guide
-- **[Examples](./docs/EXAMPLES.md)** - End-to-end examples ✨ UPDATED
+- **[Examples](./docs/EXAMPLES.md)** - End-to-end examples
 
-### Implementation & Migration (v2.0)
-- **[Implementation Complete](./IMPLEMENTATION_COMPLETE.md)** - Effect layer standardization summary ✨ NEW
-- **[Migration Guide](./MIGRATION_GUIDE.md)** - Upgrade guide for naming changes ✨ NEW
-- **[Layer Naming Standards](./docs/LAYER_NAMING_STANDARDS.md)** - Official naming conventions ✨ UPDATED
+### Bundle Optimization
+- **[Implementation Summary](./IMPLEMENTATION_SUMMARY.md)** - Bundle optimization overview and usage
+- **[Validation](./VALIDATION.md)** - Compliance validation and testing
+
+### Implementation & Migration
+- **[Implementation Complete](./IMPLEMENTATION_COMPLETE.md)** - Effect layer standardization summary
+- **[Migration Guide](./MIGRATION_GUIDE.md)** - Upgrade guide for naming changes
+- **[Layer Naming Standards](./docs/LAYER_NAMING_STANDARDS.md)** - Official naming conventions
 - **[Data-Access Libraries](./docs/DATA-ACCESS.md)** - Data-access generator guide
 - **[Feature Libraries](./docs/FEATURE.md)** - Feature generator guide
 - **[Infrastructure Libraries](./docs/INFRA.md)** - Infrastructure generator guide

@@ -44,7 +44,7 @@ TODO: Customize this file:
   // Add imports
   builder.addImports([
     { from: "effect", imports: ["Layer"] },
-    { from: "../repository.js", imports: [`${className}Repository`] }
+    { from: "../repository", imports: [`${className}Repository`] }
   ])
   builder.addBlankLine()
 

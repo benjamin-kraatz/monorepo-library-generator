@@ -136,6 +136,11 @@ const includeEdgeOption = Options.boolean("includeEdge").pipe(
   Options.optional
 )
 
+const includeRPCFeatureOption = Options.boolean("includeRPC").pipe(
+  Options.withDescription("Include RPC definitions"),
+  Options.optional
+)
+
 const featureCommand = Command.make(
   "feature",
   {
@@ -145,15 +150,19 @@ const featureCommand = Command.make(
     scope: scopeOption,
     platform: platformOption,
     includeClientServer: includeClientServerOption,
-    includeRPC: includeRPCOption,
+    includeRPC: includeRPCFeatureOption,
     includeCQRS: includeCQRSFeatureOption,
     includeEdge: includeEdgeOption
   },
   ({ description, includeCQRS, includeClientServer, includeEdge, includeRPC, name, platform, scope, tags }) => {
     const desc = Option.getOrUndefined(description)
     const scopeValue = Option.getOrUndefined(scope)
-    const platformValue = Option.getOrUndefined(platform) as "node" | "browser" | "universal" | "edge" | undefined
+    const platformValue = Option.getOrUndefined(platform)
+
+    // For boolean options with .optional, @effect/cli returns Some(false) when not provided
+    // We need to treat false as "not provided" (undefined) since boolean flags are only set when explicitly passed
     const includeCS = Option.getOrUndefined(includeClientServer)
+    const includeRPCVal = Option.getOrUndefined(includeRPC)
     const includeCQRSVal = Option.getOrUndefined(includeCQRS)
     const includeEdgeVal = Option.getOrUndefined(includeEdge)
 
@@ -163,10 +172,11 @@ const featureCommand = Command.make(
       tags,
       ...(scopeValue && { scope: scopeValue }),
       ...(platformValue && { platform: platformValue }),
-      ...(includeCS !== undefined && { includeClientServer: includeCS }),
-      ...(includeRPC && { includeRPC }),
-      ...(includeCQRSVal !== undefined && { includeCQRS: includeCQRSVal }),
-      ...(includeEdgeVal !== undefined && { includeEdge: includeEdgeVal })
+      // Only include boolean flags if they are explicitly true (flag was provided)
+      ...(includeCS === true && { includeClientServer: includeCS }),
+      ...(includeRPCVal === true && { includeRPC: includeRPCVal }),
+      ...(includeCQRSVal === true && { includeCQRS: includeCQRSVal }),
+      ...(includeEdgeVal === true && { includeEdge: includeEdgeVal })
     }).pipe(
       Effect.catchAll((error) =>
         Console.error(`Error generating feature: ${error}`).pipe(
@@ -196,7 +206,7 @@ const infraCommand = Command.make(
   },
   ({ description, includeClientServer, includeEdge, name, platform, tags }) => {
     const desc = Option.getOrUndefined(description)
-    const platformValue = Option.getOrUndefined(platform) as "node" | "browser" | "universal" | "edge" | undefined
+    const platformValue = Option.getOrUndefined(platform)
     const includeCS = Option.getOrUndefined(includeClientServer)
     const includeEdgeVal = Option.getOrUndefined(includeEdge)
 
@@ -205,8 +215,9 @@ const infraCommand = Command.make(
       ...(desc && { description: desc }),
       tags,
       ...(platformValue && { platform: platformValue }),
-      ...(includeCS !== undefined && { includeClientServer: includeCS }),
-      ...(includeEdgeVal !== undefined && { includeEdge: includeEdgeVal })
+      // Only include boolean flags if they are explicitly true (flag was provided)
+      ...(includeCS === true && { includeClientServer: includeCS }),
+      ...(includeEdgeVal === true && { includeEdge: includeEdgeVal })
     }).pipe(
       Effect.catchAll((error) =>
         Console.error(`Error generating infra: ${error}`).pipe(
@@ -239,7 +250,7 @@ const providerCommand = Command.make(
   },
   ({ description, externalService, name, platform, tags }) => {
     const desc = Option.getOrUndefined(description)
-    const platformValue = Option.getOrUndefined(platform) as "node" | "browser" | "universal" | "edge" | undefined
+    const platformValue = Option.getOrUndefined(platform)
 
     return generateProvider({
       name,
@@ -288,14 +299,15 @@ const cli = Command.run(generateCommand, {
  * with the necessary Effect platform context.
  */
 export function main(args: ReadonlyArray<string>) {
-  return cli(args).pipe(
-    Effect.provide(NodeContext.layer)
-  )
+  return cli(args)
 }
 
 /**
  * Run CLI if executed directly
  */
 if (import.meta.url === `file://${process.argv[1]}`) {
-  NodeRuntime.runMain(main(process.argv))
+  const program = main(process.argv).pipe(
+    Effect.provide(NodeContext.layer)
+  )
+  NodeRuntime.runMain(program)
 }

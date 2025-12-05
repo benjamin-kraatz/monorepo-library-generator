@@ -76,7 +76,7 @@ export interface FileSystemAdapter {
   writeFile(
     path: string,
     content: string
-  ): Effect.Effect<void, FileWriteError | DirectoryCreationError, unknown>
+  ): Effect.Effect<void, FileWriteError | DirectoryCreationError>
 
   /**
    * Read a file from the specified path
@@ -84,7 +84,7 @@ export interface FileSystemAdapter {
    * @param path - Absolute or relative file path
    * @returns Effect that succeeds with file content or fails with FileReadError
    */
-  readFile(path: string): Effect.Effect<string, FileReadError, unknown>
+  readFile(path: string): Effect.Effect<string, FileReadError>
 
   /**
    * Check if a file or directory exists
@@ -92,7 +92,7 @@ export interface FileSystemAdapter {
    * @param path - Absolute or relative path
    * @returns Effect that succeeds with boolean (true if exists)
    */
-  exists(path: string): Effect.Effect<boolean, FileSystemError, unknown>
+  exists(path: string): Effect.Effect<boolean, FileSystemError>
 
   /**
    * Create a directory (including parent directories)
@@ -100,7 +100,7 @@ export interface FileSystemAdapter {
    * @param path - Absolute or relative directory path
    * @returns Effect that succeeds with void or fails with DirectoryCreationError
    */
-  makeDirectory(path: string): Effect.Effect<void, DirectoryCreationError, unknown>
+  makeDirectory(path: string): Effect.Effect<void, DirectoryCreationError>
 
   /**
    * List contents of a directory
@@ -110,7 +110,7 @@ export interface FileSystemAdapter {
    */
   listDirectory(
     path: string
-  ): Effect.Effect<ReadonlyArray<string>, FileSystemError, unknown>
+  ): Effect.Effect<ReadonlyArray<string>, FileSystemError>
 
   /**
    * Delete a file or directory
@@ -122,7 +122,7 @@ export interface FileSystemAdapter {
   remove(
     path: string,
     options?: { recursive?: boolean }
-  ): Effect.Effect<void, FileSystemError, unknown>
+  ): Effect.Effect<void, FileSystemError>
 
   /**
    * Get the root directory of the workspace

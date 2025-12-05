@@ -30,7 +30,7 @@ export function generateErrorsFile(options: ContractTemplateOptions) {
   builder.addBlankLine()
 
   // Add imports
-  builder.addImports([{ from: "effect", imports: ["Data", "Schema"] }])
+  builder.addImports([{ from: "effect", imports: ["Data"] }])
   builder.addBlankLine()
 
   // ============================================================================

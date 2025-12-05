@@ -12,7 +12,7 @@ import {
   type ExportSection,
   generateExportSections,
   generateStandardErrorExports
-} from "../../../utils/code-generation/barrel-export-utils"
+} from "../../../utils/code-generation/barrel-exports"
 import { TypeScriptBuilder } from "../../../utils/code-generation/typescript-builder"
 import type { ProviderTemplateOptions } from "../../../utils/shared/types"
 

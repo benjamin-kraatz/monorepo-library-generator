@@ -3,22 +3,27 @@
  *
  * Wrapper that integrates infrastructure generator core with Nx workspace.
  *
- * Responsibilities:
- * - Computes library metadata and platform configuration
- * - Generates infrastructure files (package.json, tsconfig, project.json)
- * - Delegates domain file generation to core generator
- * - Formats files and provides post-generation instructions
+ * Two-Phase Generation:
+ * 1. **Infrastructure Phase**: Uses infrastructure.ts to generate
+ *    all infrastructure files (package.json, tsconfig files, vitest.config.ts, etc.)
+ * 2. **Domain Phase**: Delegates to infra-generator-core.ts for domain-specific
+ *    files (service, providers, configuration, etc.)
+ *
+ * The infrastructure generator ensures:
+ * - Complete infrastructure (7 files)
+ * - Consistent behavior with CLI generators
+ * - Platform-aware exports (client/server/edge)
  */
 
 import type { Tree } from "@nx/devkit"
-import { formatFiles } from "@nx/devkit"
+import { addProjectConfiguration, formatFiles } from "@nx/devkit"
 import { Effect } from "effect"
-import { parseTags } from "../../utils/generator-utils"
-import { generateLibraryFiles, type LibraryGeneratorOptions } from "../../utils/library-generator-utils"
-import { computeLibraryMetadata, type LibraryMetadata } from "../../utils/library-metadata"
-import { computePlatformConfiguration } from "../../utils/platform-utils"
+import { parseTags } from "../../utils/generators"
+import { computeLibraryMetadata } from "../../utils/library-metadata"
+import { computePlatformConfiguration } from "../../utils/platforms"
 import { createTreeAdapter } from "../../utils/tree-adapter"
-import { generateInfraCore, type GeneratorResult } from "../core/infra-generator-core"
+import { generateLibraryInfrastructure } from "../../utils/infrastructure"
+import { generateInfraCore } from "../core/infra"
 import type { InfraGeneratorSchema } from "./schema"
 
 /**
@@ -71,24 +76,32 @@ export default async function infraGenerator(
     defaultTags
   )
 
-  // Phase 1: Generate infrastructure files
-  const libraryOptions: LibraryGeneratorOptions = {
-    name: metadata.name,
-    projectName: metadata.projectName,
-    projectRoot: metadata.projectRoot,
-    offsetFromRoot: metadata.offsetFromRoot,
-    libraryType: "infra",
-    platform,
-    description: metadata.description,
-    tags,
-    includeClientServer,
-    includeEdgeExports: includeEdge
+  // Create TreeAdapter for Nx integration
+  const adapter = createTreeAdapter(tree)
+
+  // Phase 1: Generate infrastructure files using infrastructure generator
+  const infraResult = await Effect.runPromise(
+    generateLibraryInfrastructure(adapter, {
+      projectName: metadata.projectName,
+      projectRoot: metadata.projectRoot,
+      sourceRoot: metadata.sourceRoot,
+      packageName: metadata.packageName,
+      description: metadata.description,
+      libraryType: "infra",
+      platform,
+      offsetFromRoot: metadata.offsetFromRoot,
+      tags,
+      ...(includeClientServer !== undefined && { includeClientServer }),
+      ...(includeEdge && { includeEdgeExports: includeEdge })
+    })
+  )
+
+  // Register project with Nx (if project configuration was returned)
+  if (infraResult.requiresNxRegistration && infraResult.projectConfig) {
+    addProjectConfiguration(tree, metadata.projectName, infraResult.projectConfig)
   }
 
-  await generateLibraryFiles(tree, libraryOptions)
-
   // Phase 2: Generate domain-specific files via core generator
-  const adapter = createTreeAdapter(tree)
   const coreOptions: Parameters<typeof generateInfraCore>[1] = {
     // Pre-computed metadata
     name: metadata.name,
@@ -112,7 +125,7 @@ export default async function infraGenerator(
 
   // Run core generator with Effect runtime
   const result = await Effect.runPromise(
-    generateInfraCore(adapter, coreOptions) as Effect.Effect<GeneratorResult, never>
+    generateInfraCore(adapter, coreOptions)
   )
 
   // Format generated files

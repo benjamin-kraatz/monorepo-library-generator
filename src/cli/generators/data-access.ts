@@ -3,18 +3,23 @@
  *
  * Wrapper that integrates data-access generator core with Effect-based CLI.
  *
- * Responsibilities:
- * - Computes library metadata for standalone use
- * - Generates infrastructure files via generateInfrastructureFiles()
- * - Delegates domain file generation to core generator
- * - Provides CLI-specific output and instructions
+ * Two-Phase Generation:
+ * 1. **Infrastructure Phase**: Uses infrastructure.ts to generate
+ *    all infrastructure files (package.json, tsconfig files, vitest.config.ts, etc.)
+ * 2. **Domain Phase**: Delegates to data-access-generator-core.ts for domain-specific
+ *    files (repository, queries, validation, etc.)
+ *
+ * The infrastructure generator ensures:
+ * - Complete infrastructure (7 files)
+ * - Consistent behavior with Nx generators
+ * - Proper server-side platform configuration
  */
 
 import { Console, Effect } from "effect"
-import { generateDataAccessCore, type GeneratorResult } from "../../generators/core/data-access-generator-core"
+import { generateDataAccessCore, type GeneratorResult } from "../../generators/core/data-access"
 import { createEffectFsAdapter } from "../../utils/effect-fs-adapter"
-import { generateInfrastructureFiles } from "../../utils/infrastructure-generator"
-import { createNamingVariants } from "../../utils/naming-utils"
+import { generateLibraryInfrastructure } from "../../utils/infrastructure"
+import { createNamingVariants } from "../../utils/naming"
 
 /**
  * Data Access Generator Options (CLI)
@@ -71,39 +76,43 @@ export function generateDataAccess(options: DataAccessGeneratorOptions) {
 
     yield* Console.log(`Creating data-access library: ${options.name}...`)
 
-    // Phase 1: Generate infrastructure files
-    yield* generateInfrastructureFiles(adapter, {
-      workspaceRoot,
+    // Parse tags
+    const tagsString = options.tags ?? "type:data-access,scope:shared,platform:node"
+    const tags = tagsString.split(",").map(t => t.trim())
+
+    // Phase 1: Generate infrastructure files using infrastructure generator
+    yield* generateLibraryInfrastructure(adapter, {
       projectRoot: metadata.projectRoot,
+      sourceRoot: metadata.sourceRoot,
       projectName: metadata.projectName,
       packageName: metadata.packageName,
       description: metadata.description,
       libraryType: "data-access",
-      offsetFromRoot: metadata.offsetFromRoot
+      offsetFromRoot: metadata.offsetFromRoot,
+      platform: "node",
+      tags
     })
 
     // Phase 2: Generate domain files via core generator
-    const result: GeneratorResult = yield* (
-      generateDataAccessCore(adapter, {
-        // Pre-computed metadata
-        name: metadata.name,
-        className: metadata.className,
-        propertyName: metadata.propertyName,
-        fileName: metadata.fileName,
-        constantName: metadata.constantName,
-        projectName: metadata.projectName,
-        projectRoot: metadata.projectRoot,
-        sourceRoot: metadata.sourceRoot,
-        packageName: metadata.packageName,
-        offsetFromRoot: metadata.offsetFromRoot,
-        description: metadata.description,
-        tags: options.tags ?? "type:data-access,scope:shared,platform:server",
+    const result: GeneratorResult = yield* generateDataAccessCore(adapter, {
+      // Pre-computed metadata
+      name: metadata.name,
+      className: metadata.className,
+      propertyName: metadata.propertyName,
+      fileName: metadata.fileName,
+      constantName: metadata.constantName,
+      projectName: metadata.projectName,
+      projectRoot: metadata.projectRoot,
+      sourceRoot: metadata.sourceRoot,
+      packageName: metadata.packageName,
+      offsetFromRoot: metadata.offsetFromRoot,
+      description: metadata.description,
+      tags: tagsString,
 
-        // Feature flags
-        ...(options.includeCache !== undefined && { includeCache: options.includeCache }),
-        ...(options.contractLibrary !== undefined && { contractLibrary: options.contractLibrary })
-      }) as Effect.Effect<GeneratorResult>
-    )
+      // Feature flags
+      ...(options.includeCache !== undefined && { includeCache: options.includeCache }),
+      ...(options.contractLibrary !== undefined && { contractLibrary: options.contractLibrary })
+    })
 
     yield* Console.log("✨ Data access library created successfully!")
     yield* Console.log(`  Location: ${result.projectRoot}`)
