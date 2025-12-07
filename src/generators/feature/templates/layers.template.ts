@@ -85,19 +85,21 @@ export const ${className}ServiceLive = ${className}Service.Live;`)
  */
 export const ${className}ServiceDev = Layer.effect(
   ${className}Service,
-  Effect.gen(function () {
-    // TODO: Inject dependencies as needed
-    // const userRepo = yield* UserRepository;
-    // const logger = yield* LoggingService;
+  Effect.sync(() => {
+    // TODO: Inject dependencies as needed via Effect.gen if you need to yield dependencies
+    // Effect.gen(function* () {
+    //   const userRepo = yield* UserRepository;
+    //   const logger = yield* LoggingService;
+    //   ...
+    // })
 
     console.log("[${className}] Development layer initialized");
 
     return {
       exampleOperation: () =>
-        Effect.gen(function () {
+        Effect.sync(() => {
           console.log("[${className}] [DEV] exampleOperation starting");
           console.log("[${className}] [DEV] exampleOperation completed");
-          return Effect.void;
         }),
     };
   })

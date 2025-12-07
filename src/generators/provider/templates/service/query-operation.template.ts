@@ -95,8 +95,8 @@ export interface Query${className}Operations {
  * TODO: Implement with actual ${externalService} SDK
  */
 export const queryOperations: Query${className}Operations = {
-  list: (_params) =>
-    Effect.gen(function () {
+  list: (params) =>
+    Effect.gen(function* () {
       // TODO: Replace with actual ${externalService} SDK call
       // Example:
       // const client = yield* ${externalService}Client;
@@ -106,7 +106,9 @@ export const queryOperations: Query${className}Operations = {
       // });
       // return result;
 
-      return Effect.dieMessage("List operation not implemented - replace with ${externalService} SDK call");
+      yield* Effect.logWarning(\`List operation called but not implemented\`);
+      yield* Effect.logDebug(\`Params: \${JSON.stringify(params)}\`);
+      return yield* Effect.dieMessage("List operation not implemented - replace with ${externalService} SDK call");
     }).pipe(
       Effect.retry(
         Schedule.exponential(Duration.millis(100)).pipe(
@@ -115,8 +117,8 @@ export const queryOperations: Query${className}Operations = {
       )
     ),
 
-  get: (_id) =>
-    Effect.gen(function () {
+  get: (id) =>
+    Effect.gen(function* () {
       // TODO: Replace with actual ${externalService} SDK call
       // Example:
       // const client = yield* ${externalService}Client;
@@ -126,7 +128,8 @@ export const queryOperations: Query${className}Operations = {
       // });
       // return result;
 
-      return Effect.dieMessage("Get operation not implemented - replace with ${externalService} SDK call");
+      yield* Effect.logWarning(\`Get operation called for id \${id} but not implemented\`);
+      return yield* Effect.dieMessage("Get operation not implemented - replace with ${externalService} SDK call");
     }).pipe(
       Effect.retry(
         Schedule.exponential(Duration.millis(100)).pipe(

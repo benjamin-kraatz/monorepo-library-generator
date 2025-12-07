@@ -87,8 +87,8 @@ export interface Update${className}Operations {
  * TODO: Implement with actual ${externalService} SDK
  */
 export const updateOperations: Update${className}Operations = {
-  update: (_id, _data) =>
-    Effect.gen(function () {
+  update: (id, data) =>
+    Effect.gen(function* () {
       // TODO: Replace with actual ${externalService} SDK call
       // Example:
       // const client = yield* ${externalService}Client;
@@ -98,7 +98,9 @@ export const updateOperations: Update${className}Operations = {
       // });
       // return result;
 
-      return Effect.dieMessage("Update operation not implemented - replace with ${externalService} SDK call");
+      yield* Effect.logWarning(\`Update operation called for id \${id} but not implemented\`);
+      yield* Effect.logDebug(\`Data: \${JSON.stringify(data)}\`);
+      return yield* Effect.dieMessage("Update operation not implemented - replace with ${externalService} SDK call");
     }).pipe(
       Effect.retry(
         Schedule.exponential(Duration.millis(100)).pipe(

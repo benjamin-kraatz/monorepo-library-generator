@@ -80,8 +80,8 @@ export interface Delete${className}Operations {
  * TODO: Implement with actual ${externalService} SDK
  */
 export const deleteOperations: Delete${className}Operations = {
-  delete: (_id) =>
-    Effect.gen(function () {
+  delete: (id) =>
+    Effect.gen(function* () {
       // TODO: Replace with actual ${externalService} SDK call
       // Example:
       // const client = yield* ${externalService}Client;
@@ -90,7 +90,8 @@ export const deleteOperations: Delete${className}Operations = {
       //   catch: (error) => map${className}Error(error as Error)
       // });
 
-      return Effect.dieMessage("Delete operation not implemented - replace with ${externalService} SDK call");
+      yield* Effect.logWarning(\`Delete operation called for id \${id} but not implemented\`);
+      return yield* Effect.dieMessage("Delete operation not implemented - replace with ${externalService} SDK call");
     }).pipe(
       Effect.retry(
         Schedule.exponential(Duration.millis(100)).pipe(

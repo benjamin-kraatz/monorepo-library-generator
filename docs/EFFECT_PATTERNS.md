@@ -738,6 +738,388 @@ const sharedData = Effect.gen(function* () {
 
 ---
 
+## Control Flow Patterns
+
+### Decision Matrix: When to Use Control Flow Operators
+
+Effect.ts provides declarative control flow operators that work seamlessly with Effects. Use this decision matrix to choose between plain JavaScript control flow and Effect operators:
+
+| Scenario | Use Plain if/else | Use Effect.if/when/unless | Rationale |
+|----------|-------------------|---------------------------|-----------|
+| Condition is a **value** | ✅ **Recommended** | ❌ Unnecessary | Simple, readable, performant |
+| Condition is an **Effect** | ❌ Can't use | ✅ **Required** | Must unwrap Effect first |
+| Branches return **values** | ✅ **Recommended** | ❌ Over-engineering | No Effect context needed |
+| Branches return **Effects** | ⚠️ Both work | ✅ **Clearer intent** | Effect operators show intent better |
+| Optional execution (side effect) | ⚠️ if/else works | ✅ **Effect.when** | Explicit optional behavior |
+| Guard clauses (early exit) | ⚠️ if with return | ✅ **Effect.unless** | Prevents nesting |
+| Combining two parallel results | ❌ Complex | ✅ **Effect.zip** | Type-safe pairing |
+
+**Rule of Thumb**:
+- Use **Effect operators** when working primarily with Effects
+- Use **plain JavaScript** when working with values
+- When in doubt, **Effect.gen with if/else** is always valid
+
+---
+
+### Pattern 1: Effect.if - Binary Branching
+
+**Use when**: You need to choose between two different effects based on a condition.
+
+```typescript
+import { Effect } from "effect";
+
+// ✅ GOOD: Simple branching with Effect.if
+const processOrder = (isPriority: boolean) =>
+  Effect.if(isPriority, {
+    onTrue: () =>
+      Effect.gen(function* () {
+        const expressService = yield* ExpressShippingService;
+        return yield* expressService.ship();
+      }),
+    onFalse: () =>
+      Effect.gen(function* () {
+        const standardService = yield* StandardShippingService;
+        return yield* standardService.ship();
+      })
+  });
+
+// ⚠️ ACCEPTABLE: Effect.gen with plain if/else
+const processOrderAlternative = (isPriority: boolean) =>
+  Effect.gen(function* () {
+    if (isPriority) {
+      const expressService = yield* ExpressShippingService;
+      return yield* expressService.ship();
+    } else {
+      const standardService = yield* StandardShippingService;
+      return yield* standardService.ship();
+    }
+  });
+
+// ❌ AVOID: Effect.if when condition is simple value
+const getBadPrice = (isPremium: boolean) =>
+  Effect.if(isPremium, {
+    onTrue: () => Effect.succeed(99.99),
+    onFalse: () => Effect.succeed(19.99)
+  });
+
+// ✅ BETTER: Plain JS for simple value branching
+const getGoodPrice = (isPremium: boolean) =>
+  Effect.succeed(isPremium ? 99.99 : 19.99);
+```
+
+**Effect.if with Effectful Condition**:
+
+```typescript
+import { Random } from "effect";
+
+// Condition itself is an Effect
+const randomChoice = Effect.if(Random.nextBoolean, {
+  onTrue: () => Effect.log("Heads!").pipe(Effect.as("heads")),
+  onFalse: () => Effect.log("Tails!").pipe(Effect.as("tails"))
+});
+```
+
+---
+
+### Pattern 2: Effect.when - Conditional Execution
+
+**Use when**: You want to optionally execute an effect based on a condition. Returns `Option<A>` - `Some` if executed, `None` if skipped.
+
+```typescript
+import { Effect, Option } from "effect";
+
+// ✅ GOOD: Guard clause with Effect.when
+const sendNotification = (shouldNotify: boolean, userId: string) =>
+  Effect.when(shouldNotify, () =>
+    Effect.gen(function* () {
+      const userRepo = yield* UserRepository;
+      const user = yield* userRepo.findById(userId);
+
+      if (Option.isNone(user)) {
+        return yield* Effect.fail(new UserNotFoundError({ userId }));
+      }
+
+      const emailService = yield* EmailService;
+      yield* emailService.send(user.value.email, "Notification");
+    })
+  );
+
+// Result type: Effect<Option<void>, Error>
+// - Some(void) when shouldNotify is true and effect succeeds
+// - None when shouldNotify is false
+
+// ✅ GOOD: Optional cache warming
+const warmCacheIfEnabled = (config: Config) =>
+  Effect.when(config.enableCaching, () =>
+    Effect.gen(function* () {
+      const cache = yield* CacheService;
+      yield* cache.warmup();
+      yield* Effect.log("Cache warmed successfully");
+    })
+  );
+
+// Unwrap Option result
+const result = yield* sendNotification(true, "user-123");
+if (Option.isSome(result)) {
+  console.log("Notification sent");
+} else {
+  console.log("Notification skipped");
+}
+```
+
+**Effect.whenEffect** - Condition is an Effect:
+
+```typescript
+import { Random } from "effect";
+
+// Random condition
+const maybeSendEmail = (email: string) =>
+  Effect.whenEffect(
+    Random.nextBoolean, // Condition is Effect<boolean>
+    () => EmailService.send(email, "Random notification")
+  );
+```
+
+---
+
+### Pattern 3: Effect.unless - Inverted Guard
+
+**Use when**: You want to execute only if condition is **false** (inverted `when`).
+
+```typescript
+import { Effect } from "effect";
+
+// ✅ GOOD: Early exit pattern with Effect.unless
+const validateUser = (user: User) =>
+  Effect.unless(user.isVerified, () =>
+    Effect.fail(new UnverifiedUserError({ userId: user.id }))
+  );
+
+// Equivalent to:
+// if (!user.isVerified) {
+//   return Effect.fail(...)
+// }
+
+// ✅ GOOD: Skip expensive operation if already cached
+const loadUserProfile = (userId: string) =>
+  Effect.gen(function* () {
+    const cache = yield* CacheService;
+    const cached = yield* cache.get<UserProfile>(`user:${userId}`);
+
+    // Only fetch if NOT cached
+    yield* Effect.unless(Option.isSome(cached), () =>
+      Effect.gen(function* () {
+        const api = yield* UserAPI;
+        const profile = yield* api.fetchProfile(userId);
+        yield* cache.set(`user:${userId}`, profile);
+      })
+    );
+
+    return Option.getOrElse(cached, () => /* default */);
+  });
+```
+
+---
+
+### Pattern 4: Effect.zip - Parallel Execution with Tuple Result
+
+**Use when**: You need to run exactly **two** independent effects and combine results as a tuple `[A, B]`.
+
+```typescript
+import { Effect } from "effect";
+
+// ✅ GOOD: Combine two independent queries
+const getUserProfile = (userId: string) =>
+  Effect.zip(
+    UserRepository.findById(userId),
+    PermissionsRepository.findByUserId(userId)
+  ).pipe(
+    Effect.map(([user, permissions]) => ({
+      ...user,
+      permissions
+    }))
+  );
+
+// Result type: Effect<[User, Permission[]], Error>
+
+// With concurrent option (parallel execution)
+const getUserProfileParallel = (userId: string) =>
+  Effect.zip(
+    UserRepository.findById(userId),
+    PermissionsRepository.findByUserId(userId),
+    { concurrency: "unbounded" } // Run in parallel
+  ).pipe(
+    Effect.map(([user, permissions]) => ({ ...user, permissions }))
+  );
+```
+
+**Comparison: Effect.zip vs Effect.all**:
+
+```typescript
+// Effect.zip: Exactly 2 effects, tuple result
+const withZip = Effect.zip(effect1, effect2);
+// Result: Effect<[A, B], E>
+
+// Effect.all: Multiple effects, array or object result
+const withAll = Effect.all([effect1, effect2]);
+// Result: Effect<[A, B], E>
+
+const withAllObject = Effect.all({
+  user: effect1,
+  permissions: effect2
+});
+// Result: Effect<{ user: A, permissions: B }, E>
+```
+
+**When to use each**:
+- **Effect.zip**: Exactly 2 effects, prefer tuple destructuring
+- **Effect.all**: 3+ effects, or when you want named results (object form)
+
+---
+
+### Pattern 5: Effect.zipWith - Combine with Custom Function
+
+**Use when**: You want to combine two effects with a custom transformation.
+
+```typescript
+import { Effect } from "effect";
+
+// ✅ GOOD: Custom combination logic
+const getTotalPrice = (productId: string, quantity: number) =>
+  Effect.zipWith(
+    ProductRepository.findById(productId),
+    DiscountService.getDiscount(productId),
+    (product, discount) => {
+      const basePrice = product.price * quantity;
+      return basePrice * (1 - discount);
+    }
+  );
+
+// Equivalent to:
+const getTotalPriceAlternative = (productId: string, quantity: number) =>
+  Effect.gen(function* () {
+    const [product, discount] = yield* Effect.all([
+      ProductRepository.findById(productId),
+      DiscountService.getDiscount(productId)
+    ]);
+
+    const basePrice = product.price * quantity;
+    return basePrice * (1 - discount);
+  });
+```
+
+---
+
+### Anti-Patterns: Control Flow
+
+```typescript
+// ❌ WRONG: Overusing Effect.if for complex branching
+const badBranching = (status: string, user: User) =>
+  Effect.if(status === "active", {
+    onTrue: () =>
+      Effect.if(user.isPremium, {
+        onTrue: () => premiumActive(),
+        onFalse: () => standardActive()
+      }),
+    onFalse: () =>
+      Effect.if(status === "pending", {
+        onTrue: () => pendingFlow(),
+        onFalse: () => inactiveFlow()
+      })
+  });
+
+// ✅ CORRECT: Use Effect.gen for complex logic
+const goodBranching = (status: string, user: User) =>
+  Effect.gen(function* () {
+    if (status === "active") {
+      return user.isPremium
+        ? yield* premiumActive()
+        : yield* standardActive();
+    }
+
+    if (status === "pending") {
+      return yield* pendingFlow();
+    }
+
+    return yield* inactiveFlow();
+  });
+
+// ❌ WRONG: Using Effect operators for non-Effect values
+const badValueBranching = (count: number) =>
+  Effect.if(count > 10, {
+    onTrue: () => Effect.succeed("many"),
+    onFalse: () => Effect.succeed("few")
+  });
+
+// ✅ CORRECT: Plain JS for simple values
+const goodValueBranching = (count: number) =>
+  Effect.succeed(count > 10 ? "many" : "few");
+
+// ❌ WRONG: Effect.zip for dependent operations
+const badSequence = (userId: string) =>
+  Effect.zip(
+    createUser(userId),
+    createOrder(userId) // Depends on user being created!
+  );
+
+// ✅ CORRECT: Sequential with Effect.gen
+const goodSequence = (userId: string) =>
+  Effect.gen(function* () {
+    const user = yield* createUser(userId);
+    const order = yield* createOrder(user.id); // Use created user
+    return { user, order };
+  });
+```
+
+---
+
+### Decision Flowchart
+
+```
+Q: Do I need conditional logic?
+│
+├─ Condition is VALUE (boolean, number, etc.)?
+│  │
+│  ├─ Branches return VALUES?
+│  │  └─ Use plain if/else or ternary operator ✅
+│  │
+│  └─ Branches return EFFECTS?
+│     ├─ Simple binary choice?
+│     │  └─ Use Effect.if or Effect.gen with if/else ⚠️
+│     │
+│     ├─ Optional execution (side effect)?
+│     │  └─ Use Effect.when ✅
+│     │
+│     └─ Guard clause (early exit)?
+│        └─ Use Effect.unless ✅
+│
+└─ Condition is EFFECT (Random.nextBoolean, API call)?
+   │
+   ├─ Binary choice?
+   │  └─ Use Effect.if with effectful condition ✅
+   │
+   ├─ Optional execution?
+   │  └─ Use Effect.whenEffect ✅
+   │
+   └─ Inverted guard?
+      └─ Use Effect.unlessEffect ✅
+
+Q: Do I need to combine two independent effects?
+│
+└─ Use Effect.zip or Effect.zipWith ✅
+   (For 3+ effects, use Effect.all instead)
+```
+
+---
+
+### Cross-References
+
+- [Effect.all for batch operations](#effect-all-batch-operations) - Combining multiple effects
+- [Effect.gen vs Combinators](#effect-gen-vs-combinators) - When to use generators
+- [Error Handling Patterns](#error-handling-patterns) - Handling errors in branches
+
+---
+
 ## Layer Creation Patterns
 
 ### Decision Tree: Choosing the Right Layer Constructor
@@ -1544,6 +1926,453 @@ When in doubt:
 
 - Are you sending this error over the network? → Schema.TaggedError
 - Is it internal domain logic? → Data.TaggedError
+
+## Effect.all - Batch Operations & Parallel Execution
+
+### Overview
+
+`Effect.all` is Effect's primary tool for combining multiple independent effects. It enables parallel execution with fine-grained concurrency control, making it essential for batch operations, data loading, and performant APIs.
+
+**Key Features**:
+- Accepts arrays, objects, or iterables of effects
+- Configurable concurrency (unbounded, bounded, or sequential)
+- Short-circuits on first error (fail-fast behavior)
+- Type-safe result aggregation
+
+---
+
+### Decision Matrix: Effect.all vs Alternatives
+
+| Scenario | Use Effect.all | Use Alternative | Rationale |
+|----------|----------------|-----------------|-----------|
+| 2-10 independent effects | ✅ **Effect.all** | ⚠️ Effect.zip for exactly 2 | Clear intent, flexible result type |
+| 10-100 independent effects | ✅ **Effect.all with concurrency limit** | ❌ | Prevents overwhelming services |
+| 100+ independent effects | ⚠️ Consider Stream | ✅ **Stream.fromIterable + Stream.mapEffect** | Better memory management |
+| Effects depend on each other | ❌ | ✅ **Effect.gen with yield\*** | Must execute sequentially |
+| Need to collect errors | ⚠️ Fails fast | ✅ **Effect.allSuccesses** | Continue after errors |
+| Named results needed | ✅ **Effect.all with object** | ⚠️ Effect.all with array + destructuring | Better readability |
+
+---
+
+### Pattern 1: Batch Operations with Array
+
+**Use when**: You have multiple independent operations to run in parallel.
+
+```typescript
+import { Effect } from "effect";
+
+// ✅ GOOD: Load multiple users in parallel
+const loadDashboardData = (userId: string, teamIds: readonly string[]) =>
+  Effect.all([
+    UserRepository.findById(userId),
+    TeamRepository.findByIds(teamIds),
+    NotificationRepository.findUnread(userId),
+    ActivityRepository.findRecent(userId, 10)
+  ]).pipe(
+    Effect.map(([user, teams, notifications, activities]) => ({
+      user,
+      teams,
+      notifications,
+      activities
+    }))
+  );
+
+// Result type: Effect<{user: User, teams: Team[], ...}, Error>
+```
+
+---
+
+### Pattern 2: Batch Operations with Object (Named Results)
+
+**Use when**: You want readable, self-documenting result access.
+
+```typescript
+import { Effect } from "effect";
+
+// ✅ BETTER: Named results for clarity
+const loadDashboardData = (userId: string) =>
+  Effect.all({
+    user: UserRepository.findById(userId),
+    teams: TeamRepository.findByUserId(userId),
+    notifications: NotificationRepository.findUnread(userId),
+    activities: ActivityRepository.findRecent(userId, 10)
+  });
+
+// Access with dot notation
+const dashboard = yield* loadDashboardData("user-123");
+console.log(dashboard.user.name);
+console.log(dashboard.teams.length);
+
+// Result type: Effect<{
+//   user: User,
+//   teams: Team[],
+//   notifications: Notification[],
+//   activities: Activity[]
+// }, Error>
+```
+
+---
+
+### Pattern 3: Concurrency Control
+
+**Use when**: You need to limit concurrent operations to avoid overwhelming downstream services.
+
+```typescript
+import { Effect } from "effect";
+
+// ❌ WRONG: Unbounded concurrency (10,000 users = 10,000 concurrent DB queries!)
+const loadAllUsersBad = (userIds: readonly string[]) =>
+  Effect.all(
+    userIds.map(id => UserRepository.findById(id))
+  );
+
+// ✅ CORRECT: Bounded concurrency
+const loadAllUsers = (userIds: readonly string[]) =>
+  Effect.all(
+    userIds.map(id => UserRepository.findById(id)),
+    { concurrency: 10 } // Max 10 concurrent queries
+  );
+
+// ✅ CORRECT: Sequential execution (one at a time)
+const loadSequentially = (userIds: readonly string[]) =>
+  Effect.all(
+    userIds.map(id => UserRepository.findById(id)),
+    { concurrency: 1 } // Process one by one
+  );
+
+// ✅ CORRECT: Inherit parent concurrency
+const loadWithInheritance = (userIds: readonly string[]) =>
+  Effect.all(
+    userIds.map(id => UserRepository.findById(id)),
+    { concurrency: "inherit" } // Use parent's concurrency setting
+  );
+```
+
+**Concurrency Options**:
+- `{ concurrency: "unbounded" }` - No limit (default) - Use for < 10 operations
+- `{ concurrency: N }` - Fixed limit - Use for 10-100 operations
+- `{ concurrency: 1 }` - Sequential - Guarantees order
+- `{ concurrency: "inherit" }` - Use parent's setting - For nested Effect.all calls
+
+**Performance Guide**:
+- **< 10 operations**: Unbounded OK
+- **10-100 operations**: Bounded (5-20 concurrent)
+- **100+ operations**: Consider Stream.fromIterable + Stream.mapEffect
+
+---
+
+### Pattern 4: Short-Circuiting Behavior
+
+**Important**: `Effect.all` uses fail-fast semantics - it stops on the first error.
+
+```typescript
+import { Effect } from "effect";
+
+const validateAllFields = (fields: readonly Field[]) =>
+  Effect.all(
+    fields.map(field => validateField(field))
+  );
+
+// If field[2] fails, fields[3+] never execute
+// Remaining operations are interrupted
+
+// ✅ Behavior: Fast failure detection
+// ❌ Limitation: Don't get all validation errors
+```
+
+**When fail-fast is good**:
+- External API calls (save time/cost on known failures)
+- Database queries (don't waste connections)
+- Expensive operations (stop early on critical failures)
+
+**When fail-fast is bad**:
+- Form validation (user wants all errors at once)
+- Batch processing (need to know all failures)
+- Data migrations (want full error report)
+
+For these cases, use `Effect.allSuccesses` (Pattern 5).
+
+---
+
+### Pattern 5: Collecting All Results with Effect.allSuccesses
+
+**Use when**: You want to process all items even if some fail, collecting both successes and failures.
+
+```typescript
+import { Effect, Option } from "effect";
+
+// Process all items, collect successes and failures
+const processAllItems = (items: readonly Item[]) =>
+  Effect.allSuccesses(
+    items.map(item => processItem(item))
+  ).pipe(
+    Effect.map((results) => {
+      const successes = results.filter(Option.isSome).map(opt => opt.value);
+      const failureCount = results.filter(Option.isNone).length;
+
+      return {
+        successes,
+        failureCount,
+        total: results.length,
+        successRate: successes.length / results.length
+      };
+    })
+  );
+
+// Result type: Effect<Option<Result>[], never>
+// - Some(result) for successful operations
+// - None for failed operations
+// - Never fails (always succeeds with array of Options)
+```
+
+**Real-World Example: Batch User Import**
+
+```typescript
+import { Effect, Option, Exit } from "effect";
+
+interface ImportResult {
+  readonly imported: readonly User[];
+  readonly failed: readonly { email: string; error: string }[];
+}
+
+const importUsers = (emails: readonly string[]): Effect.Effect<ImportResult> =>
+  Effect.allSuccesses(
+    emails.map(email =>
+      Effect.gen(function* () {
+        // Validate email
+        const validated = yield* validateEmail(email);
+
+        // Check if user exists
+        const existing = yield* UserRepository.findByEmail(email);
+        if (Option.isSome(existing)) {
+          return yield* Effect.fail(new DuplicateEmailError({ email }));
+        }
+
+        // Create user
+        const user = yield* UserRepository.create({
+          email: validated,
+          createdAt: new Date()
+        });
+
+        return user;
+      }).pipe(
+        Effect.exit
+      )
+    )
+  ).pipe(
+    Effect.map((exits) => {
+      const imported: User[] = [];
+      const failed: { email: string; error: string }[] = [];
+
+      exits.forEach((exit, index) => {
+        if (Exit.isSuccess(exit)) {
+          imported.push(exit.value);
+        } else {
+          failed.push({
+            email: emails[index],
+            error: Exit.isFailure(exit) ? exit.cause.toString() : "Unknown error"
+          });
+        }
+      });
+
+      return { imported, failed };
+    })
+  );
+
+// Usage
+const result = yield* importUsers(["user1@example.com", "user2@example.com"]);
+console.log(`Imported: ${result.imported.length}, Failed: ${result.failed.length}`);
+```
+
+---
+
+### Pattern 6: Effect.forEach - Functional Iteration
+
+**Use when**: You want to transform an iterable with effects (more functional than Effect.all + map).
+
+```typescript
+import { Effect } from "effect";
+
+// ✅ GOOD: Effect.forEach for transformation
+const enrichUsers = (userIds: readonly string[]) =>
+  Effect.forEach(
+    userIds,
+    (id) =>
+      Effect.gen(function* () {
+        const user = yield* UserRepository.findById(id);
+        const orders = yield* OrderRepository.countByUserId(id);
+        const lastLogin = yield* ActivityRepository.getLastLogin(id);
+
+        return {
+          ...user,
+          orderCount: orders,
+          lastLogin
+        };
+      }),
+    { concurrency: 10 }
+  );
+
+// Equivalent to:
+const enrichUsersAlternative = (userIds: readonly string[]) =>
+  Effect.all(
+    userIds.map(id =>
+      Effect.gen(function* () {
+        // same implementation
+      })
+    ),
+    { concurrency: 10 }
+  );
+```
+
+**Effect.forEach vs Effect.all + map**:
+- `Effect.forEach`: More functional, clearer intent
+- `Effect.all + map`: More explicit transformation
+- Both are equivalent - choose based on team preference
+
+---
+
+### Anti-Patterns
+
+```typescript
+// ❌ WRONG: No concurrency control for external API
+const fetchAllExternalUsers = (ids: readonly string[]) =>
+  Effect.all(
+    ids.map(id => ExternalAPI.fetchUser(id))
+    // 1000 IDs = 1000 concurrent HTTP requests = rate limit! 💥
+  );
+
+// ✅ CORRECT: Bounded concurrency
+const fetchAllExternalUsersCorrect = (ids: readonly string[]) =>
+  Effect.all(
+    ids.map(id => ExternalAPI.fetchUser(id)),
+    { concurrency: 5 } // Respectful rate limiting
+  );
+
+// ❌ WRONG: Effect.all for dependent operations
+const createUserAndOrder = (userId: string) =>
+  Effect.all({
+    user: createUser(userId),
+    order: createOrder(userId) // Depends on user being created first!
+  });
+
+// ✅ CORRECT: Sequential with Effect.gen
+const createUserAndOrderCorrect = (userId: string) =>
+  Effect.gen(function* () {
+    const user = yield* createUser(userId);
+    const order = yield* createOrder(user.id); // Use created user's ID
+    return { user, order };
+  });
+
+// ❌ WRONG: Effect.all for large datasets
+const processThousandsOfFiles = (files: readonly File[]) =>
+  Effect.all(
+    files.map(file => processFile(file))
+    // 10,000 files loaded into memory at once! 💥
+  );
+
+// ✅ CORRECT: Use Stream for large datasets
+import { Stream } from "effect";
+
+const processThousandsOfFilesCorrect = (files: readonly File[]) =>
+  Stream.fromIterable(files).pipe(
+    Stream.mapEffect(file => processFile(file), { concurrency: 10 }),
+    Stream.runCollect
+  );
+```
+
+---
+
+### When to Use What
+
+**Use Effect.all when**:
+- Operations are independent (no data dependencies)
+- Number of operations is known and reasonable (< 100)
+- You want fail-fast behavior
+- You need type-safe result aggregation
+
+**Use Effect.allSuccesses when**:
+- You need to process all items even if some fail
+- Form validation (collect all errors)
+- Batch operations (complete error report)
+- Import/export operations
+
+**Use Effect.forEach when**:
+- You prefer functional iteration style
+- Transforming iterables with effects
+- Equivalent to Effect.all + map
+
+**Use Stream.fromIterable when**:
+- Processing 100+ items
+- Memory efficiency is critical
+- Backpressure control needed
+- Working with large datasets
+
+**Use Effect.gen with yield\* when**:
+- Operations depend on each other
+- Sequential execution required
+- Complex control flow
+
+---
+
+### Real-World Examples
+
+**Example 1: API Dashboard Load**
+
+```typescript
+const loadUserDashboard = (userId: string) =>
+  Effect.all({
+    profile: UserService.getProfile(userId),
+    stats: AnalyticsService.getUserStats(userId),
+    notifications: NotificationService.getUnread(userId),
+    recentActivity: ActivityService.getRecent(userId, 10)
+  }).pipe(
+    Effect.withSpan("load-dashboard"), // Tracing
+    Effect.timeout("3 seconds"), // Timeout for all operations
+    Effect.catchAll((error) =>
+      Effect.succeed({
+        profile: null,
+        stats: null,
+        notifications: [],
+        recentActivity: []
+      }) // Graceful degradation
+    )
+  );
+```
+
+**Example 2: Batch Data Enrichment**
+
+```typescript
+const enrichProducts = (productIds: readonly string[]) =>
+  Effect.forEach(
+    productIds,
+    (id) =>
+      Effect.all({
+        product: ProductRepository.findById(id),
+        reviews: ReviewRepository.findByProductId(id),
+        inventory: InventoryService.getStock(id),
+        pricing: PricingService.getPrice(id)
+      }).pipe(
+        Effect.map(({ product, reviews, inventory, pricing }) => ({
+          ...product,
+          reviewCount: reviews.length,
+          averageRating: calculateAverage(reviews),
+          inStock: inventory > 0,
+          price: pricing
+        }))
+      ),
+    { concurrency: 20 } // Process 20 products at a time
+  );
+```
+
+---
+
+### Cross-References
+
+- [Control Flow Patterns](#control-flow-patterns) - Effect.zip for exactly 2 effects
+- [Streaming & Queuing Patterns](#streaming--queuing-patterns) - Stream.fromIterable for large datasets
+- [Error Handling Patterns](#error-handling-patterns) - Handling errors in parallel operations
+
+---
 
 ## Advanced Effect Patterns
 
@@ -3881,7 +4710,214 @@ const handleFieldChange = (field: string, value: string) =>
 
 ## Running Effects
 
-### Application Entry Points
+### Critical Context: Running in This Codebase
+
+**IMPORTANT**: This monorepo uses a specific running pattern strategy:
+
+1. ✅ **Templates NEVER use Effect.run\*** - By design, generated library code returns Effects, never runs them
+2. ✅ **Running happens ONLY at application boundaries** - Apps/servers, not libraries
+3. ✅ **Tests use it.scoped** - No manual Effect.runPromise (see TESTING_PATTERNS.md)
+4. ✅ **Callbacks use Runtime.runFork** - Preserved runtime for SDK integration
+
+**Why this matters**: If you're writing library code (features, data-access, providers), you should NEVER need to run effects. This section is for application developers and special integration cases only.
+
+---
+
+### Decision Matrix: Choosing the Right Runner
+
+| Context | Runner | When to Use | Constraints | Example |
+|---------|--------|-------------|-------------|---------|
+| **Application entry point** | `Effect.runPromise` | Main function in apps/servers | Can fail (throws) | `await Effect.runPromise(app)` |
+| **Node.js CLI** | `NodeRuntime.runMain` | CLI programs | Handles signals | `NodeRuntime.runMain(cli)` |
+| **Tests** | `it.scoped` | ALL test cases | Automatic scope mgmt | See TESTING_PATTERNS.md |
+| **Callbacks (WebSocket, etc)** | `Runtime.runFork` | SDK callbacks, event handlers | Preserve runtime | WebSocket.on("message", ...) |
+| **Background tasks** | `Runtime.runFork` | Fire-and-forget | Non-blocking | Background job processing |
+| **Pure sync effects** | `Effect.runSync` | Config loading, constants | Must be synchronous | `Effect.runSync(loadConfig)` |
+| **Library code** | ❌ **NEVER** | Exported functions | Return Effect, don't run | All template-generated code |
+
+**Quick Rules**:
+- Application entry → `Effect.runPromise`
+- Tests → `it.scoped` (never manual)
+- Callbacks → `Runtime.runFork`
+- Libraries → Return Effect (don't run)
+- Doubt? → Return Effect and let consumer run it
+
+---
+
+### Pattern 1: Effect.runPromise (Application Entry Point)
+
+**Use when**: Running Effect at application boundaries (main function, server startup).
+
+```typescript
+import { Effect, Layer } from "effect";
+
+// ✅ CORRECT: Application entry point (apps/api/src/main.ts)
+async function main() {
+  const program = Effect.gen(function* () {
+    const server = yield* HttpServer;
+    yield* server.start();
+    yield* Effect.log("Server started successfully");
+  });
+
+  await Effect.runPromise(
+    program.pipe(Effect.provide(AppLayer))
+  );
+}
+
+main().catch((error) => {
+  console.error("Application failed:", error);
+  process.exit(1);
+});
+```
+
+**Characteristics**:
+- Returns `Promise<A>`
+- Throws on failure (use try/catch or .catch)
+- Loses Effect error types (becomes generic Error)
+- Use at application boundaries ONLY
+
+**⚠️ Critical**: Never use in library code:
+
+```typescript
+// ❌ WRONG: Running effects in library exports
+export async function saveUser(user: User) {
+  // DON'T DO THIS in libraries!
+  return await Effect.runPromise(
+    UserRepository.save(user).pipe(Effect.provide(AppLayer))
+  );
+}
+
+// ✅ CORRECT: Return Effect, let consumer run it
+export const saveUser = (user: User): Effect.Effect<void, RepositoryError, UserRepository> =>
+  Effect.gen(function* () {
+    const repo = yield* UserRepository;
+    yield* repo.save(user);
+  });
+```
+
+---
+
+### Pattern 2: Effect.runSync (Pure Synchronous Effects)
+
+**Use when**: Effect is guaranteed synchronous (rare in practice).
+
+```typescript
+import { Effect } from "effect";
+
+// ✅ CORRECT: Pure sync effect
+const config = Effect.runSync(
+  Effect.succeed({ apiKey: "test", port: 3000 })
+);
+
+// ❌ WRONG: Running async effect
+const userData = Effect.runSync(
+  Effect.gen(function* () {
+    const db = yield* DatabaseService; // RUNTIME ERROR! Async operation
+    return yield* db.query(...);
+  })
+);
+// Error: "Running sync effects requires that the effect be synchronous"
+```
+
+**Characteristics**:
+- Returns `A` (not Promise)
+- **THROWS** if effect is async
+- Use ONLY for pure computations
+- Rare in practice (prefer runPromise)
+
+**When runSync is appropriate**:
+- Loading static configuration at module init
+- Computing constants
+- Pure transformations (no async/await)
+
+**When runSync is NOT appropriate** (99% of cases):
+- Database queries
+- API calls
+- File I/O
+- Any Effect using `yield*` with services
+
+---
+
+### Pattern 3: Runtime.runFork (Background Tasks & Callbacks)
+
+**Use when**: Fire-and-forget operations or callback integration.
+
+```typescript
+import { Effect, Runtime } from "effect";
+
+// ✅ CORRECT: Background task with runtime preservation
+const scheduleCleanup = Effect.gen(function* () {
+  const runtime = yield* Effect.runtime();
+  const runFork = Runtime.runFork(runtime);
+
+  // Schedule cleanup every hour
+  setInterval(() => {
+    runFork(
+      Effect.gen(function* () {
+        const cache = yield* CacheService;
+        yield* cache.cleanup();
+        yield* Effect.log("Cache cleaned");
+      })
+    );
+  }, 3600000);
+});
+
+// ✅ CORRECT: WebSocket with preserved runtime
+const setupWebSocket = Effect.gen(function* () {
+  const runtime = yield* Effect.runtime();
+  const runFork = Runtime.runFork(runtime);
+
+  websocket.on("message", (data) => {
+    runFork(handleMessage(data)); // Preserves context and layers
+  });
+});
+```
+
+**Characteristics**:
+- Returns `RuntimeFiber<A, E>`
+- Non-blocking (doesn't wait for completion)
+- Preserves Effect error types
+- Use for callbacks, background tasks
+
+**Why preserve runtime?**
+- Callback has access to all services (DatabaseService, etc.)
+- Layer composition works
+- Context tags available
+- Proper error tracking
+
+See [Runtime Preservation](#runtime-preservation-for-callbacks) section below for complete details.
+
+---
+
+### Pattern 4: NodeRuntime.runMain (CLI Applications)
+
+**Use when**: Building CLI tools with graceful shutdown.
+
+```typescript
+import { NodeRuntime } from "@effect/platform-node";
+import { Effect, Layer } from "effect";
+
+// ✅ CORRECT: CLI application (apps/cli/src/main.ts)
+const program = Effect.gen(function* () {
+  const cli = yield* CliService;
+  const args = yield* cli.parseArgs(process.argv);
+  yield* cli.execute(args);
+});
+
+NodeRuntime.runMain(
+  program.pipe(Effect.provide(AppLayer))
+);
+
+// Benefits:
+// - Graceful shutdown on SIGTERM/SIGINT
+// - Automatic error logging with stack traces
+// - Exit code handling (0 for success, 1 for failure)
+// - Resource cleanup on interruption
+```
+
+---
+
+### Application Entry Points (Summary)
 
 ```typescript
 // ✅ Recommended: Effect.runPromise for async contexts
@@ -3909,6 +4945,118 @@ Effect.runSync(asyncEffect); // Will throw if effect is async
 // ✅ Use runSync only for pure synchronous effects
 Effect.runSync(Effect.succeed(42));
 ```
+
+---
+
+### Where Effects Are Run in This Codebase
+
+**Application Layer** (apps/*/src/main.ts):
+```typescript
+// Entry point - ONLY place to run effects in apps
+await Effect.runPromise(program.pipe(Effect.provide(AppLayer)));
+```
+
+**Test Layer** (\*.spec.ts files):
+```typescript
+// Tests - @effect/vitest handles running, NEVER manual runPromise
+it.scoped("test", () =>
+  Effect.gen(function* () {
+    // Test code here - framework runs it
+  }).pipe(Effect.provide(Layer.fresh(TestLayer)))
+);
+```
+
+**Callback Layer** (WebSocket, event handlers):
+```typescript
+// Callbacks - Runtime preservation pattern (see below)
+const runtime = yield* Effect.runtime();
+const runFork = Runtime.runFork(runtime);
+
+websocket.on("message", (data) => {
+  runFork(handleMessage(data)); // Preserves context
+});
+```
+
+**Library Layer** (libs/\*\*/src/\*\*/\*.ts):
+```typescript
+// Libraries - NEVER run effects, always return Effect
+export const operation = (): Effect.Effect<A, E, R> =>
+  Effect.gen(function* () {
+    // Implementation - returns Effect, doesn't run it
+  });
+```
+
+---
+
+### Anti-Patterns: Running Effects
+
+```typescript
+// ❌ WRONG: Running effects in library code
+export class UserRepository {
+  async findById(id: string): Promise<User> {
+    // NEVER do this in libraries!
+    return await Effect.runPromise(
+      Effect.gen(function* () {
+        const db = yield* DatabaseService;
+        return yield* db.query(...);
+      })
+    );
+  }
+}
+
+// ✅ CORRECT: Return Effect, let consumer run it
+export class UserRepository {
+  findById(id: string): Effect.Effect<User, Error, DatabaseService> {
+    return Effect.gen(function* () {
+      const db = yield* DatabaseService;
+      return yield* db.query(...);
+    });
+  }
+}
+
+// ❌ WRONG: Manual runPromise in tests
+it("should find user", async () => {
+  const result = await Effect.runPromise(
+    UserRepository.findById("123").pipe(Effect.provide(TestLayer))
+  );
+  expect(result).toBeDefined();
+});
+
+// ✅ CORRECT: Use it.scoped (see TESTING_PATTERNS.md)
+it.scoped("should find user", () =>
+  Effect.gen(function* () {
+    const repo = yield* UserRepository;
+    const result = yield* repo.findById("123");
+    expect(result).toBeDefined();
+  }).pipe(Effect.provide(Layer.fresh(TestLayer)))
+);
+
+// ❌ WRONG: runSync with async operations
+const user = Effect.runSync(
+  Effect.gen(function* () {
+    const repo = yield* UserRepository; // THROWS! Async operation
+    return yield* repo.findById("123");
+  })
+);
+
+// ✅ CORRECT: Use runPromise for async
+const user = await Effect.runPromise(
+  Effect.gen(function* () {
+    const repo = yield* UserRepository;
+    return yield* repo.findById("123");
+  }).pipe(Effect.provide(AppLayer))
+);
+```
+
+---
+
+### Cross-References
+
+- [Testing Patterns](./TESTING_PATTERNS.md) - Complete guide to it.scoped and test execution
+- [Runtime Preservation](#runtime-preservation-for-callbacks) - Callback integration patterns (below)
+- [Layer Composition](#layer-creation-patterns) - How to provide dependencies before running
+
+---
 
 ## ⚠️ CRITICAL: Runtime Preservation for Callbacks
 

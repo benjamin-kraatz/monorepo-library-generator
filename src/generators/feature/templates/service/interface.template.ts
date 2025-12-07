@@ -475,23 +475,28 @@ export class ${className}Service extends Context.Tag("${className}Service")<
   /**
    * Live Layer - Production implementation
    *
-   * TODO: Add actual dependencies
+   * TODO: Add actual dependencies via Effect.gen when you need to yield
    * Example:
-   *   const repo = yield* UserRepository;
-   *   const logger = yield* LoggingService;
+   *   Effect.gen(function* () {
+   *     const repo = yield* UserRepository;
+   *     const logger = yield* LoggingService;
+   *     return { ... }
+   *   })
    */
   static readonly Live = Layer.effect(
     this,
-    Effect.gen(function () {
-      // TODO: Inject dependencies
+    Effect.sync(() => {
+      // TODO: Inject dependencies using Effect.gen if you need to yield
       // const repo = yield* UserRepository;
 
       return {
         exampleOperation: () =>
-          Effect.gen(function () {
-            // TODO: Implement business logic
-            // const data = yield* repo.findAll();
-            // return { success: true, data };
+          Effect.sync(() => {
+            // TODO: Implement business logic using Effect.gen if you need to yield
+            // Effect.gen(function* () {
+            //   const data = yield* repo.findAll();
+            //   return { success: true, data };
+            // })
 
             return {
               success: true

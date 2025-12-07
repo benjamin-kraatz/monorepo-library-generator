@@ -261,6 +261,74 @@ TODO: Uncomment and customize these imports based on your needs:`
 }`)
   builder.addBlankLine()
 
+  // Add batch operations pattern
+  builder.addSectionComment("Batch Operations with Effect.all")
+  builder.addRaw(`//
+// BATCH OPERATIONS & PARALLEL EXECUTION:
+//
+// Pattern: Process multiple independent items in parallel with concurrency control
+// -----------------------------------------------------------------------------
+//
+// Use Effect.all when operations are independent and can run concurrently:
+//
+// const results = yield* Effect.all(
+//   userIds.map(id => userRepo.findById(id)),
+//   { concurrency: 10 } // Limit to 10 concurrent operations
+// );
+//
+// Example 1: Load dashboard data in parallel
+// const dashboard = yield* Effect.all({
+//   user: userRepo.findById(userId),
+//   notifications: notificationRepo.findUnread(userId),
+//   recentActivity: activityRepo.findRecent(userId, 10)
+// }).pipe(
+//   Effect.mapError(err => new ${className}Error({
+//     message: "Failed to load dashboard",
+//     cause: err
+//   }))
+// );
+//
+// Example 2: Batch processing with concurrency limit
+// const enrichedItems = yield* Effect.all(
+//   itemIds.map(id =>
+//     Effect.gen(function* () {
+//       const item = yield* itemRepo.findById(id);
+//       const details = yield* detailsService.getDetails(id);
+//       return { ...item, details };
+//     })
+//   ),
+//   { concurrency: 5 } // Process 5 items at a time
+// );
+//
+// Example 3: Collect all results even if some fail (Effect.allSuccesses)
+// const results = yield* Effect.allSuccesses(
+//   itemIds.map(id => itemRepo.findById(id))
+// ).pipe(
+//   Effect.map(options => ({
+//     successes: options.filter(Option.isSome).map(o => o.value),
+//     failures: options.filter(Option.isNone).length
+//   }))
+// );
+//
+// WHEN TO USE:
+// - Operations are independent (no data dependencies)
+// - Number of items is reasonable (< 100)
+// - Want to maximize performance
+//
+// CONCURRENCY GUIDELINES:
+// - < 10 items: { concurrency: "unbounded" } (default)
+// - 10-100 items: { concurrency: 5-20 }
+// - 100+ items: Consider Stream.fromIterable + Stream.mapEffect
+//
+// DON'T USE Effect.all when:
+// - Operations depend on each other (use Effect.gen with yield* instead)
+// - Processing thousands of items (use Stream instead)
+//
+// See docs/EFFECT_PATTERNS.md - "Effect.all - Batch Operations" for complete guide
+//
+`)
+  builder.addBlankLine()
+
   // Add comprehensive error handling reference
   builder.addSectionComment("Error Transformation Reference")
   builder.addRaw(`//

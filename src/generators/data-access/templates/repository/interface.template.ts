@@ -36,7 +36,7 @@ ARCHITECTURE PATTERN:
 
   // Add imports
   builder.addImports([
-    { from: "effect", imports: ["Context", "Layer", "Effect"] }
+    { from: "effect", imports: ["Context", "Layer", "Effect", "Stream", "Option"] }
   ])
   builder.addBlankLine()
 
@@ -89,93 +89,71 @@ export interface ${className}RepositoryInterface
     Aggregate${className}Operations {
 
   // ==========================================================================
-  // TODO: Stream-Based Operations for Large Datasets
+  // Stream-Based Operations for Large Datasets
   // ==========================================================================
   //
   // Stream provides constant-memory processing for large/unbounded datasets.
-  // Use Stream when:
-  // - Processing 1000+ items
-  // - Memory constraints are critical
-  // - Need backpressure handling
+  // Use when processing 1000+ items or when memory constraints are critical.
+
+  /**
+   * Stream all entities with pagination
+   *
+   * Provides constant-memory processing of large datasets using Stream.paginateEffect.
+   * Automatically handles pagination and backpressure.
+   *
+   * @param options - Configuration options
+   * @param options.batchSize - Number of items per page (default: 100)
+   *
+   * @returns Stream of entities with constant memory usage
+   *
+   * @example
+   * \`\`\`typescript
+   * // Stream all entities
+   * const repo = yield* ${className}Repository;
+   * yield* repo.streamAll({ batchSize: 100 }).pipe(
+   *   Stream.mapEffect((entity) => processEntity(entity)),
+   *   Stream.runDrain
+   * );
+   *
+   * // Count total items with constant memory
+   * const count = yield* repo.streamAll().pipe(
+   *   Stream.runCount
+   * );
+   *
+   * // Export to CSV with constant memory
+   * yield* repo.streamAll().pipe(
+   *   Stream.map((entity) => toCsvRow(entity)),
+   *   Stream.run(Sink.file("export.csv"))
+   * );
+   * \`\`\`
+   */
+  readonly streamAll: (options?: {
+    readonly batchSize?: number;
+  }) => Stream.Stream<${className}, ${className}RepositoryError, never>;
+
+  // ==========================================================================
+  // TODO: Additional Stream Operations (Optional)
+  // ==========================================================================
   //
-  // Example: Stream all entities with backpressure
-  //
-  // readonly streamAll: (options?: {
-  //   batchSize?: number;
-  //   filters?: Record<string, unknown>;
-  // }) => Stream.Stream<YourEntity, ${className}RepositoryError, never>;
-  //
-  // Implementation pattern:
-  //
-  // streamAll: (options = {}) =>
-  //   Stream.asyncScoped<YourEntity, ${className}RepositoryError>((emit) =>
-  //     Effect.gen(function* () {
-  //       const db = yield* KyselyService;
-  //       const batchSize = options.batchSize ?? 100;
-  //       let offset = 0;
-  //
-  //       while (true) {
-  //         const batch = yield* Effect.tryPromise({
-  //           try: () => db.selectFrom("your_table")
-  //             .selectAll()
-  //             .limit(batchSize)
-  //             .offset(offset)
-  //             .execute(),
-  //           catch: (error) => new ${className}RepositoryError({
-  //             message: "Failed to stream entities",
-  //             cause: error
-  //           })
-  //         });
-  //
-  //         if (batch.length === 0) break;
-  //
-  //         for (const item of batch) {
-  //           yield* emit.single(item);
-  //         }
-  //
-  //         offset += batchSize;
-  //       }
-  //     })
-  //   ),
-  //
-  // Usage in service layer:
-  //
-  // const repo = yield* ${className}Repository;
-  // yield* repo.streamAll({ batchSize: 100 }).pipe(
-  //   Stream.mapEffect((entity) => processEntity(entity)),
-  //   Stream.runDrain
-  // );
-  //
-  // Example: Stream with Sink for aggregation
+  // Add these if your use case requires filtering or custom streaming:
   //
   // readonly streamByCriteria: (
-  //   criteria: Record<string, unknown>,
+  //   criteria: Partial<${className}>,
   //   options?: { batchSize?: number }
-  // ) => Stream.Stream<YourEntity, ${className}RepositoryError, never>;
+  // ) => Stream.Stream<${className}, ${className}RepositoryError, never>;
   //
-  // // Use with Sink for memory-efficient aggregation
-  // const totalRevenue = yield* repo.streamByCriteria({ status: "completed" }).pipe(
-  //   Stream.map(order => order.amount),
+  // Usage examples:
+  //
+  // // Stream with Sink for aggregation
+  // const total = yield* repo.streamByCriteria({ status: "active" }).pipe(
+  //   Stream.map(item => item.amount),
   //   Stream.run(Sink.sum) // Constant memory aggregation
   // );
   //
-  // Example: Batch processing with Stream
-  //
-  // readonly streamForProcessing: () => Stream.Stream<
-  //   YourEntity,
-  //   ${className}RepositoryError,
-  //   never
-  // >;
-  //
-  // // Process in batches with backpressure
-  // yield* repo.streamForProcessing().pipe(
+  // // Batch processing with backpressure
+  // yield* repo.streamAll().pipe(
   //   Stream.grouped(50), // Process 50 at a time
-  //   Stream.mapEffect((batch) =>
-  //     Effect.gen(function* () {
-  //       // Process batch
-  //       yield* processBatch(batch);
-  //     })
-  //   ),
+  //   Stream.mapEffect((batch) => processBatch(batch)),
   //   Stream.runDrain
   // );
   //

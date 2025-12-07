@@ -81,8 +81,8 @@ export interface Create${className}Operations {
  * TODO: Implement with actual ${externalService} SDK
  */
 export const createOperations: Create${className}Operations = {
-  create: (_data) =>
-    Effect.gen(function () {
+  create: (data) =>
+    Effect.gen(function* () {
       // TODO: Replace with actual ${externalService} SDK call
       // Example:
       // const client = yield* ${externalService}Client;
@@ -92,7 +92,9 @@ export const createOperations: Create${className}Operations = {
       // });
       // return result;
 
-      return Effect.dieMessage("Create operation not implemented - replace with ${externalService} SDK call");
+      yield* Effect.logWarning(\`Create operation called with data but not implemented\`);
+      yield* Effect.logDebug(\`Data: \${JSON.stringify(data)}\`);
+      return yield* Effect.dieMessage("Create operation not implemented - replace with ${externalService} SDK call");
     }).pipe(
       Effect.retry(
         Schedule.exponential(Duration.millis(100)).pipe(
