@@ -23,7 +23,7 @@ export interface BuildConfigOptions {
   libraryType: LibraryType
   includeClientServer?: boolean
   additionalEntryPoints?: Array<string>
-  buildMode?: "nx" | "effect" | "effect-v4"
+  buildMode?: "nx" | "effect"
 }
 
 /**
